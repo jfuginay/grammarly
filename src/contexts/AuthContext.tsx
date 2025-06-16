@@ -59,31 +59,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const createUser = async (user: User) => {
     try {
-      const { data, error } = await supabase
-        .from('User')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-      if (!data) {
-        const { error: insertError } = await supabase
-          .from('User')
-          .insert({
-            id: user.id,
-            email: user.email,
-          });
-        if (insertError) {
-          throw insertError;
-        }
+      // Use fetch to call our API route for user creation
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
       }
     } catch (error) {
+      console.error('Error creating user:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to create user profile",
       });
+      throw error;
     }
   };
 
