@@ -52,7 +52,40 @@ const spellCheckDict: Record<string, string> = {
   'freind': 'friend',
   'thier': 'their',
   'reccomend': 'recommend',
-  'tommorrow': 'tomorrow'
+  'tommorrow': 'tomorrow',
+  'alot': 'a lot',
+  'allways': 'always',
+  'becuase': 'because',
+  'bussiness': 'business',
+  'comming': 'coming',
+  'concious': 'conscious',
+  'dosent': "doesn't",
+  'enviroment': 'environment',
+  'experiance': 'experience',
+  'futher': 'further',
+  'garentee': 'guarantee',
+  'happend': 'happened',
+  'immediatly': 'immediately',
+  'intresting': 'interesting',
+  'knowlege': 'knowledge',
+  'lenght': 'length',
+  'lisence': 'license',
+  'millenium': 'millennium',
+  'noticable': 'noticeable',
+  'persistant': 'persistent',
+  'posession': 'possession',
+  'priviledge': 'privilege',
+  'reffered': 'referred',
+  'relevent': 'relevant',
+  'remeber': 'remember',
+  'succesful': 'successful',
+  'suprise': 'surprise',
+  'truely': 'truly',
+  'untill': 'until',
+  'usefull': 'useful',
+  'wether': 'whether',
+  'wich': 'which',
+  'writting': 'writing'
 };
 
 // Grammar rules
@@ -93,6 +126,32 @@ const styleSuggestions = [
   }
 ];
 
+// Function to check for local spelling errors
+const checkLocalSpelling = (text: string): Suggestion[] => {
+  const words = text.split(/\b/);
+  const suggestions: Suggestion[] = [];
+  let currentIndex = 0;
+
+  words.forEach((word: string) => {
+    const lowerWord = word.toLowerCase();
+    if (spellCheckDict[lowerWord]) {
+      suggestions.push({
+        id: `local-${currentIndex}`,
+        type: 'spelling',
+        text: word,
+        replacement: spellCheckDict[lowerWord],
+        explanation: 'Common misspelling detected',
+        startIndex: currentIndex,
+        endIndex: currentIndex + word.length,
+        severity: 'error'
+      });
+    }
+    currentIndex += word.length;
+  });
+
+  return suggestions;
+};
+
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const [text, setText] = useState("Welcome to your writing assistant! Try typing some text with mistakes like 'teh' or 'recieve' to see suggestions appear.");
@@ -132,14 +191,32 @@ export default function Dashboard() {
     const getSuggestions = async () => {
       setIsLoading(true);
       try {
-        const newSuggestions = await generateSuggestions(text);
-        setSuggestions(newSuggestions);
+        // First check for local spelling errors
+        const localSuggestions = checkLocalSpelling(text);
+        
+        // Then get API suggestions
+        const apiSuggestions = await generateSuggestions(text);
+        
+        // Combine both sets of suggestions, removing duplicates
+        const allSuggestions = [...localSuggestions];
+        apiSuggestions.forEach((apiSuggestion: Suggestion) => {
+          const isDuplicate = localSuggestions.some(
+            (localSuggestion: Suggestion) => 
+              localSuggestion.startIndex === apiSuggestion.startIndex &&
+              localSuggestion.endIndex === apiSuggestion.endIndex
+          );
+          if (!isDuplicate) {
+            allSuggestions.push(apiSuggestion);
+          }
+        });
+        
+        setSuggestions(allSuggestions);
       } finally {
         setIsLoading(false);
       }
     };
     
-    const timeoutId = setTimeout(getSuggestions, 500);
+    const timeoutId = setTimeout(getSuggestions, 300);
     return () => clearTimeout(timeoutId);
   }, [text, generateSuggestions]);
 
@@ -153,7 +230,7 @@ export default function Dashboard() {
   };
 
   const dismissSuggestion = (suggestionId: string) => {
-    setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+    setSuggestions((prev: Suggestion[]) => prev.filter((s: Suggestion) => s.id !== suggestionId));
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
   };
