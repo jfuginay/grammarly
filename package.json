@@ -59,6 +59,7 @@
     "lucide-react": "^0.451.0",
     "next": "14.2.27",
     "next-themes": "^0.3.0",
+    "openai": "^5.5.0",
     "prisma": "^5.19.1",
     "react": "^18",
     "react-day-picker": "8.10.1",
@@ -78,7 +79,7 @@
   },
   "devDependencies": {
     "@types/lodash.throttle": "^4.1.9",
-    "@types/node": "^20",
+    "@types/node": "^20.19.1",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-syntax-highlighter": "^15.5.13",

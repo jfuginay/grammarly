@@ -102,75 +102,45 @@ export default function Dashboard() {
   const [showSuggestionPanel, setShowSuggestionPanel] = useState(true);
   const [floatingSuggestion, setFloatingSuggestion] = useState<Suggestion | null>(null);
   const [floatingPosition, setFloatingPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const generateSuggestions = useCallback((inputText: string): Suggestion[] => {
-    const newSuggestions: Suggestion[] = [];
-    const words = inputText.split(/(\s+)/);
-    let currentIndex = 0;
+  const generateSuggestions = useCallback(async (inputText: string): Promise<Suggestion[]> => {
+    try {
+      const response = await fetch('/api/correct-text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: inputText }),
+      });
 
-    // Spell checking
-    words.forEach((word, index) => {
-      const cleanWord = word.toLowerCase().replace(/[^\w]/g, '');
-      if (cleanWord && spellCheckDict[cleanWord]) {
-        const startIndex = currentIndex;
-        const endIndex = currentIndex + word.length;
-        
-        newSuggestions.push({
-          id: `spell-${index}-${startIndex}`,
-          type: 'spelling',
-          text: word,
-          replacement: spellCheckDict[cleanWord],
-          explanation: `"${cleanWord}" appears to be misspelled`,
-          startIndex,
-          endIndex,
-          severity: 'error'
-        });
+      if (!response.ok) {
+        throw new Error('Failed to get suggestions');
       }
-      currentIndex += word.length;
-    });
 
-    // Grammar checking
-    grammarRules.forEach((rule, ruleIndex) => {
-      let match;
-      while ((match = rule.pattern.exec(inputText)) !== null) {
-        newSuggestions.push({
-          id: `grammar-${ruleIndex}-${match.index}`,
-          type: 'grammar',
-          text: match[0],
-          replacement: rule.replacement,
-          explanation: rule.explanation,
-          startIndex: match.index,
-          endIndex: match.index + match[0].length,
-          severity: 'warning'
-        });
-      }
-    });
-
-    // Style suggestions
-    styleSuggestions.forEach((rule, ruleIndex) => {
-      let match;
-      while ((match = rule.pattern.exec(inputText)) !== null) {
-        newSuggestions.push({
-          id: `style-${ruleIndex}-${match.index}`,
-          type: 'style',
-          text: match[0],
-          replacement: rule.replacement,
-          explanation: rule.explanation,
-          startIndex: match.index,
-          endIndex: match.index + match[0].length,
-          severity: 'suggestion'
-        });
-      }
-    });
-
-    return newSuggestions.sort((a, b) => a.startIndex - b.startIndex);
+      const data = await response.json();
+      return data.suggestions;
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      return [];
+    }
   }, []);
 
   useEffect(() => {
-    const newSuggestions = generateSuggestions(text);
-    setSuggestions(newSuggestions);
+    const getSuggestions = async () => {
+      setIsLoading(true);
+      try {
+        const newSuggestions = await generateSuggestions(text);
+        setSuggestions(newSuggestions);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    const timeoutId = setTimeout(getSuggestions, 500);
+    return () => clearTimeout(timeoutId);
   }, [text, generateSuggestions]);
 
   const applySuggestion = (suggestion: Suggestion) => {
@@ -307,161 +277,163 @@ export default function Dashboard() {
     return 'default';
   };
 
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const handleClearText = () => {
+    setText("");
+    setSuggestions([]);
+  };
+
+  const getTextStats = () => {
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    const characters = text.length;
+    return {
+      words: words.length,
+      characters
+    };
+  };
+
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <motion.aside 
-        initial={{ x: -300 }}
-        animate={{ x: 0 }}
-        className="w-80 border-r border-border bg-card p-6 flex flex-col"
-      >
-        <div className="flex items-center space-x-2 mb-8">
-          <Sparkles className="w-8 h-8 text-primary" />
-          <span className="text-2xl font-bold text-primary">GrammarlyClone</span>
-        </div>
-
-        <div className="flex items-center space-x-3 mb-6 p-3 rounded-lg bg-muted/50">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">Writing Assistant</h1>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="text-sm">
+                {getTextStats().words} words
+              </Badge>
+              <Badge variant="outline" className="text-sm">
+                {getTextStats().characters} characters
+              </Badge>
+            </div>
           </div>
-          <div className="flex-1">
-            <div className="font-medium">{user?.email || 'User'}</div>
-            <div className="text-sm text-muted-foreground">Free Plan</div>
-          </div>
-        </div>
-
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold flex items-center">
-              <FileText className="w-4 h-4 mr-2" />
-              Suggestions ({suggestions.length})
-            </h3>
+          <div className="flex items-center space-x-4">
             <Button
-              variant="ghost"
+              variant="outline"
+              size="sm"
+              onClick={handleCopyToClipboard}
+              className="flex items-center space-x-2"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Copy</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearText}
+              className="flex items-center space-x-2"
+            >
+              <X className="h-4 w-4" />
+              <span>Clear</span>
+            </Button>
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setShowSuggestionPanel(!showSuggestionPanel)}
+              className="flex items-center space-x-2"
             >
-              {showSuggestionPanel ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showSuggestionPanel ? (
+                <>
+                  <EyeOff className="h-4 w-4" />
+                  <span>Hide Suggestions</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4" />
+                  <span>Show Suggestions</span>
+                </>
+              )}
             </Button>
           </div>
-
-          <AnimatePresence>
-            {showSuggestionPanel && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-3"
-              >
-                {suggestions.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                    <p>Great job! No issues found.</p>
-                  </div>
-                ) : (
-                  suggestions.map((suggestion) => (
-                    <motion.div
-                      key={suggestion.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => {
-                        setSelectedSuggestion(suggestion);
-                        setShowSuggestionModal(true);
-                      }}
-                    >
-                      <div className="flex items-start space-x-2">
-                        {getSuggestionIcon(suggestion.type, suggestion.severity)}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Badge variant={getSuggestionBadgeVariant(suggestion.severity)} className="text-xs">
-                              {suggestion.type}
-                            </Badge>
-                          </div>
-                          <p className="text-sm font-medium mb-1">
-                            "{suggestion.text}" → "{suggestion.replacement}"
-                          </p>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {suggestion.explanation}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
-        <Separator className="my-6" />
-
-        <Button
-          onClick={signOut}
-          variant="ghost"
-          className="justify-start text-muted-foreground hover:text-foreground"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
-      </motion.aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col">
-        <motion.header 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="border-b border-border p-6"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Writing Assistant</h1>
-              <p className="text-muted-foreground">Write with confidence and clarity</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="text-sm">
-                {text.split(/\s+/).filter(word => word.length > 0).length} words
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                {text.length} characters
-              </Badge>
-            </div>
-          </div>
-        </motion.header>
-
-        <div className="flex-1 p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="h-full"
-          >
-            <Card className="h-full">
-              <CardContent className="p-0 h-full">
-                <div className="relative h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="p-6">
+                <div className="relative">
                   <textarea
                     ref={textareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onClick={handleTextClick}
-                    className="w-full h-full p-6 text-lg leading-relaxed resize-none border-none outline-none bg-transparent font-mono"
-                    placeholder="Start writing your document here..."
-                    style={{ minHeight: '500px' }}
+                    className="w-full h-[500px] p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Start typing your text here..."
                   />
-                  
-                  {/* Overlay for highlighting */}
-                  <div 
-                    ref={overlayRef}
-                    className="absolute inset-0 p-6 text-lg leading-relaxed pointer-events-auto whitespace-pre-wrap font-mono text-transparent"
-                    dangerouslySetInnerHTML={{ __html: renderTextWithHighlights() }}
-                    onMouseMove={handleOverlayMouseMove}
-                    onMouseLeave={handleOverlayMouseLeave}
-                  />
+                  {isLoading && (
+                    <div className="absolute top-4 right-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
+
+          {showSuggestionPanel && (
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Sparkles className="h-5 w-5" />
+                    <span>Suggestions</span>
+                    {suggestions.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {suggestions.length}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {suggestions.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      {isLoading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                          <span>Analyzing text...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-2">
+                          <CheckCircle className="h-8 w-8 text-green-500" />
+                          <p>No suggestions found</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {suggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.id}
+                          className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                          onClick={() => {
+                            setSelectedSuggestion(suggestion);
+                            setShowSuggestionModal(true);
+                          }}
+                        >
+                          <div className="flex items-start space-x-3">
+                            {getSuggestionIcon(suggestion.type, suggestion.severity)}
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">{suggestion.text}</span>
+                                <span className="text-gray-500">→</span>
+                                <span className="text-blue-600">{suggestion.replacement}</span>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-1">{suggestion.explanation}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
-      </main>
+      </div>
 
       {/* Floating Suggestion */}
       <FloatingSuggestion
