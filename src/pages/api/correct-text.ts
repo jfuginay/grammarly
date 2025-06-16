@@ -35,7 +35,13 @@ export default async function handler(
       response_format: { type: "json_object" }
     });
 
-    const suggestions = JSON.parse(completion.choices[0].message.content).suggestions;
+    const responseContent = completion.choices[0].message.content;
+
+    if (!responseContent) {
+      return res.status(500).json({ message: 'Failed to get a valid response from the assistant.' });
+    }
+
+    const suggestions = JSON.parse(responseContent).suggestions;
     return res.status(200).json({ suggestions });
   } catch (error) {
     console.error('Error in text correction:', error);
