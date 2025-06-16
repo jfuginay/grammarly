@@ -188,43 +188,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleOverlayMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const overlay = e.currentTarget;
-    const rect = overlay.getBoundingClientRect();
-    const x = e.clientX - rect.left - 24; // Account for padding
-    const y = e.clientY - rect.top - 24; // Account for padding
-    
-    // Find which suggestion is being hovered
-    const lineHeight = 28;
-    const charWidth = 11;
-    const line = Math.floor(y / lineHeight);
-    const column = Math.floor(x / charWidth);
-    
-    const lines = text.split('\n');
-    let charIndex = 0;
-    for (let i = 0; i < line && i < lines.length; i++) {
-      charIndex += lines[i].length + 1; // +1 for newline
-    }
-    charIndex += Math.min(column, lines[line]?.length || 0);
-    
-    const hoveredSuggestion = suggestions.find(s => 
-      charIndex >= s.startIndex && charIndex <= s.endIndex
-    );
-    
-    if (hoveredSuggestion && hoveredSuggestion.id !== floatingSuggestion?.id) {
-      setFloatingSuggestion(hoveredSuggestion);
-      setFloatingPosition({ x: e.clientX, y: e.clientY });
-    } else if (!hoveredSuggestion) {
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
-    }
-  };
-
-  const handleOverlayMouseLeave = () => {
-    setFloatingSuggestion(null);
-    setFloatingPosition(null);
-  };
-
   const renderTextWithHighlights = () => {
     if (suggestions.length === 0) return text;
 
@@ -360,17 +323,15 @@ export default function Dashboard() {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onClick={handleTextClick}
-                    className="w-full h-[500px] p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-lg leading-relaxed"
+                    className="w-full h-[500px] p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-lg leading-relaxed relative z-10"
                     placeholder="Start typing your text here..."
                   />
                   
                   {/* Overlay for highlighting */}
                   <div 
                     ref={overlayRef}
-                    className="absolute inset-0 p-4 text-lg leading-relaxed pointer-events-auto whitespace-pre-wrap font-mono text-transparent"
+                    className="absolute inset-0 p-4 text-lg leading-relaxed pointer-events-none whitespace-pre-wrap font-mono text-transparent z-0"
                     dangerouslySetInnerHTML={{ __html: renderTextWithHighlights() }}
-                    onMouseMove={handleOverlayMouseMove}
-                    onMouseLeave={handleOverlayMouseLeave}
                   />
                   
                   {isLoading && (
