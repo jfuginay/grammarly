@@ -360,9 +360,19 @@ export default function Dashboard() {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onClick={handleTextClick}
-                    className="w-full h-[500px] p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full h-[500px] p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-lg leading-relaxed"
                     placeholder="Start typing your text here..."
                   />
+                  
+                  {/* Overlay for highlighting */}
+                  <div 
+                    ref={overlayRef}
+                    className="absolute inset-0 p-4 text-lg leading-relaxed pointer-events-auto whitespace-pre-wrap font-mono text-transparent"
+                    dangerouslySetInnerHTML={{ __html: renderTextWithHighlights() }}
+                    onMouseMove={handleOverlayMouseMove}
+                    onMouseLeave={handleOverlayMouseLeave}
+                  />
+                  
                   {isLoading && (
                     <div className="absolute top-4 right-4">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>

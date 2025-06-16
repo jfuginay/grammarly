@@ -25,7 +25,34 @@ export default async function handler(
       messages: [
         {
           role: "system",
-          content: "You are a professional writing assistant. Analyze the given text for grammar, spelling, and style issues. Return a JSON array of suggestions, where each suggestion has: type ('spelling', 'grammar', or 'style'), text (the original text), replacement (the corrected text), explanation (why the change is needed), startIndex (where the issue starts), endIndex (where the issue ends), and severity ('error', 'warning', or 'suggestion')."
+          content: `You are a professional writing assistant. Analyze the given text for grammar, spelling, and style issues. 
+
+Return a JSON object with this exact structure:
+{
+  "suggestions": [
+    {
+      "id": "unique-id",
+      "type": "spelling|grammar|style",
+      "text": "original problematic text",
+      "replacement": "corrected text",
+      "explanation": "explanation of why this change is needed",
+      "startIndex": number,
+      "endIndex": number,
+      "severity": "error|warning|suggestion"
+    }
+  ]
+}
+
+Rules:
+- Use "spelling" for misspelled words
+- Use "grammar" for grammatical errors
+- Use "style" for style improvements
+- Use "error" severity for spelling mistakes and serious grammar errors
+- Use "warning" severity for minor grammar issues
+- Use "suggestion" severity for style improvements
+- Calculate exact startIndex and endIndex positions in the original text
+- Generate unique IDs for each suggestion
+- Focus on finding actual typos and spelling mistakes`
         },
         {
           role: "user",
