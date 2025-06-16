@@ -265,10 +265,10 @@ export default function Dashboard() {
       result += text.substring(lastIndex, suggestion.startIndex);
       
       const highlightClass = suggestion.severity === 'error' 
-        ? 'bg-red-100 border-b-2 border-red-500 dark:bg-red-900/20 dark:border-red-400 hover:bg-red-200 dark:hover:bg-red-800/30' 
+        ? 'bg-red-100 border-b-2 border-red-500 dark:bg-red-900/20 dark:border-red-400 hover:bg-red-200 dark:hover:bg-red-800/30 text-red-800 dark:text-red-200' 
         : suggestion.severity === 'warning'
-        ? 'bg-yellow-100 border-b-2 border-yellow-500 dark:bg-yellow-900/20 dark:border-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-800/30'
-        : 'bg-blue-100 border-b-2 border-blue-500 dark:bg-blue-900/20 dark:border-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/30';
+        ? 'bg-yellow-100 border-b-2 border-yellow-500 dark:bg-yellow-900/20 dark:border-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-800/30 text-yellow-800 dark:text-yellow-200'
+        : 'bg-blue-100 border-b-2 border-blue-500 dark:bg-blue-900/20 dark:border-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/30 text-blue-800 dark:text-blue-200';
       
       result += `<span class="${highlightClass} cursor-pointer transition-colors" data-suggestion-id="${suggestion.id}">${suggestion.text}</span>`;
       lastIndex = suggestion.endIndex;
