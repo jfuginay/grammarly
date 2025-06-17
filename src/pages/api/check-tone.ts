@@ -9,24 +9,21 @@ const toneSystemPrompt = `You are a sophisticated writing assistant. Your task i
 Respond with a JSON object that has the following structure:
 {
   "overallTone": "A one or two-word description of the dominant tone (e.g., 'Formal', 'Confident & Assertive', 'Friendly & Casual').",
-  "toneScores": {
-    "Formal": 0.8,
-    "Friendly": 0.2,
-    "Confident": 0.9,
-    "Analytical": 0.6,
-    "Optimistic": 0.7
-  },
+  "overallScore": 0.85, // Add this: AI's confidence in the overallTone, a number between 0 and 1.
   "highlightedSentences": [
     {
       "text": "The sentence or phrase to highlight.",
       "tone": "The specific tone of this sentence (e.g., 'Formal', 'Confident').",
+      "score": 0.9, // Add this: AI's confidence in the tone for this specific sentence, a number between 0 and 1.
       "startIndex": 0,
       "endIndex": 25
     }
   ]
 }
-Analyze the text and identify up to 5 key sentences or phrases that most strongly contribute to the overall tone. For each, provide the text, the specific tone, and its start and end index in the original text.
-The tone scores should be a rating from 0 to 1 for a few dominant tones you identify.
+Analyze the text and identify up to 3-5 key sentences or phrases that most strongly contribute to the overall tone.
+For the "overallTone", provide an "overallScore" which is a number between 0 and 1 representing your confidence in this assessment.
+For each highlighted sentence, provide the "text", its specific "tone", its start and end "startIndex" and "endIndex" in the original text, and a "score" (a number between 0 and 1) representing your confidence in the tone identified for that specific sentence.
+Do not include the "toneScores" object that was previously requested.
 Ensure your response is only the JSON object.`;
 
 export default async function handler(
