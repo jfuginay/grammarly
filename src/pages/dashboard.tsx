@@ -26,7 +26,8 @@ import {
   Download,
   Copy,
   Clipboard,
-  ExternalLink
+  ExternalLink,
+  Smile
 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -34,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
+import { Progress } from "@/components/ui/progress";
 
 interface Suggestion {
   id: string;
@@ -45,6 +47,35 @@ interface Suggestion {
   endIndex: number;
   severity: 'error' | 'warning' | 'suggestion';
 }
+
+interface ToneAnalysisResult {
+  overallTone: string;
+  toneScores: Record<string, number>;
+  highlightedSentences: {
+    text: string;
+    tone: string;
+    startIndex: number;
+    endIndex: number;
+  }[];
+}
+
+const TONE_COLORS: Record<string, string> = {
+  Formal: "bg-blue-200 dark:bg-blue-800",
+  Friendly: "bg-green-200 dark:bg-green-800",
+  Confident: "bg-purple-200 dark:bg-purple-800",
+  Analytical: "bg-yellow-200 dark:bg-yellow-800",
+  Optimistic: "bg-pink-200 dark:bg-pink-800",
+  Default: "bg-gray-200 dark:bg-gray-700",
+};
+
+const TONE_PROGRESS_COLORS: Record<string, string> = {
+  Formal: "[&>div]:bg-blue-500",
+  Friendly: "[&>div]:bg-green-500",
+  Confident: "[&>div]:bg-purple-500",
+  Analytical: "[&>div]:bg-yellow-500",
+  Optimistic: "[&>div]:bg-pink-500",
+  Default: "[&>div]:bg-gray-500",
+};
 
 // Add mobile detection hook
 const useIsMobile = () => useMediaQuery("(max-width: 768px)");
@@ -60,9 +91,18 @@ export default function Dashboard() {
   const [showSuggestionNotification, setShowSuggestionNotification] = useState(false);
   const [isApplyingSuggestion, setIsApplyingSuggestion] = useState(false);
   const [showDocumentOptions, setShowDocumentOptions] = useState(false);
+  const [isCheckingTone, setIsCheckingTone] = useState(false);
+  const [toneAnalysis, setToneAnalysis] = useState<ToneAnalysisResult | null>(null);
+  const [typingSpeed, setTypingSpeed] = useState(0);
+  const [engieMessage, setEngieMessage] = useState("Hello! I'm Engie. Start typing and I'll share some encouraging thoughts!");
+  const [isEngieThinking, setIsEngieThinking] = useState(false);
+  const lastTypeTimeRef = useRef(Date.now());
+  const charCountRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
+  const [lastAnalyzedText, setLastAnalyzedText] = useState("");
+  const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
 
   // Add new state for mobile UI and document handling
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -91,6 +131,53 @@ export default function Dashboard() {
     }
   }, []);
 
+  const handleCheckTone = useCallback(async () => {
+    if (!text.trim()) return;
+    setIsCheckingTone(true);
+    try {
+      const response = await fetch('/api/check-tone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get tone analysis');
+      }
+
+      const data = await response.json();
+      setToneAnalysis(data.analysis);
+      setActiveTab('tone');
+    } catch (error) {
+      console.error('Error getting tone analysis:', error);
+    } finally {
+      setIsCheckingTone(false);
+    }
+  }, [text]);
+
+  const handleEngieAnalysis = useCallback(async () => {
+    if (isEngieThinking || !text.trim() || text === lastAnalyzedText) return;
+    setIsEngieThinking(true);
+    try {
+      const response = await fetch('/api/engie-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await response.json();
+      if (data.response) {
+        setEngieMessage(data.response);
+        setLastAnalyzedText(text);
+      }
+    } catch (error) {
+      console.error("Error with Engie's analysis:", error);
+    } finally {
+      setIsEngieThinking(false);
+    }
+  }, [text, isEngieThinking, lastAnalyzedText]);
+
   useEffect(() => {
     const getSuggestions = async () => {
       // Don't generate new suggestions if we're currently applying one
@@ -111,13 +198,30 @@ export default function Dashboard() {
       }
     };
     
-    if (text.trim()) {
+    // Typing speed and Engie logic
+    const wpm = (charCountRef.current / 5) / ((Date.now() - lastTypeTimeRef.current) / 60000);
+    setTypingSpeed(wpm);
+
+    const typingTimeout = setTimeout(() => {
+      setTypingSpeed(0);
+      if (text.trim().length > 20) {
+        handleEngieAnalysis();
+      } else if (!text.trim()) {
+        setEngieMessage("A blank page is full of possibilities! What's on your mind? ✨");
+      }
+    }, 2000); // Engie analyzes after 2s of inactivity
+
+    if (text.trim() && activeTab !== 'tone') {
       const timeoutId = setTimeout(getSuggestions, 300);
-      return () => clearTimeout(timeoutId);
+      return () => {
+        clearTimeout(timeoutId);
+        clearTimeout(typingTimeout);
+      };
     } else {
       setSuggestions([]);
+      return () => clearTimeout(typingTimeout);
     }
-  }, [text, generateSuggestions]);
+  }, [text, generateSuggestions, activeTab, handleEngieAnalysis]);
 
   const applySuggestion = (suggestion: Suggestion) => {
     // Set flag to prevent new suggestions from being generated during application
@@ -282,6 +386,60 @@ export default function Dashboard() {
     }
   };
 
+  const renderHighlightedText = () => {
+    if (!toneAnalysis || !text) return <p>{text}</p>;
+
+    let lastIndex = 0;
+    const highlightedElements = [];
+    const sortedSentences = [...toneAnalysis.highlightedSentences].sort((a, b) => a.startIndex - b.startIndex);
+
+    sortedSentences.forEach((sentence, i) => {
+      if (sentence.startIndex > lastIndex) {
+        highlightedElements.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex, sentence.startIndex)}</span>);
+      }
+      const colorClass = TONE_COLORS[sentence.tone] || TONE_COLORS.Default;
+      highlightedElements.push(
+        <span key={`hl-${i}`} className={`${colorClass} p-1 rounded`}>
+          {text.substring(sentence.startIndex, sentence.endIndex)}
+        </span>
+      );
+      lastIndex = sentence.endIndex;
+    });
+
+    if (lastIndex < text.length) {
+      highlightedElements.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>);
+    }
+
+    return <p className="text-lg leading-relaxed whitespace-pre-wrap">{highlightedElements}</p>;
+  };
+
+  const renderTextWithSuggestionHighlight = () => {
+    if (!hoveredSuggestion) return null;
+
+    const { startIndex, endIndex } = hoveredSuggestion;
+    
+    // To handle wrapping and newlines correctly, we need to render the text with spans
+    const preText = text.substring(0, startIndex);
+    const highlightedText = text.substring(startIndex, endIndex);
+    const postText = text.substring(endIndex);
+
+    return (
+      <div 
+        className="absolute inset-0 p-4 border border-transparent rounded-lg resize-none leading-relaxed pointer-events-none whitespace-pre-wrap"
+        style={{
+          fontSize: isMobile ? '1rem' : '1.125rem', // text-base or text-lg
+          fontFamily: 'inherit',
+        }}
+      >
+        <span>{preText}</span>
+        <span className="bg-yellow-200/50 dark:bg-yellow-800/50 rounded">
+          {highlightedText}
+        </span>
+        <span>{postText}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -443,6 +601,23 @@ export default function Dashboard() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={handleCheckTone}
+                disabled={isCheckingTone}
+                className="flex items-center space-x-2"
+              >
+                {isCheckingTone ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                ) : (
+                  <Smile className="h-4 w-4" />
+                )}
+                <span>Check Tone</span>
+              </Button>
+
+              <Separator orientation="vertical" className="h-6" />
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleCopyToClipboard}
                 className="flex items-center space-x-2"
               >
@@ -476,7 +651,7 @@ export default function Dashboard() {
         {/* Mobile Tabs */}
         {isMobile && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="write">Write</TabsTrigger>
               <TabsTrigger value="suggestions">
                 Suggestions
@@ -486,22 +661,83 @@ export default function Dashboard() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="tone">Tone</TabsTrigger>
             </TabsList>
           </Tabs>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8">
+          {/* Left Panel: Tone Analysis */}
+          <AnimatePresence>
+            {toneAnalysis && (
+              <motion.div
+                className="lg:col-span-1"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <Card className="h-full">
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="flex items-center space-x-2">
+                      <Smile className="h-5 w-5" />
+                      <span>Tone Analysis</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold mb-2">Overall Tone</h4>
+                        <Badge variant="default">{toneAnalysis.overallTone}</Badge>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-2">Tone Scores</h4>
+                        <div className="space-y-2">
+                          {Object.entries(toneAnalysis.toneScores).map(([tone, score]) => (
+                            <div key={tone}>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">{tone}</span>
+                                <span className="text-sm font-medium">{Math.round(score * 100)}%</span>
+                              </div>
+                              <Progress value={score * 100} className={`w-full ${TONE_PROGRESS_COLORS[tone] || TONE_PROGRESS_COLORS.Default}`} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
           {/* Text Editor Section */}
-          <div className={`${isMobile ? 'col-span-1' : 'lg:col-span-2'}`}>
+          <div className={toneAnalysis ? "lg:col-span-2" : "lg:col-span-3"}>
             <Card className="h-full">
               <CardContent className="p-4 sm:p-6">
                 <div className="relative">
                   <textarea
                     ref={textareaRef}
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onFocus={() => setIsKeyboardOpen(true)}
-                    onBlur={() => setIsKeyboardOpen(false)}
+                    onChange={(e) => {
+                      const newText = e.target.value;
+                      const timeNow = Date.now();
+                      if (newText.length > text.length) {
+                        if (timeNow - lastTypeTimeRef.current > 2000) {
+                          charCountRef.current = 0;
+                          lastTypeTimeRef.current = timeNow;
+                        }
+                        charCountRef.current += newText.length - text.length;
+                      }
+                      setText(newText);
+                      if (suggestions.length > 0) setSuggestions([]);
+                      if (toneAnalysis) setToneAnalysis(null);
+                      if(lastAnalyzedText) setLastAnalyzedText("");
+                    }}
+                    onFocus={() => {
+                      lastTypeTimeRef.current = Date.now();
+                      charCountRef.current = 0;
+                    }}
+                    onBlur={() => setTypingSpeed(0)}
                     className={`w-full ${
                       isMobile 
                         ? 'h-[60vh] text-base' 
@@ -509,6 +745,8 @@ export default function Dashboard() {
                     } p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed bg-white dark:bg-gray-800`}
                     placeholder="Start typing your text here, upload a document, or paste content..."
                   />
+                  
+                  {renderTextWithSuggestionHighlight()}
                   
                   {isLoading && (
                     <div className="absolute top-4 right-4">
@@ -544,91 +782,136 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Engie aI Assistant */}
+            <AnimatePresence>
+              <motion.div 
+                className="mt-4 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className="text-2xl">🤖</div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">Engie says...</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {isEngieThinking ? 'Thinking...' : engieMessage}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">Typing Speed</p>
+                    <p className="text-2xl font-bold text-blue-500">{Math.round(typingSpeed)} <span className="text-sm font-normal">WPM</span></p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Suggestions Panel */}
-          {(!isMobile || activeTab === 'suggestions') && (
-            <div className={`${isMobile ? 'col-span-1' : 'lg:col-span-1'}`}>
-              <Card className="h-full">
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Sparkles className="h-5 w-5" />
-                    <span>Suggestions</span>
-                    {suggestions.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {suggestions.length}
-                      </Badge>
+          {/* Right Panel: Suggestions */}
+          <div className="lg:col-span-1">
+            <Card className="h-full">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center space-x-2">
+                  <Sparkles className="h-5 w-5" />
+                  <span>Suggestions</span>
+                  {suggestions.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {suggestions.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                {suggestions.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    {isLoading ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <span>Analyzing text...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center space-y-2">
+                        <CheckCircle className="h-8 w-8 text-green-500" />
+                        <p>No suggestions found</p>
+                      </div>
                     )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  {suggestions.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                      {isLoading ? (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                          <span>Analyzing text...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center space-y-2">
-                          <CheckCircle className="h-8 w-8 text-green-500" />
-                          <p>No suggestions found</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <ScrollArea className={`${isMobile ? 'h-[40vh]' : 'h-[500px]'}`}>
-                      <div className="space-y-4 pr-4">
-                        {suggestions.map((suggestion) => (
-                          <motion.div
-                            key={suggestion.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${
-                              isMobile ? 'text-base' : ''
-                            }`}
-                            onClick={() => {
-                              if (isMobile) {
-                                handleMobileSuggestionTap(suggestion);
-                              } else {
-                                setSelectedSuggestion(suggestion);
-                                setShowSuggestionModal(true);
-                              }
-                            }}
-                          >
-                            <div className="flex items-start space-x-3">
-                              {getSuggestionIcon(suggestion.type, suggestion.severity)}
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-medium">{suggestion.text}</span>
-                                  <span className="text-gray-500">→</span>
-                                  <span className="text-blue-600 dark:text-blue-400">{suggestion.replacement}</span>
+                  </div>
+                ) : (
+                  <ScrollArea className={`${isMobile ? 'h-[40vh]' : 'h-[500px]'}`}>
+                    <div className="space-y-4 pr-4">
+                      {suggestions.map((suggestion) => (
+                        <motion.div
+                          key={suggestion.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                            isMobile ? 'text-base' : ''
+                          }`}
+                          onMouseEnter={() => !isMobile && setHoveredSuggestion(suggestion)}
+                          onMouseLeave={() => !isMobile && setHoveredSuggestion(null)}
+                        >
+                          <div className="flex items-start space-x-3">
+                            {getSuggestionIcon(suggestion.type, suggestion.severity)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-500 mb-1">{suggestion.explanation}</p>
+                              <div className="flex items-center space-x-2 flex-wrap">
+                                <span className="font-medium text-red-500 line-through">{suggestion.text}</span>
+                                <span className="text-gray-500">→</span>
+                                <span className="font-medium text-green-600">{suggestion.replacement}</span>
+                              </div>
+                              
+                              {!isMobile && (
+                                <div className="flex items-center space-x-2 mt-3">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      applySuggestion(suggestion);
+                                    }}
+                                  >
+                                    Apply
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      dismissSuggestion(suggestion.id);
+                                    }}
+                                  >
+                                    Dismiss
+                                  </Button>
                                 </div>
-                                <p className="text-sm text-gray-500 mt-1">{suggestion.explanation}</p>
-                                {isMobile && (
+                              )}
+
+                              {isMobile && (
+                                <div className="mt-2">
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="mt-2 text-green-600 hover:text-green-700"
+                                    className="text-green-600 hover:text-green-700 w-full justify-start p-0"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleMobileSuggestionTap(suggestion);
                                     }}
                                   >
-                                    Apply
+                                    Tap to apply
                                   </Button>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
