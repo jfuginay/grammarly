@@ -1,46 +1,53 @@
-import { useContext } from 'react';
+import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useRouter } from 'next/router';
-import { AuthContext } from '@/contexts/AuthContext';
-import Logo from '@/components/Logo';
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import Logo from './Logo';
 
-const Header = () => {
-  const { user, initializing, signOut } = useContext(AuthContext);
+export const Header = () => {
+  const supabaseClient = useSupabaseClient();
+  const user = useUser();
   const router = useRouter();
 
-  const handleButtonClick = () => {
-    if (user && router.pathname === '/dashboard') {
-      signOut();
-      router.push('/');
-    } else {
-      router.push(user ? "/dashboard" : "/login");
-    }
-  };
-
-  const buttonText = () => {
-    if (user && router.pathname === '/dashboard') {
-      return "Log out";
-    }
-    return user ? "Dashboard" : "Login";
+  const handleSignOut = async () => {
+    await supabaseClient.auth.signOut();
+    router.push('/login');
   };
 
   return (
-    <header className="w-full">
-      <div className="flex justify-between items-center py-4 px-4 sm:px-6 lg:px-8">
-        <div className="cursor-pointer" onClick={() => router.push("/")}>
-          <Logo />
-        </div>
-        {!initializing && (
-          <div className="flex items-center space-x-4">
-            <Button 
-              onClick={handleButtonClick}
-              variant="default"
-              size="default"
-            >
-              {buttonText()}
-            </Button>
-          </div>
-        )}
+    <header className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-950">
+      <div className="flex items-center gap-4">
+        <Logo />
+        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">Grammarly Clone</h1>
+      </div>
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Welcome, {user?.email ? user.email.split('@')[0] : 'Guest'}
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Avatar className="cursor-pointer">
+              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarFallback>{user?.email?.[0]?.toUpperCase() || 'G'}</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

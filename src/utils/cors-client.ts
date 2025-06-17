@@ -11,7 +11,7 @@ interface CorsTestOptions {
   origins?: string[];
 }
 
-class CorsClient {
+export class CorsClient {
   private baseUrl: string;
 
   constructor(baseUrl: string = window.location.origin) {
@@ -51,36 +51,41 @@ class CorsClient {
    */
   async testMethods(endpoint: string = '/api/cors-test'): Promise<any> {
     const methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
-    const results = {};
+    const results: { [key: string]: any } = {};
+    const promises = [];
 
     for (const method of methods) {
-      try {
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
-          method,
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: method !== 'GET' && method !== 'OPTIONS' ? JSON.stringify({ test: true }) : undefined,
-        });
+      const promise = (async () => {
+        try {
+          const response = await fetch(`${this.baseUrl}${endpoint}`, {
+            method,
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: method !== 'GET' && method !== 'OPTIONS' ? JSON.stringify({ test: true }) : undefined,
+          });
 
-        results[method] = {
-          success: true,
-          status: response.status,
-          corsHeaders: {
-            'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-            'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
-            'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
-          },
-        };
-      } catch (error: any) {
-        results[method] = {
-          success: false,
-          error: error.message,
-        };
-      }
+          results[method] = {
+            success: true,
+            status: response.status,
+            corsHeaders: {
+              'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+              'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+              'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
+            },
+          };
+        } catch (error: any) {
+          results[method] = {
+            success: false,
+            error: error.message,
+          };
+        }
+      })();
+      promises.push(promise);
     }
 
+    await Promise.all(promises);
     return results;
   }
 
