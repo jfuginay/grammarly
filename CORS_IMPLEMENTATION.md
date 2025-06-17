@@ -12,6 +12,7 @@ A comprehensive CORS (Cross-Origin Resource Sharing) solution that allows the Gr
 
 ## 🏗️ Architecture Overview
 
+
 ### 1. **Centralized CORS Configuration**
 - **`src/lib/cors.ts`** - Core CORS logic and header management
 - **`src/lib/domain-validation.ts`** - Pattern matching and domain validation
