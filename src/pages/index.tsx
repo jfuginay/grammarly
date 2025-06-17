@@ -54,8 +54,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>EnginDearing - Perfect Your Writing</title>
-        <meta name="description" content="AI-powered writing assistant that helps you write clearly and effectively" />
+        <title>Grammarly-est - The Most Grammarly Writing Assistant</title>
+        <meta name="description" content="The grammarlyest AI-powered writing assistant - out of all the Grammarly clones, this one is the most grammarly" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.ico" />
@@ -72,7 +72,7 @@ export default function Home() {
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Sparkles className="w-8 h-8 text-primary" />
-              <span className="text-2xl font-bold text-primary">EnginDearing</span>
+              <span className="text-2xl font-bold text-primary">Grammarly-est</span>
             </div>
             <nav className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">Features</a>
@@ -111,16 +111,17 @@ export default function Home() {
                 variants={fadeInUp}
                 className="text-5xl lg:text-7xl font-bold text-foreground mb-6 leading-tight"
               >
-                Perfect Your Writing with{" "}
-                <span className="text-primary">AI Precision</span>
+                The Most{" "}
+                <span className="text-primary">Grammarly</span>{" "}
+                Writing Assistant
               </motion.h1>
               
               <motion.p 
                 variants={fadeInUp}
                 className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed"
               >
-                Write with confidence using our advanced grammar checker, spell checker, and writing enhancement tools. 
-                Get real-time suggestions that make your writing clear, engaging, and mistake-free.
+                Out of all the Grammarly clones, this one is the grammarlyest! Write with confidence using our 
+                advanced grammar checker, spell checker, and writing enhancement tools that make your writing clear, engaging, and mistake-free.
               </motion.p>
               
               <motion.div 
@@ -257,10 +258,10 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-2 mb-4 md:mb-0">
                 <Sparkles className="w-6 h-6 text-primary" />
-                <span className="text-xl font-bold text-primary">EnginDearing</span>
+                <span className="text-xl font-bold text-primary">Grammarly-est</span>
               </div>
               <div className="text-muted-foreground text-sm">
-                © 2024 EnginDearing. All rights reserved.
+                © 2024 Grammarly-est. All rights reserved.
               </div>
             </div>
           </div>
