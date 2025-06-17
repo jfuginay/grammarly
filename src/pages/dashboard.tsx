@@ -547,6 +547,7 @@ const DashboardPage = () => {
                 <Card className="flex-1 flex flex-col">
                   <CardContent className="flex-1 flex p-1">
                     <Textarea
+                      id="dashboard-editor-textarea" // Added ID
                       value={text}
                       onChange={handleTextChange}
                       placeholder="Create your first document to get started or select one from the sidebar."
@@ -585,6 +586,7 @@ const DashboardPage = () => {
             onApply={applySuggestion}
             onDismiss={dismissSuggestion}
             onIdeate={() => { /* TODO */ }}
+            targetEditorSelector="#dashboard-editor-textarea" // Added prop
           />
 
           <div className="md:hidden">
