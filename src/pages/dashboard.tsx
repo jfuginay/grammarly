@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/router';
+import { createBrowserClient } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +15,7 @@ import Header from '@/components/Header';
 
 // Type definitions
 interface Suggestion {
+  id: string;
   original: string;
   suggestion: string;
   explanation: string;
@@ -28,8 +31,20 @@ interface Document {
   updatedAt: string;
 }
 
+// Helper function to escape strings for use in a regular expression
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 const DashboardPage = () => {
-  const user = useUser();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
+
   const { toast } = useToast();
 
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -37,14 +52,67 @@ const DashboardPage = () => {
 
   const [text, setText] = useState<string>('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState<boolean>(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState<boolean>(true);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [newTitle, setNewTitle] = useState<string>('');
 
-  const handleNewDocument = useCallback(async (isInitial: boolean = false) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      } else {
+        setUser(session.user);
+        setIsAuthLoading(false);
+      }
+    };
+    checkSession();
+  }, [router, supabase]);
+
+  const fetchDocuments = useCallback(async () => {
+    if (!user) return;
+
+    try {
+        const response = await fetch('/api/documents');
+        if (!response.ok) throw new Error('Could not fetch documents');
+        let docs: Document[] = await response.json();
+
+        if (docs.length === 0) {
+            // This is a new user or a user with no documents. Create one.
+            const createResponse = await fetch('/api/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: 'Untitled Document', content: '' }),
+            });
+            if (!createResponse.ok) throw new Error('Could not create initial document');
+            docs = [await createResponse.json()];
+        }
+        
+        const sortedDocs = docs.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        setDocuments(sortedDocs);
+        
+        const activeDocStillExists = activeDocument && sortedDocs.some(d => d.id === activeDocument.id);
+        if (!activeDocStillExists && sortedDocs.length > 0) {
+            setActiveDocument(sortedDocs[0]);
+            setText(sortedDocs[0].content);
+        }
+
+    } catch (error) {
+        console.error("Failed to fetch documents:", error);
+        toast({ title: "Error", description: "Could not load your documents.", variant: "destructive" });
+    }
+  }, [user, activeDocument]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDocuments();
+    }
+  }, [user, fetchDocuments]);
+
+  const handleNewDocument = useCallback(async () => {
     try {
       const response = await fetch('/api/documents', {
         method: 'POST',
@@ -52,53 +120,19 @@ const DashboardPage = () => {
         body: JSON.stringify({ title: 'Untitled Document', content: '' }),
       });
       if (!response.ok) throw new Error('Failed to create document');
-
+      const newDoc = await response.json();
+      
+      // After creating, refetch the list and set the new one as active
       await fetchDocuments();
+      setActiveDocument(newDoc);
+      setText(newDoc.content);
+      setSuggestions([]);
+
     } catch (error) {
       console.error(error);
       toast({ title: "Error", description: "Could not create a new document.", variant: "destructive" });
     }
-  }, []); // fetchDocuments is now stable
-
-  const fetchDocuments = useCallback(async () => {
-    if (!user) return;
-    try {
-      const response = await fetch('/api/documents');
-      if (!response.ok) throw new Error('Failed to fetch documents');
-      const data: Document[] = await response.json();
-      const sortedData = data.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      setDocuments(sortedData);
-
-      if (sortedData.length > 0) {
-        if (activeDocument) {
-          // If a document is already active, make sure it's still in the list and refresh its content
-          const updatedActiveDoc = sortedData.find(d => d.id === activeDocument.id);
-          if (updatedActiveDoc) {
-            setActiveDocument(updatedActiveDoc);
-          } else {
-            // If the active doc was deleted, select the first one
-            setActiveDocument(sortedData[0]);
-            setText(sortedData[0].content);
-          }
-        } else {
-          // If no document was active, select the first one
-          setActiveDocument(sortedData[0]);
-          setText(sortedData[0].content);
-        }
-      } else {
-        // If there are no documents, create one.
-        await handleNewDocument(true);
-      }
-    } catch (error) {
-      console.error("Failed to fetch documents:", error);
-    }
-  }, [user, activeDocument, handleNewDocument]);
-
-  useEffect(() => {
-    if (user) {
-      fetchDocuments();
-    }
-  }, [user]);
+  }, [fetchDocuments]);
 
   const handleSelectDocument = (doc: Document) => {
     setActiveDocument(doc);
@@ -146,19 +180,11 @@ const DashboardPage = () => {
 
   const handleDeleteDocument = async (docId: string) => {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
-
+    
     try {
       await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
-      const remainingDocs = documents.filter((d: Document) => d.id !== docId);
-      setDocuments(remainingDocs);
-
-      if (activeDocument?.id === docId) {
-        if (remainingDocs.length > 0) {
-          handleSelectDocument(remainingDocs[0]);
-        } else {
-          await handleNewDocument();
-        }
-      }
+      // After deleting, just refetch the document list from the server
+      await fetchDocuments();
       toast({ title: "Success", description: "Document deleted." });
     } catch (error) {
       console.error(error);
@@ -171,7 +197,7 @@ const DashboardPage = () => {
       setSuggestions([]);
       return;
     }
-    setIsLoading(true);
+    setIsSuggestionsLoading(true);
     try {
       const response = await fetch('/api/correct-text', {
         method: 'POST',
@@ -180,14 +206,18 @@ const DashboardPage = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setSuggestions(data.suggestions || []);
+        const suggestionsWithIds = (data.suggestions || []).map((s: Omit<Suggestion, 'id'>, index: number) => ({
+          ...s,
+          id: `${s.original}-${index}`,
+        }));
+        setSuggestions(suggestionsWithIds);
       } else {
         throw new Error(data.message || 'Failed to fetch suggestions');
       }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
     } finally {
-      setIsLoading(false);
+      setIsSuggestionsLoading(false);
     }
   }, [showAiSuggestions]);
 
@@ -201,13 +231,39 @@ const DashboardPage = () => {
     }
   }, [text, debouncedFetchSuggestions]);
 
+  const applySuggestion = (suggestionToApply: Suggestion) => {
+    // Find the Nth occurrence of the original text that this suggestion corresponds to.
+    const suggestionIndex = suggestions.findIndex(s => s.id === suggestionToApply.id);
+    let n = 0;
+    if (suggestionIndex > -1) {
+        for (let i = 0; i < suggestionIndex; i++) {
+            if (suggestions[i].original === suggestionToApply.original) {
+                n++;
+            }
+        }
+    }
 
-  const applySuggestion = (suggestion: Suggestion) => {
-    const newText = text.replace(suggestion.original, suggestion.suggestion);
+    // Replace only the Nth match in the text
+    let count = 0;
+    const newText = text.replace(
+        new RegExp(escapeRegExp(suggestionToApply.original), 'g'), 
+        (match) => {
+            if (count === n) {
+                count++;
+                return suggestionToApply.suggestion;
+            }
+            count++;
+            return match;
+        }
+    );
+
     setText(newText);
+    setSuggestions(prevSuggestions => prevSuggestions.filter(s => s.id !== suggestionToApply.id));
+
     if (activeDocument) {
         debouncedUpdateDocument(activeDocument.id, { content: newText });
     }
+    debouncedFetchSuggestions(newText);
   };
 
   // Components
@@ -239,9 +295,17 @@ const DashboardPage = () => {
     Low: 'bg-blue-500',
   };
 
+  if (isAuthLoading) {
+    return (
+        <div className="h-screen w-screen flex justify-center items-center">
+            <div>Loading...</div>
+        </div>
+    );
+  }
+
   return (
     <div className="h-screen w-screen bg-white dark:bg-gray-950 flex flex-col">
-       <Header />
+       <Header user={user} />
        <div className="flex flex-1 overflow-hidden">
           <div className="hidden md:block md:w-72 lg:w-80 h-full">
             <DocumentSidebar />
@@ -302,11 +366,11 @@ const DashboardPage = () => {
                     </CardHeader>
                 </Card>
                 <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                  {isLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
-                  {!isLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
-                  {!isLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
-                  {suggestions.map((s, i) => (
-                    <Card key={i}>
+                  {isSuggestionsLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
+                  {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
+                  {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
+                  {suggestions.map((s) => (
+                    <Card key={s.id}>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                           <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[s.severity]}`}></span>
