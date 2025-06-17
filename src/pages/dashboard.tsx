@@ -46,328 +46,12 @@ interface Suggestion {
   severity: 'error' | 'warning' | 'suggestion';
 }
 
-// Comprehensive spell checker with extensive misspellings and typos database
-const spellCheckDict: Record<string, string> = {
-  // Common transposed letters
-  'teh': 'the',
-  'adn': 'and',
-  'fro': 'for',
-  'fo': 'of',
-  'hte': 'the',
-  'taht': 'that',
-  'thsi': 'this',
-  'jsut': 'just',
-  'mroe': 'more',
-  'oyu': 'you',
-  'yuor': 'your',
-  'yuo': 'you',
-  'cna': 'can',
-  'ahve': 'have',
-  'si': 'is',
-  'sya': 'say',
-  'amke': 'make',
-  'waht': 'what',
-  'wnat': 'want',
-  'otehr': 'other',
-  'moer': 'more',
-  'hwo': 'how',
-  'nto': 'not',
-  'wrok': 'work',
-  'baout': 'about',
-  'whne': 'when',
-  'eahc': 'each',
-  'owrk': 'work',
-  'palce': 'place',
-  'tihs': 'this',
-  'thru': 'through',
-  'siad': 'said',
-  'woudl': 'would',
-  'coudl': 'could',
-  'shoudl': 'should',
-  'peopel': 'people',
-  'freind': 'friend',
-  'freinds': 'friends',
-  'compnay': 'company',
-  'mananger': 'manager',
-  
-  // I before E except after C violations
-  'recieve': 'receive',
-  'concieve': 'conceive',
-  'decieve': 'deceive',
-  'percieve': 'perceive',
-  'beleive': 'believe',
-  'acheive': 'achieve',
-  'yeild': 'yield',
-  'feild': 'field',
-  'wierd': 'weird',
-  
-  // Double consonant errors
-  'seperate': 'separate',
-  'definately': 'definitely',
-  'occured': 'occurred',
-  'accomodate': 'accommodate',
-  'neccessary': 'necessary',
-  'embarass': 'embarrass',
-  'begining': 'beginning',
-  'comming': 'coming',
-  'runing': 'running',
-  'stoping': 'stopping',
-  'geting': 'getting',
-  'siting': 'sitting',
-  'writting': 'writing',
-  'puting': 'putting',
-  'cuming': 'coming',
-  'planing': 'planning',
-  'controling': 'controlling',
-  'modeling': 'modelling',
-  'travelig': 'traveling',
-  'quareling': 'quarreling',
-  'marveling': 'marveling',
-  
-  // -ance vs -ence confusion
-  'existance': 'existence',
-  'maintainance': 'maintenance',
-  'independant': 'independent',
-  'appearence': 'appearance',
-  'persistant': 'persistent',
-  'consistant': 'consistent',
-  'dependant': 'dependent',
-  'correspondance': 'correspondence',
-  'performence': 'performance',
-  'permanant': 'permanent',
-  'relevent': 'relevant',
-  'exellent': 'excellent',
-  'differance': 'difference',
-  'importent': 'important',
-  'signifigant': 'significant',
-  'intellegent': 'intelligent',
-  'convinient': 'convenient',
-  
-  // Common typing errors and misspellings
-  'becuase': 'because',
-  'bussiness': 'business',
-  'concious': 'conscious',
-  'dosent': "doesn't",
-  'enviroment': 'environment',
-  'experiance': 'experience',
-  'futher': 'further',
-  'garentee': 'guarantee',
-  'happend': 'happened',
-  'immediatly': 'immediately',
-  'intresting': 'interesting',
-  'knowlege': 'knowledge',
-  'lenght': 'length',
-  'lisence': 'license',
-  'millenium': 'millennium',
-  'noticable': 'noticeable',
-  'posession': 'possession',
-  'priviledge': 'privilege',
-  'reffered': 'referred',
-  'remeber': 'remember',
-  'succesful': 'successful',
-  'suprise': 'surprise',
-  'truely': 'truly',
-  'untill': 'until',
-  'usefull': 'useful',
-  'wether': 'whether',
-  'wich': 'which',
-  'minumum': 'minimum',
-  'maxiumum': 'maximum',
-  'realy': 'really',
-  'finaly': 'finally',
-  'actualy': 'actually',
-  'usualy': 'usually',
-  'probaly': 'probably',
-  'generaly': 'generally',
-  'basicaly': 'basically',
-  'literaly': 'literally',
-  'originaly': 'originally',
-  'personaly': 'personally',
-  'specialy': 'specially',
-  'totaly': 'totally',
-  
-  // -tion vs -sion confusion
-  'discusion': 'discussion',
-  'extention': 'extension',
-  'dimention': 'dimension',
-  'attentoin': 'attention',
-  'questoin': 'question',
-  'occasoin': 'occasion',
-  'profesional': 'professional',
-  'commision': 'commission',
-  'permision': 'permission',
-  'admision': 'admission',
-  'omision': 'omission',
-  'submision': 'submission',
-  
-  // Common compound word errors
-  'alot': 'a lot',
-  'allways': 'always',
-  'allready': 'already',
-  'alltogether': 'altogether',
-  'allmost': 'almost',
-  'allright': 'all right',
-  'tommorrow': 'tomorrow',
-  'reccomend': 'recommend',
-  'comittee': 'committee',
-  'acording': 'according',
-  'agian': 'again',
-  'befor': 'before',
-  'durring': 'during',
-  'gramar': 'grammar',
-  'grammer': 'grammar',
-  'lazer': 'laser',
-  'liscense': 'license',
-  'mispell': 'misspell',
-  'occassion': 'occasion',
-  'occurance': 'occurrence',
-  'paralel': 'parallel',
-  'privelege': 'privilege',
-  'publically': 'publicly',
-  'rythm': 'rhythm',
-  'seperation': 'separation',
-  'speach': 'speech',
-  'sucessful': 'successful',
-  'tendancy': 'tendency',
-  'upto': 'up to',
-  'withhold': 'withhold',
-  'writen': 'written',
-  
-  // Technical and business terms
-  'sofware': 'software',
-  'hardward': 'hardware',
-  'databse': 'database',
-  'managment': 'management',
-  'develope': 'develop',
-  'developement': 'development',
-  'analysys': 'analysis',
-  'anaylsis': 'analysis',
-  'analysies': 'analyses',
-  'proceedure': 'procedure',
-  'proceedures': 'procedures',
-  'algoritm': 'algorithm',
-  'algorythm': 'algorithm',
-  'compatability': 'compatibility',
-  'efficency': 'efficiency',
-  'performace': 'performance',
-  'availibility': 'availability',
-  'responsability': 'responsibility',
-  'flexability': 'flexibility',
-  'visability': 'visibility',
-  'accesibility': 'accessibility',
-  'maintainablity': 'maintainability',
-  'scalibility': 'scalability',
-  'reliablity': 'reliability',
-  
-  // Calendar and time
-  'calender': 'calendar',
-  'scedule': 'schedule',
-  'febuary': 'February',
-  'wenesday': 'Wednesday',
-  'thuresday': 'Thursday',
-  'septemeber': 'September',
-  'occuring': 'occurring',
-  
-  // Numbers and quantities
-  'fourty': 'forty',
-  'ninty': 'ninety',
-  'twelth': 'twelfth',
-  'eigth': 'eighth',
-  'nineth': 'ninth',
-  'fourteenth': 'fourteenth',
-  'tweleve': 'twelve',
-  'thirten': 'thirteen',
-  'forteen': 'fourteen',
-  'fiften': 'fifteen',
-  'sixten': 'sixteen',
-  'seventten': 'seventeen',
-  'eightteen': 'eighteen',
-  
-  // Adjectives with -ful suffix
-  'beautifull': 'beautiful',
-  'powerfull': 'powerful',
-  'carefull': 'careful',
-  'hopefull': 'hopeful',
-  'meaningfull': 'meaningful',
-  'successfull': 'successful',
-  'wonderfull': 'wonderful',
-  'faithfull': 'faithful',
-  'gratefull': 'grateful',
-  'peacefull': 'peaceful',
-  'playfull': 'playful',
-  'colorfull': 'colorful',
-  'harmfull': 'harmful',
-  'painfull': 'painful',
-  'helpfull': 'helpful',
-  'forgetfull': 'forgetful',
-  'doubtfull': 'doubtful',
-  'respectfull': 'respectful',
-  'thoughtfull': 'thoughtful'
-};
-
-// Function to check for local spelling errors
-const checkLocalSpelling = (text: string): Suggestion[] => {
-  const suggestions: Suggestion[] = [];
-  let usedIndices: number[] = []; // Track used positions to avoid duplicates
-  
-  // Check each word in the dictionary
-  Object.keys(spellCheckDict).forEach((misspelling, index) => {
-    const replacement = spellCheckDict[misspelling];
-    let searchStart = 0;
-    
-    // Find all occurrences of this misspelling
-    while (true) {
-      // Look for word boundaries to avoid partial matches
-      const regex = new RegExp(`\\b${misspelling.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-      const match = regex.exec(text.substring(searchStart));
-      
-      if (!match) break;
-      
-      const foundIndex = searchStart + match.index;
-      const endIndex = foundIndex + match[0].length;
-      
-      // Check if this position overlaps with any used indices
-      const overlaps = usedIndices.some(usedIndex => 
-        (foundIndex <= usedIndex && usedIndex < endIndex) ||
-        (usedIndex <= foundIndex && foundIndex < usedIndex + match[0].length)
-      );
-      
-      if (!overlaps) {
-        // Mark this range as used
-        for (let i = foundIndex; i < endIndex; i++) {
-          usedIndices.push(i);
-        }
-        
-        suggestions.push({
-          id: `local-${Date.now()}-${index}-${foundIndex}`,
-          type: 'spelling',
-          text: match[0], // Use the actual matched text (preserves case)
-          replacement: match[0].charAt(0).toUpperCase() === match[0].charAt(0) 
-            ? replacement.charAt(0).toUpperCase() + replacement.slice(1) // Preserve capitalization
-            : replacement,
-          explanation: 'Common misspelling detected',
-          startIndex: foundIndex,
-          endIndex: endIndex,
-          severity: 'error'
-        });
-      }
-      
-      searchStart = foundIndex + 1;
-      
-      // Reset regex lastIndex for next search
-      regex.lastIndex = 0;
-    }
-  });
-
-  return suggestions;
-};
-
 // Add mobile detection hook
 const useIsMobile = () => useMediaQuery("(max-width: 768px)");
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const [text, setText] = useState("Welcome to your writing assistant! Try typing some text with mistakes like 'teh' or 'recieve' to see suggestions appear.");
+  const [text, setText] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
@@ -414,29 +98,11 @@ export default function Dashboard() {
       
       setIsLoading(true);
       try {
-        // First check for local spelling errors
-        const localSuggestions = checkLocalSpelling(text);
-        
-        // Then get API suggestions
         const apiSuggestions = await generateSuggestions(text);
-        
-        // Combine both sets of suggestions, removing duplicates
-        const allSuggestions = [...localSuggestions];
-        apiSuggestions.forEach((apiSuggestion: Suggestion) => {
-          const isDuplicate = localSuggestions.some(
-            (localSuggestion: Suggestion) => 
-              localSuggestion.startIndex === apiSuggestion.startIndex &&
-              localSuggestion.endIndex === apiSuggestion.endIndex
-          );
-          if (!isDuplicate) {
-            allSuggestions.push(apiSuggestion);
-          }
-        });
-        
-        setSuggestions(allSuggestions);
+        setSuggestions(apiSuggestions);
         
         // Show notification for new suggestions
-        if (allSuggestions.length > 0) {
+        if (apiSuggestions.length > 0) {
           setShowSuggestionNotification(true);
           setTimeout(() => setShowSuggestionNotification(false), 3000);
         }
@@ -451,38 +117,37 @@ export default function Dashboard() {
     } else {
       setSuggestions([]);
     }
-  }, [text, generateSuggestions, isApplyingSuggestion]);
+  }, [text, generateSuggestions]);
 
   const applySuggestion = (suggestion: Suggestion) => {
     // Set flag to prevent new suggestions from being generated during application
     setIsApplyingSuggestion(true);
     
-    // Immediately remove the applied suggestion to prevent ghosting
-    setSuggestions((prev: Suggestion[]) => {
-      const filteredSuggestions = prev.filter((s: Suggestion) => s.id !== suggestion.id);
+    // Apply the text change and update suggestions in a single state update
+    setText(prevText => {
+      const newText = prevText.substring(0, suggestion.startIndex) + 
+                     suggestion.replacement + 
+                     prevText.substring(suggestion.endIndex);
       
-      // Calculate the length difference to adjust other suggestions
-      const lengthDifference = suggestion.replacement.length - (suggestion.endIndex - suggestion.startIndex);
-      
-      // Update positions of remaining suggestions that come after the applied one
-      return filteredSuggestions.map((s: Suggestion) => {
-        // Only adjust suggestions that come after the applied one
-        if (s.startIndex > suggestion.endIndex) {
-          return {
-            ...s,
-            startIndex: s.startIndex + lengthDifference,
-            endIndex: s.endIndex + lengthDifference
-          };
-        }
-        return s;
+      // Update suggestions immediately after text change
+      setSuggestions(prevSuggestions => {
+        const filteredSuggestions = prevSuggestions.filter(s => s.id !== suggestion.id);
+        const lengthDifference = suggestion.replacement.length - (suggestion.endIndex - suggestion.startIndex);
+        
+        return filteredSuggestions.map(s => {
+          if (s.startIndex > suggestion.endIndex) {
+            return {
+              ...s,
+              startIndex: s.startIndex + lengthDifference,
+              endIndex: s.endIndex + lengthDifference
+            };
+          }
+          return s;
+        });
       });
+      
+      return newText;
     });
-    
-    // Apply the text change after updating suggestions
-    const newText = text.substring(0, suggestion.startIndex) + 
-                   suggestion.replacement + 
-                   text.substring(suggestion.endIndex);
-    setText(newText);
     
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
@@ -497,20 +162,21 @@ export default function Dashboard() {
     // Set flag to prevent new suggestions from being generated during application
     setIsApplyingSuggestion(true);
     
-    // Sort suggestions by startIndex in descending order to avoid position conflicts
-    const sortedSuggestions = [...suggestions].sort((a, b) => b.startIndex - a.startIndex);
-    
-    let updatedText = text;
-    
-    // Apply all suggestions from end to beginning
-    sortedSuggestions.forEach((suggestion) => {
-      updatedText = updatedText.substring(0, suggestion.startIndex) + 
-                   suggestion.replacement + 
-                   updatedText.substring(suggestion.endIndex);
+    // Apply all suggestions and clear the suggestions list
+    setText(prevText => {
+      const sortedSuggestions = [...suggestions].sort((a, b) => b.startIndex - a.startIndex);
+      let updatedText = prevText;
+      
+      sortedSuggestions.forEach(suggestion => {
+        updatedText = updatedText.substring(0, suggestion.startIndex) + 
+                      suggestion.replacement + 
+                      updatedText.substring(suggestion.endIndex);
+      });
+      
+      setSuggestions([]);
+      return updatedText;
     });
     
-    setText(updatedText);
-    setSuggestions([]);
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
     
@@ -921,7 +587,14 @@ export default function Dashboard() {
                             className={`p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${
                               isMobile ? 'text-base' : ''
                             }`}
-                            onClick={() => isMobile ? handleMobileSuggestionTap(suggestion) : setSelectedSuggestion(suggestion)}
+                            onClick={() => {
+                              if (isMobile) {
+                                handleMobileSuggestionTap(suggestion);
+                              } else {
+                                setSelectedSuggestion(suggestion);
+                                setShowSuggestionModal(true);
+                              }
+                            }}
                           >
                             <div className="flex items-start space-x-3">
                               {getSuggestionIcon(suggestion.type, suggestion.severity)}
