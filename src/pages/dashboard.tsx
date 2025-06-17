@@ -19,13 +19,15 @@ import {
   Sparkles,
   Eye,
   EyeOff,
-  HelpCircle
+  HelpCircle,
+  Home
 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Link from "next/link";
 
 interface Suggestion {
   id: string;
@@ -1034,7 +1036,12 @@ export default function Dashboard() {
             className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40 mb-4"
           >
             <div className="flex items-center justify-between py-3">
-              <h1 className="text-xl font-bold text-primary">Grammarly-est</h1>
+              <div className="flex items-center space-x-3">
+                <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                  <Home className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </Link>
+                <h1 className="text-xl font-bold text-primary">Grammarly-est</h1>
+              </div>
               <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"
@@ -1061,6 +1068,9 @@ export default function Dashboard() {
         {!isMobile && (
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center space-x-4">
+              <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                <Home className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              </Link>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Grammarly-est Writing Assistant</h1>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-sm">
@@ -1321,6 +1331,23 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Footer */}
+      <footer className="mt-16 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+            Built on AI-first principles by{' '}
+            <a 
+              href="https://www.engindearing.soy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors"
+            >
+              www.EnginDearing.soy
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
