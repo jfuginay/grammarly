@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
