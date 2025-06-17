@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -20,7 +21,12 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
-  Home
+  Home,
+  Upload,
+  Download,
+  Copy,
+  Paste,
+  ExternalLink
 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -299,310 +305,6 @@ const spellCheckDict: Record<string, string> = {
   'thoughtfull': 'thoughtful'
 };
 
-// Enhanced grammar rules for common errors
-const grammarRules = [
-  // Verb tense consistency
-  {
-    pattern: /\bi\s+am\s+going\s+to\s+went\b/gi,
-    replacement: 'I am going to go',
-    explanation: 'Incorrect verb tense combination'
-  },
-  {
-    pattern: /\bI\s+have\s+went\b/gi,
-    replacement: 'I have gone',
-    explanation: 'Use "gone" with "have" (present perfect tense)'
-  },
-  {
-    pattern: /\bI\s+seen\b/gi,
-    replacement: 'I saw',
-    explanation: 'Use "saw" for simple past tense'
-  },
-  {
-    pattern: /\bI\s+done\b/gi,
-    replacement: 'I did',
-    explanation: 'Use "did" for simple past tense'
-  },
-  
-  // Possessive vs contraction errors
-  {
-    pattern: /\byour\s+welcome\b/gi,
-    replacement: "you're welcome",
-    explanation: "Use 'you're' (you are) instead of 'your' (possessive)"
-  },
-  {
-    pattern: /\bits\s+a\s+nice\s+day\b/gi,
-    replacement: "it's a nice day",
-    explanation: "Use 'it's' (it is) instead of 'its' (possessive)"
-  },
-  {
-    pattern: /\bwhose\s+going\b/gi,
-    replacement: "who's going",
-    explanation: "Use 'who's' (who is) instead of 'whose' (possessive)"
-  },
-  {
-    pattern: /\btheir\s+going\b/gi,
-    replacement: "they're going",
-    explanation: "Use 'they're' (they are) instead of 'their' (possessive)"
-  },
-  
-  // Subject-verb agreement
-  {
-    pattern: /\bthere\s+is\s+\d+\s+\w+s\b/gi,
-    replacement: "there are [number] [items]",
-    explanation: "Use 'there are' with plural subjects"
-  },
-  {
-    pattern: /\beveryone\s+have\b/gi,
-    replacement: "everyone has",
-    explanation: "'Everyone' is singular and takes 'has'"
-  },
-  {
-    pattern: /\bthe\s+team\s+are\b/gi,
-    replacement: "the team is",
-    explanation: "Collective nouns like 'team' are usually singular"
-  },
-  
-  // Double negatives
-  {
-    pattern: /\bdon't\s+have\s+no\b/gi,
-    replacement: "don't have any",
-    explanation: "Avoid double negatives"
-  },
-  {
-    pattern: /\bcan't\s+get\s+no\b/gi,
-    replacement: "can't get any",
-    explanation: "Avoid double negatives"
-  },
-  
-  // Comparative and superlative errors
-  {
-    pattern: /\bmore\s+better\b/gi,
-    replacement: "better",
-    explanation: "Don't use 'more' with comparative adjectives"
-  },
-  {
-    pattern: /\bmost\s+best\b/gi,
-    replacement: "best",
-    explanation: "Don't use 'most' with superlative adjectives"
-  },
-  {
-    pattern: /\bmore\s+easier\b/gi,
-    replacement: "easier",
-    explanation: "Don't use 'more' with comparative adjectives"
-  },
-  
-  // Pronoun errors
-  {
-    pattern: /\bme\s+and\s+\w+\s+(is|are|was|were)\b/gi,
-    replacement: "[Name] and I [verb]",
-    explanation: "Use 'I' as a subject, not 'me'"
-  },
-  {
-    pattern: /\bbetween\s+you\s+and\s+I\b/gi,
-    replacement: "between you and me",
-    explanation: "Use 'me' after prepositions like 'between'"
-  },
-  
-  // Preposition errors
-  {
-    pattern: /\bdifferent\s+than\b/gi,
-    replacement: "different from",
-    explanation: "Use 'different from' instead of 'different than'"
-  },
-  {
-    pattern: /\bcould\s+of\b/gi,
-    replacement: "could have",
-    explanation: "Use 'could have' instead of 'could of'"
-  },
-  {
-    pattern: /\bwould\s+of\b/gi,
-    replacement: "would have",
-    explanation: "Use 'would have' instead of 'would of'"
-  },
-  {
-    pattern: /\bshould\s+of\b/gi,
-    replacement: "should have",
-    explanation: "Use 'should have' instead of 'should of'"
-  },
-  
-  // Misused words
-  {
-    pattern: /\birregardless\b/gi,
-    replacement: "regardless",
-    explanation: "'Irregardless' is not a standard word; use 'regardless'"
-  },
-  {
-    pattern: /\bsupposably\b/gi,
-    replacement: "supposedly",
-    explanation: "Use 'supposedly' instead of 'supposably'"
-  },
-  {
-    pattern: /\bfor\s+all\s+intensive\s+purposes\b/gi,
-    replacement: "for all intents and purposes",
-    explanation: "The correct phrase is 'for all intents and purposes'"
-  },
-  {
-    pattern: /\bnip\s+it\s+in\s+the\s+butt\b/gi,
-    replacement: "nip it in the bud",
-    explanation: "The correct phrase is 'nip it in the bud'"
-  }
-];
-
-// Enhanced style suggestions for better writing
-const styleSuggestions = [
-  // Reduce redundancy and wordiness
-  {
-    pattern: /\bvery\s+good\b/gi,
-    replacement: 'excellent',
-    explanation: 'Use more specific adjectives instead of "very + adjective"'
-  },
-  {
-    pattern: /\bvery\s+bad\b/gi,
-    replacement: 'terrible',
-    explanation: 'Use more specific adjectives instead of "very + adjective"'
-  },
-  {
-    pattern: /\bvery\s+big\b/gi,
-    replacement: 'huge',
-    explanation: 'Use more specific adjectives instead of "very + adjective"'
-  },
-  {
-    pattern: /\bvery\s+small\b/gi,
-    replacement: 'tiny',
-    explanation: 'Use more specific adjectives instead of "very + adjective"'
-  },
-  {
-    pattern: /\bin\s+order\s+to\b/gi,
-    replacement: 'to',
-    explanation: 'Simplify by using "to" instead of "in order to"'
-  },
-  {
-    pattern: /\bdue\s+to\s+the\s+fact\s+that\b/gi,
-    replacement: 'because',
-    explanation: 'Use "because" for clearer, more concise writing'
-  },
-  {
-    pattern: /\bat\s+this\s+point\s+in\s+time\b/gi,
-    replacement: 'now',
-    explanation: 'Use "now" instead of the wordy phrase'
-  },
-  {
-    pattern: /\bin\s+the\s+event\s+that\b/gi,
-    replacement: 'if',
-    explanation: 'Use "if" instead of the wordy phrase'
-  },
-  {
-    pattern: /\bprior\s+to\b/gi,
-    replacement: 'before',
-    explanation: 'Use "before" instead of "prior to"'
-  },
-  {
-    pattern: /\bsubsequent\s+to\b/gi,
-    replacement: 'after',
-    explanation: 'Use "after" instead of "subsequent to"'
-  },
-  {
-    pattern: /\bin\s+close\s+proximity\s+to\b/gi,
-    replacement: 'near',
-    explanation: 'Use "near" instead of the wordy phrase'
-  },
-  
-  // Improve weak verbs
-  {
-    pattern: /\bthere\s+is\s+\w+\s+that\s+\w+\b/gi,
-    replacement: '[subject] [verb]',
-    explanation: 'Avoid weak "there is" constructions'
-  },
-  {
-    pattern: /\bit\s+is\s+\w+\s+that\s+\w+\b/gi,
-    replacement: '[subject] [verb]',
-    explanation: 'Avoid weak "it is" constructions'
-  },
-  
-  // Passive voice suggestions
-  {
-    pattern: /\bwas\s+\w+ed\s+by\b/gi,
-    replacement: '[subject] [verb]',
-    explanation: 'Consider using active voice instead of passive voice'
-  },
-  {
-    pattern: /\bwere\s+\w+ed\s+by\b/gi,
-    replacement: '[subject] [verb]',
-    explanation: 'Consider using active voice instead of passive voice'
-  },
-  
-  // Cliché phrases
-  {
-    pattern: /\bat\s+the\s+end\s+of\s+the\s+day\b/gi,
-    replacement: 'ultimately',
-    explanation: 'Avoid clichés; use more precise language'
-  },
-  {
-    pattern: /\bthink\s+outside\s+the\s+box\b/gi,
-    replacement: 'be creative',
-    explanation: 'Avoid clichés; use more precise language'
-  },
-  {
-    pattern: /\blow\s+hanging\s+fruit\b/gi,
-    replacement: 'easy opportunities',
-    explanation: 'Avoid clichés; use more precise language'
-  },
-  {
-    pattern: /\btouch\s+base\b/gi,
-    replacement: 'contact',
-    explanation: 'Use more direct language instead of business jargon'
-  },
-  {
-    pattern: /\bcircle\s+back\b/gi,
-    replacement: 'follow up',
-    explanation: 'Use more direct language instead of business jargon'
-  },
-  
-  // Hedge words that weaken writing
-  {
-    pattern: /\bI\s+think\s+that\b/gi,
-    replacement: 'I believe',
-    explanation: 'Use stronger, more confident language'
-  },
-  {
-    pattern: /\bkind\s+of\b/gi,
-    replacement: 'somewhat',
-    explanation: 'Use more precise language instead of vague qualifiers'
-  },
-  {
-    pattern: /\bsort\s+of\b/gi,
-    replacement: 'somewhat',
-    explanation: 'Use more precise language instead of vague qualifiers'
-  },
-  
-  // Redundant phrases
-  {
-    pattern: /\bfuture\s+plans\b/gi,
-    replacement: 'plans',
-    explanation: 'Plans are inherently future-oriented; avoid redundancy'
-  },
-  {
-    pattern: /\bfree\s+gift\b/gi,
-    replacement: 'gift',
-    explanation: 'Gifts are inherently free; avoid redundancy'
-  },
-  {
-    pattern: /\badvance\s+warning\b/gi,
-    replacement: 'warning',
-    explanation: 'Warnings are inherently given in advance; avoid redundancy'
-  },
-  {
-    pattern: /\bexact\s+same\b/gi,
-    replacement: 'same',
-    explanation: 'Same implies exactness; avoid redundancy'
-  },
-  {
-    pattern: /\bunexpected\s+surprise\b/gi,
-    replacement: 'surprise',
-    explanation: 'Surprises are inherently unexpected; avoid redundancy'
-  }
-];
-
 // Function to check for local spelling errors
 const checkLocalSpelling = (text: string): Suggestion[] => {
   const suggestions: Suggestion[] = [];
@@ -671,17 +373,17 @@ export default function Dashboard() {
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [showSuggestionPanel, setShowSuggestionPanel] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showSuggestionNotification, setShowSuggestionNotification] = useState(false);
   const [isApplyingSuggestion, setIsApplyingSuggestion] = useState(false);
+  const [showDocumentOptions, setShowDocumentOptions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
-  // Add new state for mobile UI
+  // Add new state for mobile UI and document handling
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("write");
+  const [fileName, setFileName] = useState<string>("");
 
   const generateSuggestions = useCallback(async (inputText: string): Promise<Suggestion[]> => {
     try {
@@ -824,176 +526,64 @@ export default function Dashboard() {
     setShowSuggestionModal(false);
   };
 
-  const handleTextClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
-    const textarea = e.currentTarget;
-    const clickPosition = textarea.selectionStart;
-    
-    const clickedSuggestion = suggestions.find(s => 
-      clickPosition >= s.startIndex && clickPosition <= s.endIndex
-    );
-    
-    if (clickedSuggestion) {
-      const rect = textarea.getBoundingClientRect();
-      const textBeforeClick = text.substring(0, clickPosition);
-      const lines = textBeforeClick.split('\n');
-      const currentLine = lines.length - 1;
-      const currentColumn = lines[lines.length - 1].length;
-      
-      // Approximate position calculation
-      const lineHeight = 28; // Based on text-lg leading-relaxed
-      const charWidth = 11; // Approximate character width for monospace
-      
-      const x = rect.left + 24 + (currentColumn * charWidth); // 24px padding
-      const y = rect.top + 24 + (currentLine * lineHeight); // 24px padding
-      
-      setHoveredSuggestion(clickedSuggestion);
+  // Document handling functions
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setText(content);
+      setFileName(file.name);
+    };
+
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      reader.readAsText(file);
+    } else if (file.name.endsWith('.docx')) {
+      // For .docx files, we'll need a library like mammoth.js
+      // For now, show an error message
+      alert('DOCX files are not yet supported. Please use plain text files (.txt) or copy and paste your content.');
     } else {
-      setHoveredSuggestion(null);
+      alert('Please upload a text file (.txt) or copy and paste your content.');
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLTextAreaElement>) => {
-    const textarea = e.currentTarget;
-    const rect = textarea.getBoundingClientRect();
-    
-    // More accurate position calculation using textarea properties
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-    
-    // Create a temporary span to measure character positions
-    const textareaStyle = window.getComputedStyle(textarea);
-    const fontSize = parseFloat(textareaStyle.fontSize);
-    const lineHeight = parseFloat(textareaStyle.lineHeight) || fontSize * 1.4;
-    
-    // Account for padding
-    const paddingLeft = parseFloat(textareaStyle.paddingLeft);
-    const paddingTop = parseFloat(textareaStyle.paddingTop);
-    
-    const adjustedX = clickX - paddingLeft;
-    const adjustedY = clickY - paddingTop;
-    
-    // Estimate character position
-    const charWidth = fontSize * 0.6; // Approximate for monospace
-    const lineIndex = Math.floor(adjustedY / lineHeight);
-    const charIndex = Math.floor(adjustedX / charWidth);
-    
-    const lines = text.split('\n');
-    if (lineIndex >= 0 && lineIndex < lines.length) {
-      let textPosition = 0;
-      for (let i = 0; i < lineIndex; i++) {
-        textPosition += lines[i].length + 1; // +1 for newline
+  const handlePasteFromClipboard = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (clipboardText) {
+        setText(clipboardText);
+        setFileName('Pasted Content');
       }
-      textPosition += Math.min(Math.max(charIndex, 0), lines[lineIndex].length);
-      
-      const hoveredSuggestion = suggestions.find(s => 
-        textPosition >= s.startIndex && textPosition <= s.endIndex
-      );
-      
-      if (hoveredSuggestion && hoveredSuggestion.severity === 'error') {
-        // Clear any existing timeout
-        if (hoverTimeout) {
-          clearTimeout(hoverTimeout);
-        }
-        
-        // Set a new timeout for showing the suggestion
-        const timeout = setTimeout(() => {
-          setHoveredSuggestion(hoveredSuggestion);
-        }, 800); // 800ms delay before showing
-        
-        setHoverTimeout(timeout);
-      } else if (!hoveredSuggestion) {
-        // Clear timeout if not hovering over a suggestion
-        if (hoverTimeout) {
-          clearTimeout(hoverTimeout);
-          setHoverTimeout(null);
-        }
-        
-        // Hide suggestion after a short delay if we're not hovering over it
-        const hideTimeout = setTimeout(() => {
-          if (!hoveredSuggestion) {
-            setHoveredSuggestion(null);
-          }
-        }, 300);
-        
-        setHoverTimeout(hideTimeout);
-      }
+    } catch (error) {
+      console.error('Failed to read clipboard:', error);
+      alert('Unable to access clipboard. Please paste manually using Ctrl+V or Cmd+V.');
     }
   };
 
-  const handleMouseLeave = () => {
-    // Clear any pending hover timeout
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-    
-    // Hide suggestion after a delay
-    const hideTimeout = setTimeout(() => {
-      setHoveredSuggestion(null);
-    }, 300);
-    
-    setHoverTimeout(hideTimeout);
+  const handleDownloadText = () => {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName || 'corrected-text.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout);
-      }
-    };
-  }, [hoverTimeout]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + Shift + F to fix first error
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
-        e.preventDefault();
-        const firstError = suggestions.find(s => s.severity === 'error');
-        if (firstError) {
-          applySuggestion(firstError);
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [suggestions]);
-
-  const renderTextWithHighlights = () => {
-    if (suggestions.length === 0) return text;
-
-    let result = '';
-    let lastIndex = 0;
-
-    suggestions.forEach((suggestion) => {
-      result += text.substring(lastIndex, suggestion.startIndex);
-      
-      const highlightClass = suggestion.severity === 'error' 
-        ? 'bg-red-100 border-b-2 border-red-500 dark:bg-red-900/20 dark:border-red-400 hover:bg-red-200 dark:hover:bg-red-800/30 text-red-800 dark:text-red-200 hover:shadow-sm transition-all duration-200 cursor-help' 
-        : suggestion.severity === 'warning'
-        ? 'bg-yellow-100 border-b-2 border-yellow-500 dark:bg-yellow-900/20 dark:border-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-800/30 text-yellow-800 dark:text-yellow-200 hover:shadow-sm transition-all duration-200 cursor-help'
-        : 'bg-blue-100 border-b-2 border-blue-500 dark:bg-blue-900/20 dark:border-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/30 text-blue-800 dark:text-blue-200 hover:shadow-sm transition-all duration-200 cursor-help';
-      
-      result += `<span class="${highlightClass} cursor-pointer transition-colors" data-suggestion-id="${suggestion.id}">${suggestion.text}</span>`;
-      lastIndex = suggestion.endIndex;
-    });
-    
-    result += text.substring(lastIndex);
-    return result;
+  const openGoogleDocs = () => {
+    const encodedText = encodeURIComponent(text);
+    const googleDocsUrl = `https://docs.google.com/document/create?title=Grammarly-est%20Document&body=${encodedText}`;
+    window.open(googleDocsUrl, '_blank');
   };
 
   const getSuggestionIcon = (type: string, severity: string) => {
     if (severity === 'error') return <AlertCircle className="w-4 h-4 text-red-500" />;
     if (severity === 'warning') return <AlertCircle className="w-4 h-4 text-yellow-500" />;
     return <Lightbulb className="w-4 h-4 text-blue-500" />;
-  };
-
-  const getSuggestionBadgeVariant = (severity: string) => {
-    if (severity === 'error') return 'destructive';
-    if (severity === 'warning') return 'secondary';
-    return 'default';
   };
 
   const handleCopyToClipboard = () => {
@@ -1003,6 +593,7 @@ export default function Dashboard() {
   const handleClearText = () => {
     setText("");
     setSuggestions([]);
+    setFileName("");
   };
 
   const getTextStats = () => {
@@ -1028,6 +619,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept=".txt,.docx"
+          className="hidden"
+        />
+
         {/* Mobile Header */}
         {isMobile && (
           <motion.div 
@@ -1046,10 +646,26 @@ export default function Dashboard() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-9 w-9"
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePasteFromClipboard}
+                  className="h-9 w-9"
+                >
+                  <Paste className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleCopyToClipboard}
                   className="h-9 w-9"
                 >
-                  <FileText className="h-4 w-4" />
+                  <Copy className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -1079,16 +695,92 @@ export default function Dashboard() {
                 <Badge variant="outline" className="text-sm">
                   {getTextStats().characters} characters
                 </Badge>
+                {fileName && (
+                  <Badge variant="outline" className="text-sm">
+                    {fileName}
+                  </Badge>
+                )}
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              {/* Document Options */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center space-x-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span>Upload</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Upload a text file</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePasteFromClipboard}
+                      className="flex items-center space-x-2"
+                    >
+                      <Paste className="h-4 w-4" />
+                      <span>Paste</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Paste from clipboard</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadText}
+                      className="flex items-center space-x-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download as text file</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openGoogleDocs}
+                      className="flex items-center space-x-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Google Docs</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Open in Google Docs</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <Separator orientation="vertical" className="h-6" />
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleCopyToClipboard}
                 className="flex items-center space-x-2"
               >
-                <FileText className="h-4 w-4" />
+                <Copy className="h-4 w-4" />
                 <span>Copy</span>
               </Button>
               <Button
@@ -1142,26 +834,14 @@ export default function Dashboard() {
                     ref={textareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    onClick={handleTextClick}
-                    onMouseMove={handleMouseMove}
-                    onMouseLeave={handleMouseLeave}
                     onFocus={() => setIsKeyboardOpen(true)}
                     onBlur={() => setIsKeyboardOpen(false)}
                     className={`w-full ${
                       isMobile 
                         ? 'h-[60vh] text-base' 
                         : 'h-[500px] text-lg'
-                    } p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono leading-relaxed relative z-10 bg-transparent`}
-                    placeholder="Start typing your text here..."
-                  />
-                  
-                  {/* Overlay for highlighting */}
-                  <div 
-                    ref={overlayRef}
-                    className={`absolute inset-0 p-4 ${
-                      isMobile ? 'text-base' : 'text-lg'
-                    } leading-relaxed pointer-events-none whitespace-pre-wrap font-mono text-transparent z-0`}
-                    dangerouslySetInnerHTML={{ __html: renderTextWithHighlights() }}
+                    } p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed bg-white dark:bg-gray-800`}
+                    placeholder="Start typing your text here, upload a document, or paste content..."
                   />
                   
                   {isLoading && (
