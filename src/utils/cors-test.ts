@@ -64,7 +64,7 @@ export function testCorsConfiguration(): CorsTestResult[] {
 /**
  * Test domain pattern matching
  */
-export function testDomainPatterns(): { pattern: string; domain: string; matches: boolean }[] {
+export function testDomainPatterns(): { pattern: string; domain: string; matches: boolean; expected: boolean; correct: boolean }[] {
   const tests = [
     { pattern: '*.co.dev', domain: 'app.co.dev', expected: true },
     { pattern: '*.co.dev', domain: 'staging.co.dev', expected: true },

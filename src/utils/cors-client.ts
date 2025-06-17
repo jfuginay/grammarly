@@ -38,7 +38,7 @@ class CorsClient {
         headers: Object.fromEntries(response.headers.entries()),
         data,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -73,7 +73,7 @@ class CorsClient {
             'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
           },
         };
-      } catch (error) {
+      } catch (error: any) {
         results[method] = {
           success: false,
           error: error.message,
@@ -95,7 +95,7 @@ class CorsClient {
       });
 
       return await response.json();
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
