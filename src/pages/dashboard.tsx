@@ -664,6 +664,7 @@ export default function Dashboard() {
   const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showSuggestionNotification, setShowSuggestionNotification] = useState(false);
+  const [isApplyingSuggestion, setIsApplyingSuggestion] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -691,6 +692,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     const getSuggestions = async () => {
+      // Don't generate new suggestions if we're currently applying one
+      if (isApplyingSuggestion) return;
+      
       setIsLoading(true);
       try {
         // First check for local spelling errors
@@ -730,36 +734,46 @@ export default function Dashboard() {
     } else {
       setSuggestions([]);
     }
-  }, [text, generateSuggestions]);
+  }, [text, generateSuggestions, isApplyingSuggestion]);
 
   const applySuggestion = (suggestion: Suggestion) => {
+    // Set flag to prevent new suggestions from being generated during application
+    setIsApplyingSuggestion(true);
+    
+    // Immediately remove the applied suggestion to prevent ghosting
+    setSuggestions((prev: Suggestion[]) => {
+      const filteredSuggestions = prev.filter((s: Suggestion) => s.id !== suggestion.id);
+      
+      // Calculate the length difference to adjust other suggestions
+      const lengthDifference = suggestion.replacement.length - (suggestion.endIndex - suggestion.startIndex);
+      
+      // Update positions of remaining suggestions that come after the applied one
+      return filteredSuggestions.map((s: Suggestion) => {
+        // Only adjust suggestions that come after the applied one
+        if (s.startIndex > suggestion.endIndex) {
+          return {
+            ...s,
+            startIndex: s.startIndex + lengthDifference,
+            endIndex: s.endIndex + lengthDifference
+          };
+        }
+        return s;
+      });
+    });
+    
+    // Apply the text change after updating suggestions
     const newText = text.substring(0, suggestion.startIndex) + 
                    suggestion.replacement + 
                    text.substring(suggestion.endIndex);
     setText(newText);
     
-    // Calculate the length difference to adjust other suggestions
-    const lengthDifference = suggestion.replacement.length - (suggestion.endIndex - suggestion.startIndex);
-    
-    // Update positions of remaining suggestions that come after the applied one
-    setSuggestions((prev: Suggestion[]) => {
-      return prev
-        .filter((s: Suggestion) => s.id !== suggestion.id) // Remove applied suggestion
-        .map((s: Suggestion) => {
-          // Only adjust suggestions that come after the applied one
-          if (s.startIndex > suggestion.endIndex) {
-            return {
-              ...s,
-              startIndex: s.startIndex + lengthDifference,
-              endIndex: s.endIndex + lengthDifference
-            };
-          }
-          return s;
-        });
-    });
-    
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
+    
+    // Reset the flag after a short delay to allow new suggestions
+    setTimeout(() => {
+      setIsApplyingSuggestion(false);
+    }, 100);
   };
 
   const applyAllSuggestions = () => {
