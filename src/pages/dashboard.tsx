@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
@@ -12,6 +12,7 @@ import { FilePlus, Menu, Save, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
 import Header from '@/components/Header';
+import Engie from '@/components/Engie';
 
 // Type definitions
 interface Suggestion {
@@ -19,7 +20,7 @@ interface Suggestion {
   original: string;
   suggestion: string;
   explanation: string;
-  type: 'Spelling' | 'Grammar' | 'Style';
+  type: 'Spelling' | 'Grammar' | 'Style' | 'Punctuation' | 'Clarity';
   severity: 'High' | 'Medium' | 'Low';
 }
 
@@ -54,6 +55,7 @@ const DashboardPage = () => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState<boolean>(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState<boolean>(true);
+  const lastAnalyzedTextRef = useRef<string>('');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
@@ -193,11 +195,27 @@ const DashboardPage = () => {
   };
 
   const fetchSuggestions = useCallback(async (currentText: string) => {
-    if (!currentText.trim() || !showAiSuggestions) {
+    // If suggestions are turned off, clear them and stop.
+    if (!showAiSuggestions) {
       setSuggestions([]);
       return;
     }
+    
+    // If text is empty, clear suggestions and stop.
+    if (!currentText.trim()) {
+      setSuggestions([]);
+      lastAnalyzedTextRef.current = '';
+      return;
+    }
+    
+    // If text has not changed since last analysis, do nothing.
+    if (currentText === lastAnalyzedTextRef.current) {
+      return;
+    }
+
     setIsSuggestionsLoading(true);
+    lastAnalyzedTextRef.current = currentText; // Set last analyzed text before fetching
+
     try {
       const response = await fetch('/api/correct-text', {
         method: 'POST',
@@ -208,7 +226,7 @@ const DashboardPage = () => {
       if (response.ok) {
         const suggestionsWithIds = (data.suggestions || []).map((s: Omit<Suggestion, 'id'>, index: number) => ({
           ...s,
-          id: `${s.original}-${index}`,
+          id: `${s.original}-${index}-${Date.now()}`,
         }));
         setSuggestions(suggestionsWithIds);
       } else {
@@ -216,6 +234,8 @@ const DashboardPage = () => {
       }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
+      // If the API fails, we don't want to constantly retry for the same text.
+      // The user will need to change the text to trigger a new attempt.
     } finally {
       setIsSuggestionsLoading(false);
     }
@@ -265,6 +285,10 @@ const DashboardPage = () => {
     }
     debouncedFetchSuggestions(newText);
   };
+
+  const dismissSuggestion = (suggestionId: string) => {
+    setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+  }
 
   // Components
   const DocumentSidebar = () => (
@@ -354,7 +378,7 @@ const DashboardPage = () => {
                 </Card>
               </div>
 
-              <aside className={`w-80 lg:w-96 flex-col gap-4 ${showAiSuggestions ? 'flex' : 'hidden'}`}>
+              <aside className="w-80 lg:w-96 flex flex-col gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-lg font-semibold">AI Writing Assistant</CardTitle>
@@ -365,31 +389,24 @@ const DashboardPage = () => {
                         />
                     </CardHeader>
                 </Card>
-                <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                  {isSuggestionsLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
-                  {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
-                  {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
-                  {suggestions.map((s) => (
-                    <Card key={s.id}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[s.severity]}`}></span>
-                          {s.type}
-                          <Badge variant="outline" className="font-normal">{s.severity}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-through">"{s.original}"</p>
-                        <p className="text-sm font-medium text-green-600 mb-3">"{s.suggestion}"</p>
-                        <p className="text-xs text-gray-500 mb-4">{s.explanation}</p>
-                        <Button onClick={() => applySuggestion(s)} size="sm" className="w-full">Apply Suggestion</Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                {showAiSuggestions && (
+                  <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+                    {isSuggestionsLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
+                    {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
+                    {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
+                    {/* The suggestion list is now handled by Engie */}
+                  </div>
+                )}
               </aside>
             </div>
           </main>
+
+          <Engie 
+            suggestions={suggestions}
+            onApply={applySuggestion}
+            onDismiss={dismissSuggestion}
+            onIdeate={() => { /* TODO */ }}
+          />
 
           <div className="md:hidden">
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
