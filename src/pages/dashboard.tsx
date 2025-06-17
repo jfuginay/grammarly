@@ -4,6 +4,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ClipboardPaste, FileUp, Share2 } from 'lucide-react'; // Import ClipboardPaste, FileUp, and Share2 icons
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,168 @@ const DashboardPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [newTitle, setNewTitle] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePasteFromClipboard = async () => {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      toast({
+        title: "Error",
+        description: "Clipboard API not supported in this browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (clipboardText) {
+        setText(clipboardText); // Update local state for textarea
+        if (activeDocument) {
+          // Persist the change to the backend
+          debouncedUpdateDocument(activeDocument.id, { content: clipboardText });
+        }
+        toast({
+          title: "Success",
+          description: "Text pasted from clipboard.",
+        });
+      } else {
+        toast({
+          title: "Info",
+          description: "Clipboard is empty or contains no text.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to paste from clipboard:", error);
+      if (error instanceof Error && error.name === 'NotAllowedError') {
+           toast({
+            title: "Error",
+            description: "Permission to read clipboard denied. Please allow access in your browser settings.",
+            variant: "destructive",
+            duration: 7000,
+          });
+      } else {
+          toast({
+            title: "Error",
+            description: "Failed to paste text from clipboard.",
+            variant: "destructive",
+          });
+      }
+    }
+  };
+
+  const handleFileUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    // Reset file input to allow uploading the same file again
+    event.target.value = '';
+
+    const allowedTypes = ['text/plain', 'text/markdown'];
+    const allowedExtensions = ['.txt', '.md'];
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      toast({
+        title: "Error: Invalid File Type",
+        description: "Please upload a plain text file (.txt, .md).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > maxFileSize) {
+      toast({
+        title: "Error: File Too Large",
+        description: `File size cannot exceed ${maxFileSize / (1024 * 1024)}MB.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const fileContent = e.target?.result as string;
+        setText(fileContent);
+        if (activeDocument) {
+          debouncedUpdateDocument(activeDocument.id, { content: fileContent });
+        }
+        toast({
+          title: "Success",
+          description: "File content uploaded successfully.",
+        });
+      } catch (readError) {
+        console.error("Error processing file content:", readError);
+        toast({
+          title: "Error",
+          description: "Could not process file content.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    reader.onerror = () => {
+      console.error("Error reading file:", reader.error);
+      toast({
+        title: "Error",
+        description: "Failed to read the file.",
+        variant: "destructive",
+      });
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleShare = async () => {
+    if (!text.trim()) {
+      toast({
+        title: "Info",
+        description: "Nothing to share. Write some text first!",
+        variant: "default",
+      });
+      return;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: activeDocument?.title || 'My Engie Document',
+          text: text,
+          // url: window.location.href, // Optionally share the current page URL
+        });
+        console.log('Content shared successfully');
+        // Most of the time, the browser's share dialog is enough feedback.
+        // A toast here might be overkill or even feel disruptive.
+      } catch (error) {
+        // Common error is AbortError if the user cancels the share dialog
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('User cancelled sharing');
+        } else {
+          console.error('Error sharing:', error);
+          toast({
+            title: "Error",
+            description: "Could not share content.",
+            variant: "destructive",
+          });
+        }
+      }
+    } else {
+      toast({
+        title: "Info",
+        description: "Web Share API not available. You can manually copy the text.",
+        variant: "default",
+      });
+    }
+  };
 
   useEffect(() => {
     const checkSession = async () => {
@@ -356,9 +519,25 @@ const DashboardPage = () => {
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">Writing Settings</Button>
-                <Button variant="outline" size="sm">Analysis</Button>
-                <Button variant="outline" size="sm" className='bg-purple-100 text-purple-700'>AI Assistant</Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".txt,.md,text/plain,text/markdown"
+                />
+                <Button variant="outline" size="sm" onClick={handleFileUploadClick} disabled={!activeDocument}>
+                  <FileUp className="h-4 w-4 mr-2" />
+                  Upload
+                </Button>
+                <Button variant="outline" size="sm" onClick={handlePasteFromClipboard} disabled={!activeDocument}>
+                  <ClipboardPaste className="h-4 w-4 mr-2" />
+                  Paste
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleShare} disabled={!activeDocument || !text.trim()}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
                  {activeDocument && <Button size="icon" variant="ghost" className='text-red-500 hover:bg-red-100 hover:text-red-600' onClick={() => handleDeleteDocument(activeDocument.id)}><Trash2 className="h-4 w-4"/></Button>}
               </div>
             </header>
@@ -368,6 +547,7 @@ const DashboardPage = () => {
                 <Card className="flex-1 flex flex-col">
                   <CardContent className="flex-1 flex p-1">
                     <Textarea
+                      id="dashboard-editor-textarea" // Added ID
                       value={text}
                       onChange={handleTextChange}
                       placeholder="Create your first document to get started or select one from the sidebar."
@@ -406,6 +586,7 @@ const DashboardPage = () => {
             onApply={applySuggestion}
             onDismiss={dismissSuggestion}
             onIdeate={() => { /* TODO */ }}
+            targetEditorSelector="#dashboard-editor-textarea" // Added prop
           />
 
           <div className="md:hidden">
