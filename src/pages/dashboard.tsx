@@ -6,6 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import FloatingSuggestion from "@/components/FloatingSuggestion";
 import { 
   AlertCircle, 
@@ -634,6 +636,7 @@ export default function Dashboard() {
   const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showSuggestionNotification, setShowSuggestionNotification] = useState(false);
+  const [floatingSuggestionsEnabled, setFloatingSuggestionsEnabled] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -690,9 +693,9 @@ export default function Dashboard() {
           setTimeout(() => setShowSuggestionNotification(false), 3000);
         }
         
-        // Auto-show floating suggestion for the first critical error
+        // Auto-show floating suggestion for the first critical error (only if enabled)
         const firstError = allSuggestions.find(s => s.severity === 'error');
-        if (firstError && !floatingSuggestion && textareaRef.current && allSuggestions.length > 0) {
+        if (firstError && !floatingSuggestion && textareaRef.current && allSuggestions.length > 0 && floatingSuggestionsEnabled) {
           const textarea = textareaRef.current;
           const rect = textarea.getBoundingClientRect();
           const textBeforeError = text.substring(0, firstError.startIndex);
@@ -708,7 +711,7 @@ export default function Dashboard() {
           
           // Delay showing the floating suggestion to avoid interference with typing
           setTimeout(() => {
-            if (allSuggestions.some(s => s.id === firstError.id)) {
+            if (allSuggestions.some(s => s.id === firstError.id) && floatingSuggestionsEnabled) {
               setFloatingSuggestion(firstError);
               setFloatingPosition({ x, y });
             }
@@ -745,6 +748,8 @@ export default function Dashboard() {
   };
 
   const handleTextClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (!floatingSuggestionsEnabled) return;
+    
     const textarea = e.currentTarget;
     const clickPosition = textarea.selectionStart;
     
@@ -775,6 +780,8 @@ export default function Dashboard() {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (!floatingSuggestionsEnabled) return;
+    
     const textarea = e.currentTarget;
     const rect = textarea.getBoundingClientRect();
     
@@ -819,9 +826,11 @@ export default function Dashboard() {
         
         // Set a new timeout for showing the suggestion
         const timeout = setTimeout(() => {
-          setFloatingSuggestion(hoveredSuggestion);
-          setFloatingPosition({ x: e.clientX, y: e.clientY - 10 });
-          setHoveredSuggestion(hoveredSuggestion);
+          if (floatingSuggestionsEnabled) {
+            setFloatingSuggestion(hoveredSuggestion);
+            setFloatingPosition({ x: e.clientX, y: e.clientY - 10 });
+            setHoveredSuggestion(hoveredSuggestion);
+          }
         }, 800); // 800ms delay before showing
         
         setHoverTimeout(timeout);
@@ -871,6 +880,19 @@ export default function Dashboard() {
       }
     };
   }, [hoverTimeout]);
+
+  // Hide floating suggestions when toggle is turned off
+  useEffect(() => {
+    if (!floatingSuggestionsEnabled) {
+      setFloatingSuggestion(null);
+      setFloatingPosition(null);
+      setHoveredSuggestion(null);
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        setHoverTimeout(null);
+      }
+    }
+  }, [floatingSuggestionsEnabled, hoverTimeout]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -994,6 +1016,16 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="floating-suggestions"
+                checked={floatingSuggestionsEnabled}
+                onCheckedChange={setFloatingSuggestionsEnabled}
+              />
+              <Label htmlFor="floating-suggestions" className="text-sm font-medium">
+                Floating Suggestions
+              </Label>
+            </div>
             <Button
               variant="outline"
               size="sm"
