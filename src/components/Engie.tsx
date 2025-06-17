@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Draggable from 'react-draggable';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Loader2 } from 'lucide-react'; // Added Loader2
+import { Sparkles, X, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 
@@ -355,6 +355,13 @@ const Engie: React.FC<EngieProps> = ({ suggestions: externalSuggestions, onApply
     triggerIdeation(true); // Trigger internal ideation manually
   };
 
+  // Helper function to safely format scores
+  const formatScore = (score: number | undefined | null): string => {
+    if (typeof score === 'number' && !isNaN(score)) {
+      return score.toFixed(2);
+    }
+    return 'N/A';
+  };
 
   const nodeRef = React.useRef(null);
 
@@ -428,14 +435,14 @@ const Engie: React.FC<EngieProps> = ({ suggestions: externalSuggestions, onApply
                   </div>
                 )}
 
-                {/* Tone Analysis Display */}
+                {/* Tone Analysis Display - Fixed merge conflict */}
                 {toneAnalysisResult && !ideationMessage && (
                   <Card className="mt-4">
                     <CardHeader className="p-3">
                       <CardTitle className="text-base">Tone Analysis</CardTitle>
                       <CardDescription className="text-xs">
                         Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
-                          {toneAnalysisResult.overallTone} (Score: {typeof toneAnalysisResult.overallScore === 'number' ? toneAnalysisResult.overallScore.toFixed(2) : 'N/A'})
+                          {toneAnalysisResult.overallTone} (Score: {formatScore(toneAnalysisResult.overallScore)})
                         </Badge>
                       </CardDescription>
                     </CardHeader>
@@ -445,7 +452,7 @@ const Engie: React.FC<EngieProps> = ({ suggestions: externalSuggestions, onApply
                             <ul className="space-y-1">
                             {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
                                 <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                    "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {typeof item.score === 'number' ? item.score.toFixed(2) : 'N/A'})
+                                    "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {formatScore(item.score)})
                                 </li>
                             ))}
                             </ul>
@@ -491,4 +498,4 @@ const Engie: React.FC<EngieProps> = ({ suggestions: externalSuggestions, onApply
   );
 };
 
-export default Engie; 
+export default Engie;
