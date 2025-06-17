@@ -55,13 +55,10 @@ Return a JSON object with this exact structure:
 {
   "suggestions": [
     {
-      "id": "unique-id",
       "type": "spelling|grammar|style",
       "text": "original problematic text",
       "replacement": "corrected text",
       "explanation": "explanation of why this change is needed",
-      "startIndex": number,
-      "endIndex": number,
       "severity": "error|warning|suggestion"
     }
   ]
@@ -75,8 +72,7 @@ Rules:
 - Use "error" severity for spelling mistakes and serious grammar errors
 - Use "warning" severity for minor grammar issues
 - Use "suggestion" severity for style improvements
-- Calculate exact startIndex and endIndex positions in the original text
-- Generate unique IDs for each suggestion
+- Return the EXACT text as it appears in the original (including capitalization and punctuation)
 - Be more aggressive in catching typos and spelling mistakes
 - Look for common typing errors like:
   * Transposed letters (e.g., "teh" -> "the")
@@ -84,7 +80,8 @@ Rules:
   * Extra letters (e.g., "occured" -> "occurred")
   * Common homophones (e.g., "their" vs "there")
   * Common misspellings (e.g., "definately" -> "definitely")
-- Provide clear, concise explanations for each suggestion`
+- Provide clear, concise explanations for each suggestion
+- Make sure the "text" field contains the exact problematic text as it appears in the original`
         },
         {
           role: "user",
@@ -100,7 +97,55 @@ Rules:
       return res.status(500).json({ message: 'Failed to get a valid response from the assistant.' });
     }
 
-    const suggestions = JSON.parse(responseContent).suggestions as Suggestion[];
+    const apiSuggestions = JSON.parse(responseContent).suggestions;
+    
+    // Calculate indices locally for better accuracy
+    const suggestions: Suggestion[] = [];
+    let usedIndices: number[] = []; // Track used positions to avoid duplicates
+    
+    apiSuggestions.forEach((apiSuggestion: any, index: number) => {
+      const searchText = apiSuggestion.text;
+      let startIndex = -1;
+      let searchStart = 0;
+      
+      // Find the next occurrence that hasn't been used yet
+      while (true) {
+        const foundIndex = text.indexOf(searchText, searchStart);
+        if (foundIndex === -1) break;
+        
+        // Check if this position overlaps with any used indices
+        const endIndex = foundIndex + searchText.length;
+        const overlaps = usedIndices.some(usedIndex => 
+          (foundIndex <= usedIndex && usedIndex < endIndex) ||
+          (usedIndex <= foundIndex && foundIndex < usedIndex + searchText.length)
+        );
+        
+        if (!overlaps) {
+          startIndex = foundIndex;
+          // Mark this range as used
+          for (let i = startIndex; i < endIndex; i++) {
+            usedIndices.push(i);
+          }
+          break;
+        }
+        
+        searchStart = foundIndex + 1;
+      }
+      
+      if (startIndex !== -1) {
+        suggestions.push({
+          id: `api-${Date.now()}-${index}`,
+          type: apiSuggestion.type,
+          text: searchText,
+          replacement: apiSuggestion.replacement,
+          explanation: apiSuggestion.explanation,
+          startIndex: startIndex,
+          endIndex: startIndex + searchText.length,
+          severity: apiSuggestion.severity
+        });
+      }
+    });
+    
     return res.status(200).json({ suggestions });
   } catch (error) {
     console.error('Error in text correction:', error);

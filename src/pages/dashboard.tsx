@@ -598,25 +598,56 @@ const styleSuggestions = [
 
 // Function to check for local spelling errors
 const checkLocalSpelling = (text: string): Suggestion[] => {
-  const words = text.split(/\b/);
   const suggestions: Suggestion[] = [];
-  let currentIndex = 0;
-
-  words.forEach((word: string) => {
-    const lowerWord = word.toLowerCase();
-    if (spellCheckDict[lowerWord]) {
-      suggestions.push({
-        id: `local-${currentIndex}`,
-        type: 'spelling',
-        text: word,
-        replacement: spellCheckDict[lowerWord],
-        explanation: 'Common misspelling detected',
-        startIndex: currentIndex,
-        endIndex: currentIndex + word.length,
-        severity: 'error'
-      });
+  let usedIndices: number[] = []; // Track used positions to avoid duplicates
+  
+  // Check each word in the dictionary
+  Object.keys(spellCheckDict).forEach((misspelling, index) => {
+    const replacement = spellCheckDict[misspelling];
+    let searchStart = 0;
+    
+    // Find all occurrences of this misspelling
+    while (true) {
+      // Look for word boundaries to avoid partial matches
+      const regex = new RegExp(`\\b${misspelling.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+      const match = regex.exec(text.substring(searchStart));
+      
+      if (!match) break;
+      
+      const foundIndex = searchStart + match.index;
+      const endIndex = foundIndex + match[0].length;
+      
+      // Check if this position overlaps with any used indices
+      const overlaps = usedIndices.some(usedIndex => 
+        (foundIndex <= usedIndex && usedIndex < endIndex) ||
+        (usedIndex <= foundIndex && foundIndex < usedIndex + match[0].length)
+      );
+      
+      if (!overlaps) {
+        // Mark this range as used
+        for (let i = foundIndex; i < endIndex; i++) {
+          usedIndices.push(i);
+        }
+        
+        suggestions.push({
+          id: `local-${Date.now()}-${index}-${foundIndex}`,
+          type: 'spelling',
+          text: match[0], // Use the actual matched text (preserves case)
+          replacement: match[0].charAt(0).toUpperCase() === match[0].charAt(0) 
+            ? replacement.charAt(0).toUpperCase() + replacement.slice(1) // Preserve capitalization
+            : replacement,
+          explanation: 'Common misspelling detected',
+          startIndex: foundIndex,
+          endIndex: endIndex,
+          severity: 'error'
+        });
+      }
+      
+      searchStart = foundIndex + 1;
+      
+      // Reset regex lastIndex for next search
+      regex.lastIndex = 0;
     }
-    currentIndex += word.length;
   });
 
   return suggestions;
