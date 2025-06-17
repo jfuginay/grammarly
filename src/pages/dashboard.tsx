@@ -36,6 +36,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
+import CookieConsent from "@/components/CookieConsent";
+import OnboardingTour, { TourStep } from "@/components/OnboardingTour";
 
 interface Suggestion {
   id: string;
@@ -103,6 +105,8 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const [lastAnalyzedText, setLastAnalyzedText] = useState("");
   const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
 
   // Add new state for mobile UI and document handling
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -222,6 +226,13 @@ export default function Dashboard() {
       return () => clearTimeout(typingTimeout);
     }
   }, [text, generateSuggestions, activeTab, handleEngieAnalysis]);
+
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('has-seen-tour');
+    if (hasSeenTour === null) {
+      setIsTourOpen(true);
+    }
+  }, []);
 
   const applySuggestion = (suggestion: Suggestion) => {
     // Set flag to prevent new suggestions from being generated during application
@@ -440,6 +451,34 @@ export default function Dashboard() {
     );
   };
 
+  const tourSteps: TourStep[] = [
+    {
+      target: '#editor-textarea',
+      title: 'Welcome to Your AI Writing Assistant!',
+      content: "This is your creative space. Write your blog posts, social media updates, or technical articles here. Let's get your ideas out there!",
+    },
+    {
+      target: '#suggestions-panel',
+      title: 'Real-Time Suggestions',
+      content: 'As you write, we provide suggestions here to improve your grammar, style, and clarity. Keep an eye on this panel to polish your work.',
+    },
+    {
+      target: '#tone-analysis-button',
+      title: 'Check Your Tone',
+      content: "Wondering how your writing sounds? Click here to get a detailed tone analysis. It's perfect for making sure your message lands the right way with your audience.",
+    },
+    {
+      target: '#engie-assistant',
+      title: "Meet Engie, Your AI Buddy",
+      content: "This is Engie, your personal writing coach. It will offer encouragement and tips as you go. It's here to make writing a little less lonely and a lot more fun.",
+    },
+  ];
+
+  const handleTourEnd = () => {
+    localStorage.setItem('has-seen-tour', 'true');
+    setIsTourOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -598,20 +637,22 @@ export default function Dashboard() {
 
               <Separator orientation="vertical" className="h-6" />
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCheckTone}
-                disabled={isCheckingTone}
-                className="flex items-center space-x-2"
-              >
-                {isCheckingTone ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                ) : (
-                  <Smile className="h-4 w-4" />
-                )}
-                <span>Check Tone</span>
-              </Button>
+              <div id="tone-analysis-button">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCheckTone}
+                  disabled={isCheckingTone}
+                  className="flex items-center space-x-2"
+                >
+                  {isCheckingTone ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  ) : (
+                    <Smile className="h-4 w-4" />
+                  )}
+                  <span>Check Tone</span>
+                </Button>
+              </div>
 
               <Separator orientation="vertical" className="h-6" />
 
@@ -716,6 +757,7 @@ export default function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="relative">
                   <textarea
+                    id="editor-textarea"
                     ref={textareaRef}
                     value={text}
                     onChange={(e) => {
@@ -786,6 +828,7 @@ export default function Dashboard() {
             {/* Engie aI Assistant */}
             <AnimatePresence>
               <motion.div 
+                id="engie-assistant"
                 className="mt-4 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow-sm"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -809,7 +852,7 @@ export default function Dashboard() {
           </div>
 
           {/* Right Panel: Suggestions */}
-          <div className="lg:col-span-1">
+          <div id="suggestions-panel" className="lg:col-span-1">
             <Card className="h-full">
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center space-x-2">
@@ -914,6 +957,17 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <CookieConsent />
+      <OnboardingTour
+        steps={tourSteps}
+        isOpen={isTourOpen}
+        onClose={handleTourEnd}
+        currentStep={tourStep}
+        onNext={() => setTourStep(s => (s < tourSteps.length - 1 ? s + 1 : s))}
+        onPrev={() => setTourStep(s => (s > 0 ? s - 1 : s))}
+        onSkip={handleTourEnd}
+      />
 
       {/* Suggestion Modal */}
       <Dialog open={showSuggestionModal} onOpenChange={setShowSuggestionModal}>
