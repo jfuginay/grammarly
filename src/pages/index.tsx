@@ -54,10 +54,11 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>GrammarlyClone - Perfect Your Writing</title>
+        <title>EnginDearing - Perfect Your Writing</title>
         <meta name="description" content="AI-powered writing assistant that helps you write clearly and effectively" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
       </Head>
       
       <div className="bg-background min-h-screen">
@@ -71,7 +72,7 @@ export default function Home() {
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Sparkles className="w-8 h-8 text-primary" />
-              <span className="text-2xl font-bold text-primary">GrammarlyClone</span>
+              <span className="text-2xl font-bold text-primary">EnginDearing</span>
             </div>
             <nav className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">Features</a>
@@ -256,10 +257,10 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-2 mb-4 md:mb-0">
                 <Sparkles className="w-6 h-6 text-primary" />
-                <span className="text-xl font-bold text-primary">GrammarlyClone</span>
+                <span className="text-xl font-bold text-primary">EnginDearing</span>
               </div>
               <div className="text-muted-foreground text-sm">
-                © 2024 GrammarlyClone. All rights reserved.
+                © 2024 EnginDearing. All rights reserved.
               </div>
             </div>
           </div>
