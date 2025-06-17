@@ -32,10 +32,62 @@ interface Suggestion {
   severity: 'error' | 'warning' | 'suggestion';
 }
 
-// Simple spell checker with common misspellings
+// Comprehensive spell checker with extensive misspellings and typos database
 const spellCheckDict: Record<string, string> = {
+  // Common transposed letters
   'teh': 'the',
+  'adn': 'and',
+  'fro': 'for',
+  'fo': 'of',
+  'hte': 'the',
+  'taht': 'that',
+  'thsi': 'this',
+  'jsut': 'just',
+  'mroe': 'more',
+  'oyu': 'you',
+  'yuor': 'your',
+  'yuo': 'you',
+  'cna': 'can',
+  'ahve': 'have',
+  'si': 'is',
+  'sya': 'say',
+  'amke': 'make',
+  'waht': 'what',
+  'wnat': 'want',
+  'otehr': 'other',
+  'moer': 'more',
+  'hwo': 'how',
+  'nto': 'not',
+  'wrok': 'work',
+  'baout': 'about',
+  'whne': 'when',
+  'eahc': 'each',
+  'owrk': 'work',
+  'palce': 'place',
+  'tihs': 'this',
+  'thru': 'through',
+  'siad': 'said',
+  'woudl': 'would',
+  'coudl': 'could',
+  'shoudl': 'should',
+  'peopel': 'people',
+  'freind': 'friend',
+  'freinds': 'friends',
+  'compnay': 'company',
+  'mananger': 'manager',
+  
+  // I before E except after C violations
   'recieve': 'receive',
+  'concieve': 'conceive',
+  'decieve': 'deceive',
+  'percieve': 'perceive',
+  'beleive': 'believe',
+  'acheive': 'achieve',
+  'yeild': 'yield',
+  'feild': 'field',
+  'wierd': 'weird',
+  
+  // Double consonant errors
   'seperate': 'separate',
   'definately': 'definitely',
   'occured': 'occurred',
@@ -43,22 +95,43 @@ const spellCheckDict: Record<string, string> = {
   'neccessary': 'necessary',
   'embarass': 'embarrass',
   'begining': 'beginning',
+  'comming': 'coming',
+  'runing': 'running',
+  'stoping': 'stopping',
+  'geting': 'getting',
+  'siting': 'sitting',
+  'writting': 'writing',
+  'puting': 'putting',
+  'cuming': 'coming',
+  'planing': 'planning',
+  'controling': 'controlling',
+  'modeling': 'modelling',
+  'travelig': 'traveling',
+  'quareling': 'quarreling',
+  'marveling': 'marveling',
+  
+  // -ance vs -ence confusion
   'existance': 'existence',
   'maintainance': 'maintenance',
   'independant': 'independent',
   'appearence': 'appearance',
-  'beleive': 'believe',
-  'acheive': 'achieve',
-  'wierd': 'weird',
-  'freind': 'friend',
-  'thier': 'their',
-  'reccomend': 'recommend',
-  'tommorrow': 'tomorrow',
-  'alot': 'a lot',
-  'allways': 'always',
+  'persistant': 'persistent',
+  'consistant': 'consistent',
+  'dependant': 'dependent',
+  'correspondance': 'correspondence',
+  'performence': 'performance',
+  'permanant': 'permanent',
+  'relevent': 'relevant',
+  'exellent': 'excellent',
+  'differance': 'difference',
+  'importent': 'important',
+  'signifigant': 'significant',
+  'intellegent': 'intelligent',
+  'convinient': 'convenient',
+  
+  // Common typing errors and misspellings
   'becuase': 'because',
   'bussiness': 'business',
-  'comming': 'coming',
   'concious': 'conscious',
   'dosent': "doesn't",
   'enviroment': 'environment',
@@ -73,11 +146,9 @@ const spellCheckDict: Record<string, string> = {
   'lisence': 'license',
   'millenium': 'millennium',
   'noticable': 'noticeable',
-  'persistant': 'persistent',
   'posession': 'possession',
   'priviledge': 'privilege',
   'reffered': 'referred',
-  'relevent': 'relevant',
   'remeber': 'remember',
   'succesful': 'successful',
   'suprise': 'surprise',
@@ -86,16 +157,165 @@ const spellCheckDict: Record<string, string> = {
   'usefull': 'useful',
   'wether': 'whether',
   'wich': 'which',
-  'writting': 'writing'
+  'minumum': 'minimum',
+  'maxiumum': 'maximum',
+  'realy': 'really',
+  'finaly': 'finally',
+  'actualy': 'actually',
+  'usualy': 'usually',
+  'probaly': 'probably',
+  'generaly': 'generally',
+  'basicaly': 'basically',
+  'literaly': 'literally',
+  'originaly': 'originally',
+  'personaly': 'personally',
+  'specialy': 'specially',
+  'totaly': 'totally',
+  
+  // -tion vs -sion confusion
+  'discusion': 'discussion',
+  'extention': 'extension',
+  'dimention': 'dimension',
+  'attentoin': 'attention',
+  'questoin': 'question',
+  'occasoin': 'occasion',
+  'profesional': 'professional',
+  'commision': 'commission',
+  'permision': 'permission',
+  'admision': 'admission',
+  'omision': 'omission',
+  'submision': 'submission',
+  
+  // Common compound word errors
+  'alot': 'a lot',
+  'allways': 'always',
+  'allready': 'already',
+  'alltogether': 'altogether',
+  'allmost': 'almost',
+  'allright': 'all right',
+  'tommorrow': 'tomorrow',
+  'reccomend': 'recommend',
+  'comittee': 'committee',
+  'acording': 'according',
+  'agian': 'again',
+  'befor': 'before',
+  'durring': 'during',
+  'gramar': 'grammar',
+  'grammer': 'grammar',
+  'lazer': 'laser',
+  'liscense': 'license',
+  'mispell': 'misspell',
+  'occassion': 'occasion',
+  'occurance': 'occurrence',
+  'paralel': 'parallel',
+  'privelege': 'privilege',
+  'publically': 'publicly',
+  'rythm': 'rhythm',
+  'seperation': 'separation',
+  'speach': 'speech',
+  'sucessful': 'successful',
+  'tendancy': 'tendency',
+  'upto': 'up to',
+  'withhold': 'withhold',
+  'writen': 'written',
+  
+  // Technical and business terms
+  'sofware': 'software',
+  'hardward': 'hardware',
+  'databse': 'database',
+  'managment': 'management',
+  'develope': 'develop',
+  'developement': 'development',
+  'analysys': 'analysis',
+  'anaylsis': 'analysis',
+  'analysies': 'analyses',
+  'proceedure': 'procedure',
+  'proceedures': 'procedures',
+  'algoritm': 'algorithm',
+  'algorythm': 'algorithm',
+  'compatability': 'compatibility',
+  'efficency': 'efficiency',
+  'performace': 'performance',
+  'availibility': 'availability',
+  'responsability': 'responsibility',
+  'flexability': 'flexibility',
+  'visability': 'visibility',
+  'accesibility': 'accessibility',
+  'maintainablity': 'maintainability',
+  'scalibility': 'scalability',
+  'reliablity': 'reliability',
+  
+  // Calendar and time
+  'calender': 'calendar',
+  'scedule': 'schedule',
+  'febuary': 'February',
+  'wenesday': 'Wednesday',
+  'thuresday': 'Thursday',
+  'septemeber': 'September',
+  'occuring': 'occurring',
+  
+  // Numbers and quantities
+  'fourty': 'forty',
+  'ninty': 'ninety',
+  'twelth': 'twelfth',
+  'eigth': 'eighth',
+  'nineth': 'ninth',
+  'fourteenth': 'fourteenth',
+  'tweleve': 'twelve',
+  'thirten': 'thirteen',
+  'forteen': 'fourteen',
+  'fiften': 'fifteen',
+  'sixten': 'sixteen',
+  'seventten': 'seventeen',
+  'eightteen': 'eighteen',
+  
+  // Adjectives with -ful suffix
+  'beautifull': 'beautiful',
+  'powerfull': 'powerful',
+  'carefull': 'careful',
+  'hopefull': 'hopeful',
+  'meaningfull': 'meaningful',
+  'successfull': 'successful',
+  'wonderfull': 'wonderful',
+  'faithfull': 'faithful',
+  'gratefull': 'grateful',
+  'peacefull': 'peaceful',
+  'playfull': 'playful',
+  'colorfull': 'colorful',
+  'harmfull': 'harmful',
+  'painfull': 'painful',
+  'helpfull': 'helpful',
+  'forgetfull': 'forgetful',
+  'doubtfull': 'doubtful',
+  'respectfull': 'respectful',
+  'thoughtfull': 'thoughtful'
 };
 
-// Grammar rules
+// Enhanced grammar rules for common errors
 const grammarRules = [
+  // Verb tense consistency
   {
     pattern: /\bi\s+am\s+going\s+to\s+went\b/gi,
     replacement: 'I am going to go',
     explanation: 'Incorrect verb tense combination'
   },
+  {
+    pattern: /\bI\s+have\s+went\b/gi,
+    replacement: 'I have gone',
+    explanation: 'Use "gone" with "have" (present perfect tense)'
+  },
+  {
+    pattern: /\bI\s+seen\b/gi,
+    replacement: 'I saw',
+    explanation: 'Use "saw" for simple past tense'
+  },
+  {
+    pattern: /\bI\s+done\b/gi,
+    replacement: 'I did',
+    explanation: 'Use "did" for simple past tense'
+  },
+  
+  // Possessive vs contraction errors
   {
     pattern: /\byour\s+welcome\b/gi,
     replacement: "you're welcome",
@@ -105,14 +325,142 @@ const grammarRules = [
     pattern: /\bits\s+a\s+nice\s+day\b/gi,
     replacement: "it's a nice day",
     explanation: "Use 'it's' (it is) instead of 'its' (possessive)"
+  },
+  {
+    pattern: /\bwhose\s+going\b/gi,
+    replacement: "who's going",
+    explanation: "Use 'who's' (who is) instead of 'whose' (possessive)"
+  },
+  {
+    pattern: /\btheir\s+going\b/gi,
+    replacement: "they're going",
+    explanation: "Use 'they're' (they are) instead of 'their' (possessive)"
+  },
+  
+  // Subject-verb agreement
+  {
+    pattern: /\bthere\s+is\s+\d+\s+\w+s\b/gi,
+    replacement: "there are [number] [items]",
+    explanation: "Use 'there are' with plural subjects"
+  },
+  {
+    pattern: /\beveryone\s+have\b/gi,
+    replacement: "everyone has",
+    explanation: "'Everyone' is singular and takes 'has'"
+  },
+  {
+    pattern: /\bthe\s+team\s+are\b/gi,
+    replacement: "the team is",
+    explanation: "Collective nouns like 'team' are usually singular"
+  },
+  
+  // Double negatives
+  {
+    pattern: /\bdon't\s+have\s+no\b/gi,
+    replacement: "don't have any",
+    explanation: "Avoid double negatives"
+  },
+  {
+    pattern: /\bcan't\s+get\s+no\b/gi,
+    replacement: "can't get any",
+    explanation: "Avoid double negatives"
+  },
+  
+  // Comparative and superlative errors
+  {
+    pattern: /\bmore\s+better\b/gi,
+    replacement: "better",
+    explanation: "Don't use 'more' with comparative adjectives"
+  },
+  {
+    pattern: /\bmost\s+best\b/gi,
+    replacement: "best",
+    explanation: "Don't use 'most' with superlative adjectives"
+  },
+  {
+    pattern: /\bmore\s+easier\b/gi,
+    replacement: "easier",
+    explanation: "Don't use 'more' with comparative adjectives"
+  },
+  
+  // Pronoun errors
+  {
+    pattern: /\bme\s+and\s+\w+\s+(is|are|was|were)\b/gi,
+    replacement: "[Name] and I [verb]",
+    explanation: "Use 'I' as a subject, not 'me'"
+  },
+  {
+    pattern: /\bbetween\s+you\s+and\s+I\b/gi,
+    replacement: "between you and me",
+    explanation: "Use 'me' after prepositions like 'between'"
+  },
+  
+  // Preposition errors
+  {
+    pattern: /\bdifferent\s+than\b/gi,
+    replacement: "different from",
+    explanation: "Use 'different from' instead of 'different than'"
+  },
+  {
+    pattern: /\bcould\s+of\b/gi,
+    replacement: "could have",
+    explanation: "Use 'could have' instead of 'could of'"
+  },
+  {
+    pattern: /\bwould\s+of\b/gi,
+    replacement: "would have",
+    explanation: "Use 'would have' instead of 'would of'"
+  },
+  {
+    pattern: /\bshould\s+of\b/gi,
+    replacement: "should have",
+    explanation: "Use 'should have' instead of 'should of'"
+  },
+  
+  // Misused words
+  {
+    pattern: /\birregardless\b/gi,
+    replacement: "regardless",
+    explanation: "'Irregardless' is not a standard word; use 'regardless'"
+  },
+  {
+    pattern: /\bsupposably\b/gi,
+    replacement: "supposedly",
+    explanation: "Use 'supposedly' instead of 'supposably'"
+  },
+  {
+    pattern: /\bfor\s+all\s+intensive\s+purposes\b/gi,
+    replacement: "for all intents and purposes",
+    explanation: "The correct phrase is 'for all intents and purposes'"
+  },
+  {
+    pattern: /\bnip\s+it\s+in\s+the\s+butt\b/gi,
+    replacement: "nip it in the bud",
+    explanation: "The correct phrase is 'nip it in the bud'"
   }
 ];
 
-// Style suggestions
+// Enhanced style suggestions for better writing
 const styleSuggestions = [
+  // Reduce redundancy and wordiness
   {
     pattern: /\bvery\s+good\b/gi,
     replacement: 'excellent',
+    explanation: 'Use more specific adjectives instead of "very + adjective"'
+  },
+  {
+    pattern: /\bvery\s+bad\b/gi,
+    replacement: 'terrible',
+    explanation: 'Use more specific adjectives instead of "very + adjective"'
+  },
+  {
+    pattern: /\bvery\s+big\b/gi,
+    replacement: 'huge',
+    explanation: 'Use more specific adjectives instead of "very + adjective"'
+  },
+  {
+    pattern: /\bvery\s+small\b/gi,
+    replacement: 'tiny',
     explanation: 'Use more specific adjectives instead of "very + adjective"'
   },
   {
@@ -124,6 +472,126 @@ const styleSuggestions = [
     pattern: /\bdue\s+to\s+the\s+fact\s+that\b/gi,
     replacement: 'because',
     explanation: 'Use "because" for clearer, more concise writing'
+  },
+  {
+    pattern: /\bat\s+this\s+point\s+in\s+time\b/gi,
+    replacement: 'now',
+    explanation: 'Use "now" instead of the wordy phrase'
+  },
+  {
+    pattern: /\bin\s+the\s+event\s+that\b/gi,
+    replacement: 'if',
+    explanation: 'Use "if" instead of the wordy phrase'
+  },
+  {
+    pattern: /\bprior\s+to\b/gi,
+    replacement: 'before',
+    explanation: 'Use "before" instead of "prior to"'
+  },
+  {
+    pattern: /\bsubsequent\s+to\b/gi,
+    replacement: 'after',
+    explanation: 'Use "after" instead of "subsequent to"'
+  },
+  {
+    pattern: /\bin\s+close\s+proximity\s+to\b/gi,
+    replacement: 'near',
+    explanation: 'Use "near" instead of the wordy phrase'
+  },
+  
+  // Improve weak verbs
+  {
+    pattern: /\bthere\s+is\s+\w+\s+that\s+\w+\b/gi,
+    replacement: '[subject] [verb]',
+    explanation: 'Avoid weak "there is" constructions'
+  },
+  {
+    pattern: /\bit\s+is\s+\w+\s+that\s+\w+\b/gi,
+    replacement: '[subject] [verb]',
+    explanation: 'Avoid weak "it is" constructions'
+  },
+  
+  // Passive voice suggestions
+  {
+    pattern: /\bwas\s+\w+ed\s+by\b/gi,
+    replacement: '[subject] [verb]',
+    explanation: 'Consider using active voice instead of passive voice'
+  },
+  {
+    pattern: /\bwere\s+\w+ed\s+by\b/gi,
+    replacement: '[subject] [verb]',
+    explanation: 'Consider using active voice instead of passive voice'
+  },
+  
+  // Cliché phrases
+  {
+    pattern: /\bat\s+the\s+end\s+of\s+the\s+day\b/gi,
+    replacement: 'ultimately',
+    explanation: 'Avoid clichés; use more precise language'
+  },
+  {
+    pattern: /\bthink\s+outside\s+the\s+box\b/gi,
+    replacement: 'be creative',
+    explanation: 'Avoid clichés; use more precise language'
+  },
+  {
+    pattern: /\blow\s+hanging\s+fruit\b/gi,
+    replacement: 'easy opportunities',
+    explanation: 'Avoid clichés; use more precise language'
+  },
+  {
+    pattern: /\btouch\s+base\b/gi,
+    replacement: 'contact',
+    explanation: 'Use more direct language instead of business jargon'
+  },
+  {
+    pattern: /\bcircle\s+back\b/gi,
+    replacement: 'follow up',
+    explanation: 'Use more direct language instead of business jargon'
+  },
+  
+  // Hedge words that weaken writing
+  {
+    pattern: /\bI\s+think\s+that\b/gi,
+    replacement: 'I believe',
+    explanation: 'Use stronger, more confident language'
+  },
+  {
+    pattern: /\bkind\s+of\b/gi,
+    replacement: 'somewhat',
+    explanation: 'Use more precise language instead of vague qualifiers'
+  },
+  {
+    pattern: /\bsort\s+of\b/gi,
+    replacement: 'somewhat',
+    explanation: 'Use more precise language instead of vague qualifiers'
+  },
+  
+  // Redundant phrases
+  {
+    pattern: /\bfuture\s+plans\b/gi,
+    replacement: 'plans',
+    explanation: 'Plans are inherently future-oriented; avoid redundancy'
+  },
+  {
+    pattern: /\bfree\s+gift\b/gi,
+    replacement: 'gift',
+    explanation: 'Gifts are inherently free; avoid redundancy'
+  },
+  {
+    pattern: /\badvance\s+warning\b/gi,
+    replacement: 'warning',
+    explanation: 'Warnings are inherently given in advance; avoid redundancy'
+  },
+  {
+    pattern: /\bexact\s+same\b/gi,
+    replacement: 'same',
+    explanation: 'Same implies exactness; avoid redundancy'
+  },
+  {
+    pattern: /\bunexpected\s+surprise\b/gi,
+    replacement: 'surprise',
+    explanation: 'Surprises are inherently unexpected; avoid redundancy'
   }
 ];
 
