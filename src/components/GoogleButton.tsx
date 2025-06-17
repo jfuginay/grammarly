@@ -15,7 +15,7 @@ const GoogleButton = () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     });
   };
@@ -26,7 +26,7 @@ const GoogleButton = () => {
       className="w-full flex items-center justify-center"
       onClick={handleGoogleLogin}
     >
-      <Image src="/google.svg" alt="Google logo" width={20} height={20} className="mr-2" />
+      <Image src="/favicon.svg" alt="Google logo" width={20} height={20} className="mr-2" />
       Sign in with Google
     </Button>
   );
