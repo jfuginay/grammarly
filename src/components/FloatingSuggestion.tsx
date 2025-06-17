@@ -22,6 +22,8 @@ interface FloatingSuggestionProps {
   onApply: (suggestion: Suggestion) => void;
   onDismiss: (suggestionId: string) => void;
   onClose: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export default function FloatingSuggestion({
@@ -29,7 +31,9 @@ export default function FloatingSuggestion({
   position,
   onApply,
   onDismiss,
-  onClose
+  onClose,
+  onMouseEnter,
+  onMouseLeave
 }: FloatingSuggestionProps) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -42,6 +46,34 @@ export default function FloatingSuggestion({
   }, [suggestion, position]);
 
   if (!suggestion || !position) return null;
+
+  // Smart positioning to keep the suggestion in viewport
+  const getSmartPosition = () => {
+    const cardWidth = 320;
+    const cardHeight = 200; // Approximate height
+    const padding = 10;
+    
+    let { x, y } = position;
+    
+    // Adjust horizontal position if it would go off-screen
+    if (x + cardWidth > window.innerWidth) {
+      x = window.innerWidth - cardWidth - padding;
+    }
+    if (x < padding) {
+      x = padding;
+    }
+    
+    // Adjust vertical position if it would go off-screen
+    if (y - cardHeight < padding) {
+      y = y + cardHeight + 20; // Show below instead of above
+    } else {
+      y = y - 10; // Show above with small offset
+    }
+    
+    return { x, y };
+  };
+
+  const smartPosition = getSmartPosition();
 
   const getSuggestionIcon = (type: string, severity: string) => {
     if (severity === 'error') return <AlertCircle className="w-4 h-4 text-red-500" />;
@@ -65,10 +97,12 @@ export default function FloatingSuggestion({
           transition={{ duration: 0.15 }}
           className="fixed z-50 pointer-events-auto"
           style={{
-            left: Math.min(position.x, window.innerWidth - 320),
-            top: position.y - 10,
-            transform: 'translateY(-100%)'
+            left: smartPosition.x,
+            top: smartPosition.y,
+            transform: smartPosition.y > position.y ? 'translateY(0)' : 'translateY(-100%)'
           }}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
         >
           <Card className="w-80 border-2 shadow-lg">
             <CardContent className="p-4">

@@ -17,7 +17,8 @@ import {
   FileText,
   Sparkles,
   Eye,
-  EyeOff
+  EyeOff,
+  HelpCircle
 } from "lucide-react";
 
 interface Suggestion {
@@ -162,6 +163,9 @@ export default function Dashboard() {
   const [floatingSuggestion, setFloatingSuggestion] = useState<Suggestion | null>(null);
   const [floatingPosition, setFloatingPosition] = useState<{ x: number; y: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showSuggestionNotification, setShowSuggestionNotification] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -211,14 +215,51 @@ export default function Dashboard() {
         });
         
         setSuggestions(allSuggestions);
+        
+        // Show notification for new suggestions
+        if (allSuggestions.length > 0) {
+          setShowSuggestionNotification(true);
+          setTimeout(() => setShowSuggestionNotification(false), 3000);
+        }
+        
+        // Auto-show floating suggestion for the first critical error
+        const firstError = allSuggestions.find(s => s.severity === 'error');
+        if (firstError && !floatingSuggestion && textareaRef.current && allSuggestions.length > 0) {
+          const textarea = textareaRef.current;
+          const rect = textarea.getBoundingClientRect();
+          const textBeforeError = text.substring(0, firstError.startIndex);
+          const lines = textBeforeError.split('\n');
+          const currentLine = lines.length - 1;
+          const currentColumn = lines[lines.length - 1].length;
+          
+          const lineHeight = 28;
+          const charWidth = 11;
+          
+          const x = rect.left + 24 + (currentColumn * charWidth);
+          const y = rect.top + 24 + (currentLine * lineHeight);
+          
+          // Delay showing the floating suggestion to avoid interference with typing
+          setTimeout(() => {
+            if (allSuggestions.some(s => s.id === firstError.id)) {
+              setFloatingSuggestion(firstError);
+              setFloatingPosition({ x, y });
+            }
+          }, 1500); // 1.5 second delay
+        }
       } finally {
         setIsLoading(false);
       }
     };
     
-    const timeoutId = setTimeout(getSuggestions, 300);
-    return () => clearTimeout(timeoutId);
-  }, [text, generateSuggestions]);
+    if (text.trim()) {
+      const timeoutId = setTimeout(getSuggestions, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSuggestions([]);
+      setFloatingSuggestion(null);
+      setFloatingPosition(null);
+    }
+  }, [text, generateSuggestions, floatingSuggestion]);
 
   const applySuggestion = (suggestion: Suggestion) => {
     const newText = text.substring(0, suggestion.startIndex) + 
@@ -265,6 +306,121 @@ export default function Dashboard() {
     }
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const rect = textarea.getBoundingClientRect();
+    
+    // More accurate position calculation using textarea properties
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    // Create a temporary span to measure character positions
+    const textareaStyle = window.getComputedStyle(textarea);
+    const fontSize = parseFloat(textareaStyle.fontSize);
+    const lineHeight = parseFloat(textareaStyle.lineHeight) || fontSize * 1.4;
+    
+    // Account for padding
+    const paddingLeft = parseFloat(textareaStyle.paddingLeft);
+    const paddingTop = parseFloat(textareaStyle.paddingTop);
+    
+    const adjustedX = clickX - paddingLeft;
+    const adjustedY = clickY - paddingTop;
+    
+    // Estimate character position
+    const charWidth = fontSize * 0.6; // Approximate for monospace
+    const lineIndex = Math.floor(adjustedY / lineHeight);
+    const charIndex = Math.floor(adjustedX / charWidth);
+    
+    const lines = text.split('\n');
+    if (lineIndex >= 0 && lineIndex < lines.length) {
+      let textPosition = 0;
+      for (let i = 0; i < lineIndex; i++) {
+        textPosition += lines[i].length + 1; // +1 for newline
+      }
+      textPosition += Math.min(Math.max(charIndex, 0), lines[lineIndex].length);
+      
+      const hoveredSuggestion = suggestions.find(s => 
+        textPosition >= s.startIndex && textPosition <= s.endIndex
+      );
+      
+      if (hoveredSuggestion && hoveredSuggestion.severity === 'error') {
+        // Clear any existing timeout
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+        }
+        
+        // Set a new timeout for showing the suggestion
+        const timeout = setTimeout(() => {
+          setFloatingSuggestion(hoveredSuggestion);
+          setFloatingPosition({ x: e.clientX, y: e.clientY - 10 });
+          setHoveredSuggestion(hoveredSuggestion);
+        }, 800); // 800ms delay before showing
+        
+        setHoverTimeout(timeout);
+      } else if (!hoveredSuggestion) {
+        // Clear timeout if not hovering over a suggestion
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+          setHoverTimeout(null);
+        }
+        
+        // Hide floating suggestion after a short delay if we're not hovering over it
+        const hideTimeout = setTimeout(() => {
+          if (!hoveredSuggestion) {
+            setFloatingSuggestion(null);
+            setFloatingPosition(null);
+            setHoveredSuggestion(null);
+          }
+        }, 300);
+        
+        setHoverTimeout(hideTimeout);
+      }
+    }
+  };
+
+  const handleMouseLeave = () => {
+    // Clear any pending hover timeout
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+    
+    // Hide floating suggestion after a delay
+    const hideTimeout = setTimeout(() => {
+      setFloatingSuggestion(null);
+      setFloatingPosition(null);
+      setHoveredSuggestion(null);
+    }, 300);
+    
+    setHoverTimeout(hideTimeout);
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Shift + F to fix first error
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        const firstError = suggestions.find(s => s.severity === 'error');
+        if (firstError) {
+          applySuggestion(firstError);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [suggestions]);
+
   const renderTextWithHighlights = () => {
     if (suggestions.length === 0) return text;
 
@@ -275,10 +431,10 @@ export default function Dashboard() {
       result += text.substring(lastIndex, suggestion.startIndex);
       
       const highlightClass = suggestion.severity === 'error' 
-        ? 'bg-red-100 border-b-2 border-red-500 dark:bg-red-900/20 dark:border-red-400 hover:bg-red-200 dark:hover:bg-red-800/30 text-red-800 dark:text-red-200' 
+        ? 'bg-red-100 border-b-2 border-red-500 dark:bg-red-900/20 dark:border-red-400 hover:bg-red-200 dark:hover:bg-red-800/30 text-red-800 dark:text-red-200 hover:shadow-sm transition-all duration-200 cursor-help' 
         : suggestion.severity === 'warning'
-        ? 'bg-yellow-100 border-b-2 border-yellow-500 dark:bg-yellow-900/20 dark:border-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-800/30 text-yellow-800 dark:text-yellow-200'
-        : 'bg-blue-100 border-b-2 border-blue-500 dark:bg-blue-900/20 dark:border-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/30 text-blue-800 dark:text-blue-200';
+        ? 'bg-yellow-100 border-b-2 border-yellow-500 dark:bg-yellow-900/20 dark:border-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-800/30 text-yellow-800 dark:text-yellow-200 hover:shadow-sm transition-all duration-200 cursor-help'
+        : 'bg-blue-100 border-b-2 border-blue-500 dark:bg-blue-900/20 dark:border-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/30 text-blue-800 dark:text-blue-200 hover:shadow-sm transition-all duration-200 cursor-help';
       
       result += `<span class="${highlightClass} cursor-pointer transition-colors" data-suggestion-id="${suggestion.id}">${suggestion.text}</span>`;
       lastIndex = suggestion.endIndex;
@@ -303,6 +459,25 @@ export default function Dashboard() {
   const closeFloatingSuggestion = () => {
     setFloatingSuggestion(null);
     setFloatingPosition(null);
+  };
+
+  const handleFloatingSuggestionMouseEnter = () => {
+    // Keep the floating suggestion visible when hovering over it
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+  };
+
+  const handleFloatingSuggestionMouseLeave = () => {
+    // Hide floating suggestion when mouse leaves the suggestion popup
+    const hideTimeout = setTimeout(() => {
+      setFloatingSuggestion(null);
+      setFloatingPosition(null);
+      setHoveredSuggestion(null);
+    }, 300);
+    
+    setHoverTimeout(hideTimeout);
   };
 
   const getSuggestionIcon = (type: string, severity: string) => {
@@ -387,6 +562,14 @@ export default function Dashboard() {
                 </>
               )}
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2"
+              title="Hover over red underlined text for quick suggestions. Press Ctrl+Shift+F to fix first error."
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -400,6 +583,8 @@ export default function Dashboard() {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onClick={handleTextClick}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
                     className="w-full h-[500px] p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-lg leading-relaxed relative z-10"
                     placeholder="Start typing your text here..."
                   />
@@ -416,6 +601,27 @@ export default function Dashboard() {
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                     </div>
                   )}
+                  
+                  {/* Suggestion Notification */}
+                  <AnimatePresence>
+                    {showSuggestionNotification && suggestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute top-4 left-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {suggestions.filter(s => s.severity === 'error').length > 0 
+                            ? `${suggestions.filter(s => s.severity === 'error').length} error${suggestions.filter(s => s.severity === 'error').length > 1 ? 's' : ''} found`
+                            : `${suggestions.length} suggestion${suggestions.length > 1 ? 's' : ''} available`
+                          }
+                        </span>
+                        <span className="text-xs opacity-80">Hover over red text for quick fixes</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </CardContent>
             </Card>
@@ -490,6 +696,8 @@ export default function Dashboard() {
         onApply={applyFloatingSuggestion}
         onDismiss={dismissFloatingSuggestion}
         onClose={closeFloatingSuggestion}
+        onMouseEnter={handleFloatingSuggestionMouseEnter}
+        onMouseLeave={handleFloatingSuggestionMouseLeave}
       />
 
       {/* Suggestion Modal */}
