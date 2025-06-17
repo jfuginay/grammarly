@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import FloatingSuggestion from "@/components/FloatingSuggestion";
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -630,13 +629,10 @@ export default function Dashboard() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [showSuggestionPanel, setShowSuggestionPanel] = useState(true);
-  const [floatingSuggestion, setFloatingSuggestion] = useState<Suggestion | null>(null);
-  const [floatingPosition, setFloatingPosition] = useState<{ x: number; y: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hoveredSuggestion, setHoveredSuggestion] = useState<Suggestion | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showSuggestionNotification, setShowSuggestionNotification] = useState(false);
-  const [floatingSuggestionsEnabled, setFloatingSuggestionsEnabled] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -692,31 +688,6 @@ export default function Dashboard() {
           setShowSuggestionNotification(true);
           setTimeout(() => setShowSuggestionNotification(false), 3000);
         }
-        
-        // Auto-show floating suggestion for the first critical error (only if enabled)
-        const firstError = allSuggestions.find(s => s.severity === 'error');
-        if (firstError && !floatingSuggestion && textareaRef.current && allSuggestions.length > 0 && floatingSuggestionsEnabled) {
-          const textarea = textareaRef.current;
-          const rect = textarea.getBoundingClientRect();
-          const textBeforeError = text.substring(0, firstError.startIndex);
-          const lines = textBeforeError.split('\n');
-          const currentLine = lines.length - 1;
-          const currentColumn = lines[lines.length - 1].length;
-          
-          const lineHeight = 28;
-          const charWidth = 11;
-          
-          const x = rect.left + 24 + (currentColumn * charWidth);
-          const y = rect.top + 24 + (currentLine * lineHeight);
-          
-          // Delay showing the floating suggestion to avoid interference with typing
-          setTimeout(() => {
-            if (allSuggestions.some(s => s.id === firstError.id) && floatingSuggestionsEnabled) {
-              setFloatingSuggestion(firstError);
-              setFloatingPosition({ x, y });
-            }
-          }, 1500); // 1.5 second delay
-        }
       } finally {
         setIsLoading(false);
       }
@@ -727,10 +698,8 @@ export default function Dashboard() {
       return () => clearTimeout(timeoutId);
     } else {
       setSuggestions([]);
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
     }
-  }, [text, generateSuggestions, floatingSuggestion]);
+  }, [text, generateSuggestions]);
 
   const applySuggestion = (suggestion: Suggestion) => {
     const newText = text.substring(0, suggestion.startIndex) + 
@@ -758,12 +727,6 @@ export default function Dashboard() {
         });
     });
     
-    // Clear any floating suggestion if it matches the applied one
-    if (floatingSuggestion && floatingSuggestion.id === suggestion.id) {
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
-    }
-    
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
   };
@@ -783,8 +746,6 @@ export default function Dashboard() {
     
     setText(updatedText);
     setSuggestions([]);
-    setFloatingSuggestion(null);
-    setFloatingPosition(null);
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
   };
@@ -796,8 +757,6 @@ export default function Dashboard() {
   };
 
   const handleTextClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
-    if (!floatingSuggestionsEnabled) return;
-    
     const textarea = e.currentTarget;
     const clickPosition = textarea.selectionStart;
     
@@ -819,17 +778,13 @@ export default function Dashboard() {
       const x = rect.left + 24 + (currentColumn * charWidth); // 24px padding
       const y = rect.top + 24 + (currentLine * lineHeight); // 24px padding
       
-      setFloatingSuggestion(clickedSuggestion);
-      setFloatingPosition({ x, y });
+      setHoveredSuggestion(clickedSuggestion);
     } else {
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
+      setHoveredSuggestion(null);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLTextAreaElement>) => {
-    if (!floatingSuggestionsEnabled) return;
-    
     const textarea = e.currentTarget;
     const rect = textarea.getBoundingClientRect();
     
@@ -874,11 +829,7 @@ export default function Dashboard() {
         
         // Set a new timeout for showing the suggestion
         const timeout = setTimeout(() => {
-          if (floatingSuggestionsEnabled) {
-            setFloatingSuggestion(hoveredSuggestion);
-            setFloatingPosition({ x: e.clientX, y: e.clientY - 10 });
-            setHoveredSuggestion(hoveredSuggestion);
-          }
+          setHoveredSuggestion(hoveredSuggestion);
         }, 800); // 800ms delay before showing
         
         setHoverTimeout(timeout);
@@ -889,11 +840,9 @@ export default function Dashboard() {
           setHoverTimeout(null);
         }
         
-        // Hide floating suggestion after a short delay if we're not hovering over it
+        // Hide suggestion after a short delay if we're not hovering over it
         const hideTimeout = setTimeout(() => {
           if (!hoveredSuggestion) {
-            setFloatingSuggestion(null);
-            setFloatingPosition(null);
             setHoveredSuggestion(null);
           }
         }, 300);
@@ -910,10 +859,8 @@ export default function Dashboard() {
       setHoverTimeout(null);
     }
     
-    // Hide floating suggestion after a delay
+    // Hide suggestion after a delay
     const hideTimeout = setTimeout(() => {
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
       setHoveredSuggestion(null);
     }, 300);
     
@@ -928,19 +875,6 @@ export default function Dashboard() {
       }
     };
   }, [hoverTimeout]);
-
-  // Hide floating suggestions when toggle is turned off
-  useEffect(() => {
-    if (!floatingSuggestionsEnabled) {
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
-      setHoveredSuggestion(null);
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout);
-        setHoverTimeout(null);
-      }
-    }
-  }, [floatingSuggestionsEnabled, hoverTimeout]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -980,42 +914,6 @@ export default function Dashboard() {
     
     result += text.substring(lastIndex);
     return result;
-  };
-
-  const applyFloatingSuggestion = (suggestion: Suggestion) => {
-    applySuggestion(suggestion);
-    setFloatingSuggestion(null);
-    setFloatingPosition(null);
-  };
-
-  const dismissFloatingSuggestion = (suggestionId: string) => {
-    dismissSuggestion(suggestionId);
-    setFloatingSuggestion(null);
-    setFloatingPosition(null);
-  };
-
-  const closeFloatingSuggestion = () => {
-    setFloatingSuggestion(null);
-    setFloatingPosition(null);
-  };
-
-  const handleFloatingSuggestionMouseEnter = () => {
-    // Keep the floating suggestion visible when hovering over it
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-  };
-
-  const handleFloatingSuggestionMouseLeave = () => {
-    // Hide floating suggestion when mouse leaves the suggestion popup
-    const hideTimeout = setTimeout(() => {
-      setFloatingSuggestion(null);
-      setFloatingPosition(null);
-      setHoveredSuggestion(null);
-    }, 300);
-    
-    setHoverTimeout(hideTimeout);
   };
 
   const getSuggestionIcon = (type: string, severity: string) => {
@@ -1064,16 +962,6 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="floating-suggestions"
-                checked={floatingSuggestionsEnabled}
-                onCheckedChange={setFloatingSuggestionsEnabled}
-              />
-              <Label htmlFor="floating-suggestions" className="text-sm font-medium">
-                Floating Suggestions
-              </Label>
-            </div>
             <Button
               variant="outline"
               size="sm"
@@ -1247,19 +1135,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
-      {/* Floating Suggestion */}
-      {floatingSuggestionsEnabled && (
-        <FloatingSuggestion
-          suggestion={floatingSuggestion}
-          position={floatingPosition}
-          onApply={applyFloatingSuggestion}
-          onDismiss={dismissFloatingSuggestion}
-          onClose={closeFloatingSuggestion}
-          onMouseEnter={handleFloatingSuggestionMouseEnter}
-          onMouseLeave={handleFloatingSuggestionMouseLeave}
-        />
-      )}
 
       {/* Suggestion Modal */}
       <Dialog open={showSuggestionModal} onOpenChange={setShowSuggestionModal}>
