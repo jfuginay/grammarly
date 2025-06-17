@@ -52,7 +52,7 @@ export class CorsClient {
   async testMethods(endpoint: string = '/api/cors-test'): Promise<any> {
     const methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
     const results: { [key: string]: any } = {};
-    const promises = [];
+    const promises: Promise<void>[] = [];
 
     for (const method of methods) {
       const promise = (async () => {
