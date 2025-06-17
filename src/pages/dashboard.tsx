@@ -768,6 +768,27 @@ export default function Dashboard() {
     setShowSuggestionModal(false);
   };
 
+  const applyAllSuggestions = () => {
+    // Sort suggestions by startIndex in descending order to avoid position conflicts
+    const sortedSuggestions = [...suggestions].sort((a, b) => b.startIndex - a.startIndex);
+    
+    let updatedText = text;
+    
+    // Apply all suggestions from end to beginning
+    sortedSuggestions.forEach((suggestion) => {
+      updatedText = updatedText.substring(0, suggestion.startIndex) + 
+                   suggestion.replacement + 
+                   updatedText.substring(suggestion.endIndex);
+    });
+    
+    setText(updatedText);
+    setSuggestions([]);
+    setFloatingSuggestion(null);
+    setFloatingPosition(null);
+    setSelectedSuggestion(null);
+    setShowSuggestionModal(false);
+  };
+
   const dismissSuggestion = (suggestionId: string) => {
     setSuggestions((prev: Suggestion[]) => prev.filter((s: Suggestion) => s.id !== suggestionId));
     setSelectedSuggestion(null);
@@ -1071,6 +1092,17 @@ export default function Dashboard() {
               <X className="h-4 w-4" />
               <span>Clear</span>
             </Button>
+            {suggestions.length > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={applyAllSuggestions}
+                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span>Fix All ({suggestions.length})</span>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -1217,15 +1249,17 @@ export default function Dashboard() {
       </div>
 
       {/* Floating Suggestion */}
-      <FloatingSuggestion
-        suggestion={floatingSuggestion}
-        position={floatingPosition}
-        onApply={applyFloatingSuggestion}
-        onDismiss={dismissFloatingSuggestion}
-        onClose={closeFloatingSuggestion}
-        onMouseEnter={handleFloatingSuggestionMouseEnter}
-        onMouseLeave={handleFloatingSuggestionMouseLeave}
-      />
+      {floatingSuggestionsEnabled && (
+        <FloatingSuggestion
+          suggestion={floatingSuggestion}
+          position={floatingPosition}
+          onApply={applyFloatingSuggestion}
+          onDismiss={dismissFloatingSuggestion}
+          onClose={closeFloatingSuggestion}
+          onMouseEnter={handleFloatingSuggestionMouseEnter}
+          onMouseLeave={handleFloatingSuggestionMouseLeave}
+        />
+      )}
 
       {/* Suggestion Modal */}
       <Dialog open={showSuggestionModal} onOpenChange={setShowSuggestionModal}>
