@@ -6,6 +6,8 @@ import GoogleButton from '@/components/GoogleButton';
 import Logo from '@/components/Logo';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -14,6 +16,9 @@ const LoginPage = () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ));
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -26,6 +31,20 @@ const LoginPage = () => {
     };
     checkSession();
   }, [router, supabase.auth]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   if (isAuthLoading) {
     return (
@@ -47,6 +66,38 @@ const LoginPage = () => {
             <CardTitle className="text-center">Log in</CardTitle>
           </CardHeader>
           <CardContent>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              <Button type="submit" className="w-full">
+                Sign In
+              </Button>
+            </form>
+            <div className="flex items-center w-full my-4">
+              <Separator className="flex-1" />
+              <span className="mx-4 text-muted-foreground text-sm font-semibold whitespace-nowrap">or</span>
+              <Separator className="flex-1" />
+            </div>
             <div className="flex flex-col gap-4">
               <GoogleButton />
               <Button
