@@ -737,6 +737,16 @@ export default function Dashboard() {
                    suggestion.replacement + 
                    text.substring(suggestion.endIndex);
     setText(newText);
+    
+    // Immediately remove the applied suggestion from the suggestions array
+    setSuggestions((prev: Suggestion[]) => prev.filter((s: Suggestion) => s.id !== suggestion.id));
+    
+    // Clear any floating suggestion if it matches the applied one
+    if (floatingSuggestion && floatingSuggestion.id === suggestion.id) {
+      setFloatingSuggestion(null);
+      setFloatingPosition(null);
+    }
+    
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
   };
