@@ -24,7 +24,7 @@ const IndexPage = () => {
             Finally, an AI Writing Assistant That Gets You.
           </h1>
           <p className="text-xl md:text-2xl text-purple-600 dark:text-purple-400 font-semibold max-w-2xl mx-auto mb-6">
-            this is the grammarly...est?
+           Out of all the Grammarly clones, this is the grammarly...est?
           </p>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Stop wrestling with words. Our (surprisingly clever) writing assistant helps you craft text that's clear, compelling, and actually sounds like you. We handle the grammar, spelling, tone, and style—so you can focus on, well, anything else.
