@@ -777,6 +777,9 @@ export default function Dashboard() {
   };
 
   const applyAllSuggestions = () => {
+    // Set flag to prevent new suggestions from being generated during application
+    setIsApplyingSuggestion(true);
+    
     // Sort suggestions by startIndex in descending order to avoid position conflicts
     const sortedSuggestions = [...suggestions].sort((a, b) => b.startIndex - a.startIndex);
     
@@ -793,6 +796,11 @@ export default function Dashboard() {
     setSuggestions([]);
     setSelectedSuggestion(null);
     setShowSuggestionModal(false);
+    
+    // Reset the flag after a short delay to allow new suggestions
+    setTimeout(() => {
+      setIsApplyingSuggestion(false);
+    }, 100);
   };
 
   const dismissSuggestion = (suggestionId: string) => {
