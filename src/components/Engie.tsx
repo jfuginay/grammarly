@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Loader2 } from 'lucide-react'; // Added Loader2
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Chat message interface
 interface ChatMessage {
@@ -69,9 +70,22 @@ const Engie: React.FC<EngieProps> = ({
   const [ideationMessage, setIdeationMessage] = useState<ChatMessage | null>(null);
   const [isIdeating, setIsIdeating] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]); // For future chat interactions
+  const [activeTab, setActiveTab] = useState('suggestions');
 
   // Determine which suggestions to use: internal if available, otherwise external
   const activeSuggestions = internalSuggestions.length > 0 ? internalSuggestions : externalSuggestions;
+
+  const resetTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    inactivityTimerRef.current = setTimeout(() => {
+      // Check if user is inactive, not in a chat, and no suggestions are showing
+      if (!isChatOpen && activeSuggestions.length === 0) {
+        triggerIdeation();
+      }
+    }, 10000); // 10 seconds of inactivity to trigger ideation
+  }, [isChatOpen, activeSuggestions.length]); // Add dependencies
 
   // Extracts text from a specific target element
   const extractTextFromTarget = (selector: string): string | null => {
@@ -278,174 +292,100 @@ const Engie: React.FC<EngieProps> = ({
   }, [isChatOpen, activeSuggestions.length, ideationMessage, toneAnalysisResult, isIdeating, isScanning]);
 
 
-  // Effect for MutationObserver and initial text scan (existing logic)
-  useEffect(() => {
-    const processScannedTexts = async (fullText: string, targetText: string | null) => {
-      if (isIdeating) return;
-
-      // For change detection, we need to decide what to compare.
-      // Let's combine them for simplicity in prevScannedTextRef, or use the target text if available, otherwise full text.
-      const textForComparison = targetText ?? fullText;
-      const currentCombinedTextState = `target:${targetText}_full:${fullText}`;
-
-
-      if (!textForComparison && !prevScannedTextRef.current ) { // Both current and previous are empty/null
-         setIsScanning(false);
-         setStatusMessage("Nothing to scan.");
-         setTimeout(() => setStatusMessage(""), 3000);
-         return;
-      }
-
-      if (currentCombinedTextState === prevScannedTextRef.current) {
-        setIsScanning(false);
-        setStatusMessage("No significant changes detected.");
-        setTimeout(() => setStatusMessage(""), 3000);
-        return;
-      }
-
-      prevScannedTextRef.current = currentCombinedTextState;
-      setIsScanning(true);
-      setStatusMessage("Engie is analyzing text...");
-      setInternalSuggestions([]); // Reset suggestions
-      setToneAnalysisResult(null);    // Reset target tone
-      setOverallPageToneAnalysis(null); // Reset page tone
-      setIdeationMessage(null);
-
-      // Log extracted texts for verification
-      console.log("Engie: Full Page Text:", fullText.substring(0, 200) + "..."); // Log snippet
-      if (targetEditorSelector && targetText !== null) {
-        console.log(`Engie: Target Editor Text (${targetEditorSelector}):`, targetText.substring(0,200) + "..."); // Log snippet
-      } else if (targetEditorSelector) {
-        console.log(`Engie: Target Editor Text (${targetEditorSelector}): Not found or empty.`);
-      }
-
-      const apiCalls = [];
-      let typoPromise: Promise<Suggestion[]> = Promise.resolve([]);
-      let targetTonePromise: Promise<ToneAnalysis | null> = Promise.resolve(null);
-      let pageTonePromise: Promise<ToneAnalysis | null> = Promise.resolve(null);
-
-      // 1. Typo suggestions - only for target editor text
-      if (targetText && targetText.trim()) {
-        typoPromise = fetchTypoSuggestions(targetText);
-      } else {
-        setInternalSuggestions([]); // Ensure suggestions are cleared if no target text
-      }
-
-      // 2. Tone analysis for target editor text
-      if (targetText && targetText.trim()) {
-        targetTonePromise = fetchToneAnalysis(targetText);
-      } else {
-        setToneAnalysisResult(null); // Clear target tone if no target text
-      }
-
-      // 3. Tone analysis for full page text
-      if (fullText && fullText.trim()) {
-        pageTonePromise = fetchToneAnalysis(fullText);
-      } else {
-        setOverallPageToneAnalysis(null); // Clear page tone if no full text
-      }
-
-      // Check if any actual analysis needs to be done
-      if ((!targetText || !targetText.trim()) && (!fullText || !fullText.trim())) {
-        setStatusMessage("Content is empty, skipping analysis.");
-        setIsScanning(false);
-        setTimeout(() => setStatusMessage(""), 3000);
-        return;
-      }
-
-      setStatusMessage("Engie is analyzing text..."); // General message
-
-      try {
-        const [typoResults, targetToneResults, pageToneResults] = await Promise.all([
-          typoPromise,
-          targetTonePromise,
-          pageTonePromise
-        ]);
-
-        if (typoResults && typoResults.length > 0) {
-          setInternalSuggestions(typoResults);
-        }
-        // No need to explicitly clear suggestions if typoResults is empty, already handled by initial reset or no-target-text condition
-
-        setToneAnalysisResult(targetToneResults); // Will be null if no targetText or API failed
-        setOverallPageToneAnalysis(pageToneResults); // Will be null if no fullText or API failed
-
-        setStatusMessage("Analysis complete.");
-      } catch (error) {
-        console.error("Error during text processing:", error);
-        setStatusMessage("Error during analysis.");
-        // Reset states on error to avoid displaying stale data
-        setInternalSuggestions([]);
-        setToneAnalysisResult(null);
-        setOverallPageToneAnalysis(null);
-      } finally {
-        setIsScanning(false);
-        setTimeout(() => setStatusMessage(""), 3000);
-      }
-    };
-
-    const handleDocumentChange = () => {
-      if (isIdeating || (isChatOpen && ideationMessage)) return;
-
-      setStatusMessage("Engie is scanning document...");
-
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
-      debounceTimeoutRef.current = setTimeout(() => {
-        const fullPageText = stableExtractFullPageText();
-        let targetEditorText: string | null = null;
-        if (targetEditorSelector) {
-          targetEditorText = stableExtractTextFromTarget(targetEditorSelector);
-        }
-        processScannedTexts(fullPageText, targetEditorText);
-      }, 1500);
-    };
-
-    // The MutationObserver should observe document.body to capture all relevant changes.
-    // The specific targeting of editor content is handled by extractTextFromTarget.
-    const observer = new MutationObserver(handleDocumentChange);
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-    });
-
-    // Initial scan on mount
-    if (!isIdeating && !ideationMessage) {
-       handleDocumentChange();
+  const processScannedTexts = useCallback(async (fullText: string, targetText: string | null) => {
+    // Only proceed if there's text in the target editor.
+    if (!targetText || !targetText.trim()) {
+      setStatusMessage("Start typing to get suggestions.");
+      setInternalSuggestions([]);
+      setToneAnalysisResult(null);
+      setOverallPageToneAnalysis(null);
+      resetTimer(); // Start inactivity timer if the editor is cleared.
+      return;
     }
 
+    // Avoid re-processing the same text
+    if (targetText === prevScannedTextRef.current) {
+        resetTimer(); // Still reset timer to track inactivity
+        return;
+    }
+    
+    setIsScanning(true);
+    setStatusMessage("Engie is thinking...");
+    prevScannedTextRef.current = targetText; // Update last scanned text
+
+    // Fetch suggestions and tone analysis in parallel
+    const [typoSuggestions, targetTone, pageTone] = await Promise.all([
+      fetchTypoSuggestions(targetText),
+      fetchToneAnalysis(targetText),
+      fetchToneAnalysis(fullText)
+    ]);
+
+    setInternalSuggestions(typoSuggestions);
+    setToneAnalysisResult(targetTone);
+    setOverallPageToneAnalysis(pageTone);
+
+
+    if (typoSuggestions.length === 0 && !targetTone && !pageTone) {
+        setStatusMessage("Looking good! No immediate suggestions.");
+    } else {
+        setStatusMessage(""); // Clear status if we have results
+    }
+
+    setIsScanning(false);
+    resetTimer(); // Reset inactivity timer after processing
+  }, [resetTimer, stableExtractTextFromTarget, stableExtractFullPageText]);
+
+
+  const handleDocumentChange = useCallback(() => {
+    // Clear the previous timeout if a new change comes in
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    // Set a new timeout
+    debounceTimeoutRef.current = setTimeout(() => {
+      const fullText = stableExtractFullPageText();
+      const targetText = targetEditorSelector ? stableExtractTextFromTarget(targetEditorSelector) : null;
+      processScannedTexts(fullText, targetText);
+    }, 1000); // 1-second debounce delay
+  }, [processScannedTexts, stableExtractFullPageText, stableExtractTextFromTarget, targetEditorSelector]);
+
+
+  // Effect to listen to document changes
+  useEffect(() => {
+    // This effect sets up listeners for user input on the page.
+    // It's broad, listening for keyup and mouseup to capture various inputs.
+    // Could be optimized by targeting a specific text area if one is provided.
+    document.addEventListener('keyup', handleDocumentChange);
+    document.addEventListener('mouseup', handleDocumentChange); // For text selection changes
+    
+    resetTimer(); // Start the first inactivity timer
+
     return () => {
-      observer.disconnect();
+      document.removeEventListener('keyup', handleDocumentChange);
+      document.removeEventListener('mouseup', handleDocumentChange);
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
       }
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
     };
-  }, [
-    isIdeating,
-    ideationMessage,
-    isChatOpen,
-    targetEditorSelector,
-    stableExtractFullPageText,
-    stableExtractTextFromTarget
-  ]);
+    // Re-run if the target selector changes
+  }, [handleDocumentChange, resetTimer]);
+
 
   const currentSuggestion = activeSuggestions.length > 0 ? activeSuggestions[currentSuggestionIndex] : null;
 
   const handleApply = () => {
-    if (currentSuggestion) {
-      if (internalSuggestions.length > 0) {
-        console.log("Applying internal suggestion:", currentSuggestion);
-        // TODO: Implement actual application of suggestion to the document.
-        // For now, just remove it from the list.
-        setInternalSuggestions(prev => prev.filter(s => s.id !== currentSuggestion.id));
-        if (activeSuggestions.length -1 <= 0) setIdeationMessage(null); // Clear ideation if all suggestions handled
-      } else {
-        onApplyExternal(currentSuggestion);
-      }
-      setCurrentSuggestionIndex(0);
+    if (currentSuggestionIndex < activeSuggestions.length) {
+      const suggestionToApply = activeSuggestions[currentSuggestionIndex];
+      onApplyExternal(suggestionToApply);
+      // Immediately remove the suggestion from the internal list for a smoother experience
+      setInternalSuggestions(prev => prev.filter(s => s.id !== suggestionToApply.id));
     }
   };
 
@@ -530,79 +470,97 @@ const Engie: React.FC<EngieProps> = ({
                   </Card>
                 )}
 
-                {/* Suggestions Display */}
-                {currentSuggestion && !ideationMessage && (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
-                      Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
-                    </p>
-                    <Card key={currentSuggestion.id}>
-                      <CardHeader className="flex flex-row items-center gap-2 p-3">
-                        <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
-                        <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
-                        <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-through">"{currentSuggestion.original}"</p>
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">"{currentSuggestion.suggestion}"</p>
-                        <p className="text-xs text-muted-foreground mt-3">{currentSuggestion.explanation}</p>
-                      </CardContent>
-                    </Card>
-                     <div className="flex justify-end gap-2 mt-4">
-                        <Button variant="ghost" size="sm" onClick={handleNext}>
-                            {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
-                        </Button>
-                        <Button variant="default" size="sm" onClick={handleApply}>Apply</Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Overall Page Tone Display */}
-                {overallPageToneAnalysis && !ideationMessage && (
-                  <Card className="mt-4 border-dashed border-sky-300 dark:border-sky-700">
-                    <CardHeader className="p-3 pb-2">
-                      <CardTitle className="text-sm font-medium text-sky-600 dark:text-sky-400">Overall Page Tone</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <p className="text-xs">
-                        General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive' : overallPageToneAnalysis.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize text-xs px-1.5 py-0.5">
-                          {overallPageToneAnalysis.overallTone}
-                          {typeof overallPageToneAnalysis.overallScore === 'number' && ` (${overallPageToneAnalysis.overallScore.toFixed(2)})`}
-                        </Badge>
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Targeted Text Tone Display */}
-                {toneAnalysisResult && !ideationMessage && (
-                  <Card className="mt-4">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-base">
-                        {targetEditorSelector ? "Editable Content Analysis" : "Text Analysis"}
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
-                          {toneAnalysisResult.overallTone} (Score: {typeof toneAnalysisResult.overallScore === 'number' ? toneAnalysisResult.overallScore.toFixed(2) : 'N/A'})
-                        </Badge>
-                      </CardDescription>
-                    </CardHeader>
-                    {toneAnalysisResult.highlightedSentences && toneAnalysisResult.highlightedSentences.length > 0 && (
-                        <CardContent className="p-3 pt-0">
-                            <p className="text-xs text-muted-foreground mb-1">Key Sentences from Editable Content:</p>
-                            <ul className="space-y-1">
-                            {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
-                                <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                    "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {typeof item.score === 'number' ? item.score.toFixed(2) : 'N/A'})
-                                </li>
-                            ))}
-                            </ul>
-                        </CardContent>
-                    )}
-                    <CardFooter className="p-3 pt-2">
-                         <p className="text-xs text-muted-foreground">Analysis of the editable content area.</p>
-                    </CardFooter>
-                  </Card>
+                {!ideationMessage && (
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+                      <TabsTrigger value="tone">Tone</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="suggestions">
+                      {/* Suggestions Display */}
+                      {currentSuggestion ? (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+                            Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
+                          </p>
+                          <Card key={currentSuggestion.id}>
+                            <CardHeader className="flex flex-row items-center gap-2 p-3">
+                              <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
+                              <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
+                              <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
+                            </CardHeader>
+                            <CardContent className="p-3 pt-0">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 line-through">"{currentSuggestion.original}"</p>
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">"{currentSuggestion.suggestion}"</p>
+                              <p className="text-xs text-muted-foreground mt-3">{currentSuggestion.explanation}</p>
+                            </CardContent>
+                          </Card>
+                          <div className="flex justify-end gap-2 mt-4">
+                              <Button variant="ghost" size="sm" onClick={handleNext}>
+                                  {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
+                              </Button>
+                              <Button variant="default" size="sm" onClick={handleApply}>Apply</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No suggestions found.</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                    <TabsContent value="tone">
+                      {/* Tone Analysis Display */}
+                      {toneAnalysisResult || overallPageToneAnalysis ? (
+                        <div className="mt-4 space-y-4">
+                          {toneAnalysisResult && (
+                             <Card>
+                                <CardHeader className="p-3">
+                                  <CardTitle className="text-base">
+                                    {targetEditorSelector ? "Editable Content Analysis" : "Text Analysis"}
+                                  </CardTitle>
+                                  <CardDescription className="text-xs">
+                                    Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
+                                      {toneAnalysisResult.overallTone} (Score: {typeof toneAnalysisResult.overallScore === 'number' ? toneAnalysisResult.overallScore.toFixed(2) : 'N/A'})
+                                    </Badge>
+                                  </CardDescription>
+                                </CardHeader>
+                                {toneAnalysisResult.highlightedSentences && toneAnalysisResult.highlightedSentences.length > 0 && (
+                                    <CardContent className="p-3 pt-0">
+                                        <p className="text-xs text-muted-foreground mb-1">Key Sentences:</p>
+                                        <ul className="space-y-1">
+                                        {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
+                                            <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                                                "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {typeof item.score === 'number' ? item.score.toFixed(2) : 'N/A'})
+                                            </li>
+                                        ))}
+                                        </ul>
+                                    </CardContent>
+                                )}
+                              </Card>
+                          )}
+                          {overallPageToneAnalysis && (
+                              <Card className="border-dashed border-sky-300 dark:border-sky-700">
+                                <CardHeader className="p-3 pb-2">
+                                  <CardTitle className="text-sm font-medium text-sky-600 dark:text-sky-400">Overall Page Tone</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                  <div className="text-xs">
+                                    General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive' : overallPageToneAnalysis.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize text-xs px-1.5 py-0.5">
+                                      {overallPageToneAnalysis.overallTone}
+                                      {typeof overallPageToneAnalysis.overallScore === 'number' && ` (${overallPageToneAnalysis.overallScore.toFixed(2)})`}
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">No tone analysis available.</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 )}
 
                 {/* Fallback "Looking good" or "Brainstorm" button */}
