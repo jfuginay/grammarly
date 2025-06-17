@@ -65,7 +65,7 @@ const IndexPage = () => {
       </main>
 
       <footer className="text-center py-6 px-6 md:px-10 text-muted-foreground text-sm">
-        © {new Date().getFullYear()} Engie. We're probably not sentient. Yet.
+        © {new Date().getFullYear()} <a href="https://www.engindearing.soy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">EnginDearing</a>. We're probably not sentient. Yet.
       </footer>
     </div>
   );
