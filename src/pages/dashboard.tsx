@@ -390,7 +390,7 @@ export default function Dashboard() {
     if (!toneAnalysis || !text) return <p>{text}</p>;
 
     let lastIndex = 0;
-    const highlightedElements = [];
+    const highlightedElements: React.ReactNode[] = [];
     const sortedSentences = [...toneAnalysis.highlightedSentences].sort((a, b) => a.startIndex - b.startIndex);
 
     sortedSentences.forEach((sentence, i) => {
