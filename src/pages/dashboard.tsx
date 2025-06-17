@@ -25,7 +25,7 @@ import {
   Upload,
   Download,
   Copy,
-  Paste,
+  Clipboard,
   ExternalLink
 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -657,7 +657,7 @@ export default function Dashboard() {
                   onClick={handlePasteFromClipboard}
                   className="h-9 w-9"
                 >
-                  <Paste className="h-4 w-4" />
+                  <Clipboard className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -730,7 +730,7 @@ export default function Dashboard() {
                       onClick={handlePasteFromClipboard}
                       className="flex items-center space-x-2"
                     >
-                      <Paste className="h-4 w-4" />
+                      <Clipboard className="h-4 w-4" />
                       <span>Paste</span>
                     </Button>
                   </TooltipTrigger>
