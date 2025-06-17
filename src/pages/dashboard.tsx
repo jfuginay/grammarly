@@ -738,8 +738,25 @@ export default function Dashboard() {
                    text.substring(suggestion.endIndex);
     setText(newText);
     
-    // Immediately remove the applied suggestion from the suggestions array
-    setSuggestions((prev: Suggestion[]) => prev.filter((s: Suggestion) => s.id !== suggestion.id));
+    // Calculate the length difference to adjust other suggestions
+    const lengthDifference = suggestion.replacement.length - (suggestion.endIndex - suggestion.startIndex);
+    
+    // Update positions of remaining suggestions that come after the applied one
+    setSuggestions((prev: Suggestion[]) => {
+      return prev
+        .filter((s: Suggestion) => s.id !== suggestion.id) // Remove applied suggestion
+        .map((s: Suggestion) => {
+          // Only adjust suggestions that come after the applied one
+          if (s.startIndex > suggestion.endIndex) {
+            return {
+              ...s,
+              startIndex: s.startIndex + lengthDifference,
+              endIndex: s.endIndex + lengthDifference
+            };
+          }
+          return s;
+        });
+    });
     
     // Clear any floating suggestion if it matches the applied one
     if (floatingSuggestion && floatingSuggestion.id === suggestion.id) {
