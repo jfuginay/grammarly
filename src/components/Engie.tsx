@@ -145,6 +145,7 @@ const Engie: React.FC<EngieProps> = ({
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevScannedTextRef = useRef<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const draggableRef = useRef<HTMLDivElement>(null);
 
   // Enhanced state for intelligent features
   const [internalSuggestions, setInternalSuggestions] = useState<Suggestion[]>([]);
@@ -945,8 +946,8 @@ const Engie: React.FC<EngieProps> = ({
       )}
       
       {/* Main Engie Interface */}
-      <Draggable bounds="parent" handle=".handle">
-        <div className={`fixed bottom-5 right-5 flex flex-col items-end z-40 ${isChatOpen ? 'w-80' : 'w-auto'}`}>
+      <Draggable bounds="parent" handle=".handle" nodeRef={draggableRef}>
+        <div ref={draggableRef} className={`fixed bottom-5 right-5 flex flex-col items-end z-40 ${isChatOpen ? 'w-80' : 'w-auto'}`}>
           {/* Notification Badge */}
           {!isChatOpen && (internalSuggestions.length > 0 || insights.some(i => i.priority === 'High' && !i.dismissed)) && (
             <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
