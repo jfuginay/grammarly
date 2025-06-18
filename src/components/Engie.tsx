@@ -533,7 +533,7 @@ const Engie: React.FC<EngieProps> = ({
   const nodeRef = React.useRef(null);
 
   return (
-    <Draggable handle=".handle" nodeRef={nodeRef}>
+    <Draggable handle=".handle" nodeRef={nodeRef} allowMobileScroll={true}>
       <div ref={nodeRef} id="engie-container" className="fixed bottom-10 right-10 z-50 flex flex-col items-end">
         <AnimatePresence>
           {isChatOpen && (
@@ -705,7 +705,7 @@ const Engie: React.FC<EngieProps> = ({
           className="handle relative p-3 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 cursor-grab"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9, cursor: 'grabbing' }}
-          onClick={() => setIsChatOpen(!isChatOpen)}
+          onTap={(event) => { event.stopPropagation(); setIsChatOpen(!isChatOpen); }}
         >
           { (isScanning || isIdeating) && !isChatOpen ? (
             <Loader2 className="h-8 w-8 animate-spin" />
