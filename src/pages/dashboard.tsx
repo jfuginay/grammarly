@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
@@ -19,7 +19,14 @@ import {
   Book,
   CheckCircle,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  BarChart2,
+  Type,
+  Text,
+  Maximize2,
+  Minimize2,
+  AlignLeft,
+  AlignJustify
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -55,6 +62,15 @@ function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
+const FONT_OPTIONS = [
+  { label: 'Serif', value: 'serif', className: 'font-serif' },
+  { label: 'Sans', value: 'sans', className: 'font-sans' },
+  { label: 'Mono', value: 'mono', className: 'font-mono' },
+];
+const LINE_HEIGHTS = [1.4, 1.6, 1.8, 2.0];
+const FONT_SIZES = [16, 18, 20, 22, 24];
+const TEXT_WIDTHS = ["40ch", "60ch", "80ch", "100ch"];
+
 const DashboardPage = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -81,6 +97,16 @@ const DashboardPage = () => {
   const [newTitle, setNewTitle] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sidebarView, setSidebarView] = useState<'documents' | 'suggestions'>('documents');
+
+  const [font, setFont] = useState('serif');
+  const [fontSize, setFontSize] = useState(18);
+  const [lineHeight, setLineHeight] = useState(1.6);
+  const [textWidth, setTextWidth] = useState('60ch');
+  const [isDistractionFree, setIsDistractionFree] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [selection, setSelection] = useState<{start: number, end: number} | null>(null);
+  const [autoSaveState, setAutoSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [writingGoal, setWritingGoal] = useState(1000);
 
   const handlePasteFromClipboard = async () => {
     if (!navigator.clipboard || !navigator.clipboard.readText) {
@@ -258,10 +284,8 @@ const DashboardPage = () => {
         const docs = await response.json();
         
         // Sort by most recently updated
-        const sortedDocs = docs.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-        setDocuments(sortedDocs);
-        
-        const activeDocStillExists = activeDocument && sortedDocs.some(d => d.id === activeDocument.id);
+        const sortedDocs = docs.sort((a: Document, b: Document) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        const activeDocStillExists = activeDocument && sortedDocs.some((d: Document) => d.id === activeDocument.id);
         if (!activeDocStillExists && sortedDocs.length > 0) {
             setActiveDocument(sortedDocs[0]);
             setText(sortedDocs[0].content);
@@ -586,6 +610,34 @@ const DashboardPage = () => {
     Low: <CheckCircle className="h-4 w-4 text-blue-500 dark:text-blue-400" />,
   };
 
+  // Word/reading time calculation
+  const wordCount = useMemo(() => text.trim().split(/\s+/).filter(Boolean).length, [text]);
+  const readingTime = useMemo(() => Math.ceil(wordCount / 200), [wordCount]);
+  const progress = Math.min(100, Math.round((wordCount / writingGoal) * 100));
+
+  // Auto-save indicator logic
+  useEffect(() => {
+    if (autoSaveState === 'saving') {
+      const timeout = setTimeout(() => setAutoSaveState('saved'), 1200);
+      return () => clearTimeout(timeout);
+    }
+  }, [autoSaveState]);
+
+  // Show toolbar on text selection
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const handleSelect = () => {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      setShowToolbar(start !== end);
+      setSelection(start !== end ? { start, end } : null);
+    };
+    textarea.addEventListener('select', handleSelect);
+    return () => textarea.removeEventListener('select', handleSelect);
+  }, []);
+
   if (isAuthLoading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-950">
@@ -598,53 +650,38 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className={`h-screen w-screen bg-gray-50 dark:bg-gray-950 flex flex-col ${isDistractionFree ? 'z-50 fixed inset-0 bg-background' : ''}`}> 
       <Header user={user} />
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Desktop */}
-        <div className="hidden md:block md:w-72 lg:w-80 border-r border-gray-200 dark:border-gray-800 overflow-hidden">
-          <Tabs defaultValue="documents" className="h-full flex flex-col">
-            <TabsList className="w-full h-12 rounded-none border-b border-gray-200 dark:border-gray-800 bg-transparent gap-4 px-6">
-              <TabsTrigger 
-                value="documents" 
-                className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none"
-              >
-                <LayoutGrid className="h-4 w-4" />
-                Documents
-              </TabsTrigger>
-              <TabsTrigger 
-                value="suggestions" 
-                className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none"
-              >
-                <Sparkles className="h-4 w-4" />
-                Suggestions
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="documents" className="h-full overflow-hidden flex-1 m-0 p-0">
-              <DocumentSidebar />
-            </TabsContent>
-            <TabsContent value="suggestions" className="h-full overflow-hidden flex-1 m-0 p-0">
-              <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-inner p-4">
-                <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent mb-4">Writing Suggestions</h2>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">AI Suggestions</span>
-                  <Switch
-                    checked={showAiSuggestions}
-                    onCheckedChange={setShowAiSuggestions}
-                    aria-label="Toggle AI Suggestions"
-                  />
-                </div>
-                <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                  {isSuggestionsLoading && <p className='text-center text-gray-500 mt-8'>Analyzing your writing...</p>}
-                  {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 mt-8">No suggestions found.</div>}
-                  {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 mt-8">Start typing to get suggestions.</div>}
-                </div>
+        {/* Sidebar: stats, goals, charts */}
+        <aside className={`hidden lg:flex flex-col w-80 xl:w-96 border-r border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md transition-all duration-300 ${isDistractionFree ? 'opacity-0 pointer-events-none' : ''}`}>
+          <div className="p-6 flex flex-col gap-6">
+            <div>
+              <h2 className="text-lg font-semibold premium-text-gradient mb-2">Writing Stats</h2>
+              <div className="flex items-center gap-4 mb-2">
+                <span className="text-2xl font-bold">{wordCount}</span>
+                <span className="text-xs text-gray-500">words</span>
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <main className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900 shadow-xl rounded-tl-xl md:rounded-none">
+              <div className="flex items-center gap-4 mb-2">
+                <span className="text-lg font-semibold">{readingTime} min</span>
+                <span className="text-xs text-gray-500">read</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="range" min={100} max={5000} step={100} value={writingGoal} onChange={e => setWritingGoal(Number(e.target.value))} className="w-32" />
+                <span className="text-xs text-gray-500">Goal: {writingGoal} words</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full mt-2">
+                <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${progress}%` }}></div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold mb-2 flex items-center gap-2"><BarChart2 className="h-4 w-4" /> Writing Dashboard</h3>
+              <div className="h-32 flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">(Charts coming soon)</div>
+            </div>
+          </div>
+        </aside>
+        {/* Main writing area */}
+        <main className={`flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900 shadow-xl rounded-tl-xl md:rounded-none transition-all duration-300 ${isDistractionFree ? 'z-50' : ''}`}> 
           <header className="flex-grow-0 flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800">
             {activeDocument && isEditingTitle ? (
               <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded">
@@ -724,140 +761,157 @@ const DashboardPage = () => {
               </TooltipProvider>
             </div>
           </header>
-
-          <div className="flex-1 flex overflow-hidden p-4">
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <Card className="flex-1 overflow-hidden border-0 shadow-none">
-                <CardContent className="p-0 h-full flex flex-col">
-                  <Textarea
-                    id="dashboard-editor-textarea"
-                    value={text}
-                    onChange={(e) => {
-                      setText(e.target.value);
-                      if (activeDocument) {
-                        debouncedUpdateDocument(activeDocument.id, { content: e.target.value });
-                      }
-                    }}
-                    placeholder="Start writing or paste your text here..."
-                    className="flex-1 resize-none border-0 text-base focus-visible:ring-0 shadow-none rounded-xl p-6 bg-white dark:bg-gray-900"
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Sidebar - Desktop */}
-            <aside className="hidden lg:flex w-80 xl:w-96 flex-col gap-4 pl-4">
-              <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow transition-shadow duration-200">
-                <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-500/5 dark:to-indigo-500/5 px-4 py-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                    <span>AI Writing Assistant</span>
-                  </CardTitle>
-                  <Switch
-                    checked={showAiSuggestions}
-                    onCheckedChange={setShowAiSuggestions}
-                    aria-label="Toggle AI Suggestions"
-                  />
-                </CardHeader>
-                <CardContent className="px-4 py-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    {showAiSuggestions ? 
-                      "AI analysis is enabled. Your writing will be analyzed for grammar, style, and clarity improvements." :
-                      "AI analysis is disabled. Enable to get writing suggestions."
+          {/* Writing area with floating toolbar */}
+          <div className="flex-1 flex flex-col items-center justify-center relative transition-all duration-300" style={{ minHeight: 0 }}>
+            <div className="w-full flex justify-center">
+              <div className={`relative w-full`} style={{ maxWidth: textWidth }}>
+                <Textarea
+                  id="dashboard-editor-textarea"
+                  ref={textareaRef}
+                  value={text}
+                  onChange={e => {
+                    setText(e.target.value);
+                    setAutoSaveState('saving');
+                    if (activeDocument) {
+                      debouncedUpdateDocument(activeDocument.id, { content: e.target.value });
                     }
+                  }}
+                  placeholder="Start writing or paste your text here..."
+                  className={`flex-1 resize-none border-0 text-base focus-visible:ring-0 shadow-none rounded-xl p-6 bg-white dark:bg-gray-900 transition-all duration-300 ${FONT_OPTIONS.find(f => f.value === font)?.className} `}
+                  style={{ fontSize, lineHeight }}
+                  rows={18}
+                  spellCheck
+                  autoFocus
+                />
+                {/* Floating toolbar on selection */}
+                {showToolbar && selection && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-2 z-20 flex gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-2 animate-fade-in">
+                    <Button variant="ghost" size="icon"><Type className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon"><Text className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon"><AlignLeft className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon"><AlignJustify className="h-4 w-4" /></Button>
                   </div>
-                </CardContent>
-              </Card>
-              
-              {showAiSuggestions && (
-                <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                  {isSuggestionsLoading && (
-                    <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                      <CardContent className="p-4 flex items-center gap-3">
-                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
-                        <p className='text-gray-600 dark:text-gray-300'>Analyzing your writing...</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && (
-                    <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                      <CardContent className="p-4 flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <p className='text-gray-600 dark:text-gray-300'>Your writing looks good! No suggestions found.</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {!isSuggestionsLoading && !text && (
-                    <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                      <CardContent className="p-4 flex items-center gap-3">
-                        <Pen className="h-5 w-5 text-blue-500" />
-                        <p className='text-gray-600 dark:text-gray-300'>Start typing to get writing suggestions.</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                )}
+                {/* Auto-save indicator */}
+                <div className="absolute right-4 bottom-4 flex items-center gap-2 text-xs">
+                  {autoSaveState === 'saving' && <span className="animate-pulse text-blue-500">Saving...</span>}
+                  {autoSaveState === 'saved' && <span className="text-green-500 transition-all duration-300">Saved</span>}
+                  {autoSaveState === 'error' && <span className="text-red-500">Error</span>}
                 </div>
-              )}
-            </aside>
+              </div>
+            </div>
           </div>
         </main>
-
-        <Engie
-          suggestions={suggestions}
-          onApply={applySuggestion}
-          onDismiss={dismissSuggestion}
-          onIdeate={() => { /* TODO */ }}
-          targetEditorSelector="#dashboard-editor-textarea" // Added prop
-        />
-
-        {/* Mobile Sidebars */}
-        <div className="md:hidden">
-          {/* Document Sidebar Sheet */}
-          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="fixed top-20 left-4 z-20 bg-white dark:bg-gray-900 shadow-lg rounded-full h-10 w-10"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0 border-r border-gray-200 dark:border-gray-800">
-              <Tabs defaultValue="documents" className="h-full flex flex-col">
-                <TabsList className="w-full h-12 rounded-none border-b border-gray-200 dark:border-gray-800 bg-transparent gap-4 px-6">
-                  <TabsTrigger value="documents" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none">
-                    Documents
-                  </TabsTrigger>
-                  <TabsTrigger value="suggestions" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none">
-                    Suggestions
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="documents" className="h-full overflow-hidden flex-1 m-0 p-0">
-                  <DocumentSidebar />
-                </TabsContent>
-                <TabsContent value="suggestions" className="h-full overflow-hidden flex-1 m-0 p-0">
-                  <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-inner p-4">
-                    <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-4">Writing Suggestions</h2>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">AI Suggestions</span>
-                      <Switch
-                        checked={showAiSuggestions}
-                        onCheckedChange={setShowAiSuggestions}
-                        aria-label="Toggle AI Suggestions"
-                      />
-                    </div>
-                    <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                      {/* Suggestions content here */}
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </SheetContent>
-          </Sheet>
-        </div>
+        {/* Right Sidebar - Desktop */}
+        <aside className="hidden lg:flex w-80 xl:w-96 flex-col gap-4 pl-4">
+          <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow transition-shadow duration-200">
+            <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-500/5 dark:to-indigo-500/5 px-4 py-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                <span>AI Writing Assistant</span>
+              </CardTitle>
+              <Switch
+                checked={showAiSuggestions}
+                onCheckedChange={setShowAiSuggestions}
+                aria-label="Toggle AI Suggestions"
+              />
+            </CardHeader>
+            <CardContent className="px-4 py-3">
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                {showAiSuggestions ? 
+                  "AI analysis is enabled. Your writing will be analyzed for grammar, style, and clarity improvements." :
+                  "AI analysis is disabled. Enable to get writing suggestions."
+                }
+              </div>
+            </CardContent>
+          </Card>
+          
+          {showAiSuggestions && (
+            <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+              {isSuggestionsLoading && (
+                <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                    <p className='text-gray-600 dark:text-gray-300'>Analyzing your writing...</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && (
+                <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <p className='text-gray-600 dark:text-gray-300'>Your writing looks good! No suggestions found.</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {!isSuggestionsLoading && !text && (
+                <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Pen className="h-5 w-5 text-blue-500" />
+                    <p className='text-gray-600 dark:text-gray-300'>Start typing to get writing suggestions.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </aside>
       </div>
+      {/* Mobile Sidebars */}
+      <div className="md:hidden">
+        {/* Document Sidebar Sheet */}
+        <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="fixed top-20 left-4 z-20 bg-white dark:bg-gray-900 shadow-lg rounded-full h-10 w-10"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-80 p-0 border-r border-gray-200 dark:border-gray-800">
+            <Tabs defaultValue="documents" className="h-full flex flex-col">
+              <TabsList className="w-full h-12 rounded-none border-b border-gray-200 dark:border-gray-800 bg-transparent gap-4 px-6">
+                <TabsTrigger value="documents" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none">
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger value="suggestions" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none">
+                  Suggestions
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="documents" className="h-full overflow-hidden flex-1 m-0 p-0">
+                <DocumentSidebar />
+              </TabsContent>
+              <TabsContent value="suggestions" className="h-full overflow-hidden flex-1 m-0 p-0">
+                <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-inner p-4">
+                  <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-4">Writing Suggestions</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">AI Suggestions</span>
+                    <Switch
+                      checked={showAiSuggestions}
+                      onCheckedChange={setShowAiSuggestions}
+                      aria-label="Toggle AI Suggestions"
+                    />
+                  </div>
+                  <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+                    {/* Suggestions content here */}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </SheetContent>
+        </Sheet>
+      </div>
+      {/* Engie Assistant */}
+      <Engie
+        suggestions={suggestions}
+        onApply={applySuggestion}
+        onDismiss={dismissSuggestion}
+        onIdeate={() => { /* TODO */ }}
+        targetEditorSelector="#dashboard-editor-textarea"
+      />
     </div>
   );
 };
