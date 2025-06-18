@@ -362,6 +362,7 @@ const DashboardPage = () => {
     // If suggestions are turned off, clear them and stop.
     if (!showAiSuggestions) {
       setSuggestions([]);
+      setIsSuggestionsLoading(false);
       return;
     }
     
@@ -369,15 +370,18 @@ const DashboardPage = () => {
     if (!currentText.trim()) {
       setSuggestions([]);
       lastAnalyzedTextRef.current = '';
+      setIsSuggestionsLoading(false);
       return;
     }
     
     // If text has not changed since last analysis, do nothing.
     if (currentText === lastAnalyzedTextRef.current) {
+      setIsSuggestionsLoading(false);
       return;
     }
 
     setIsSuggestionsLoading(true);
+    console.log("Fetching suggestions for text:", currentText.slice(0, 50) + "...");
     lastAnalyzedTextRef.current = currentText; // Set last analyzed text before fetching
 
     try {
@@ -392,8 +396,14 @@ const DashboardPage = () => {
           ...s,
           id: `${s.original}-${index}-${Date.now()}`,
         }));
+        console.log(`Received ${suggestionsWithIds.length} suggestions for updated text`);
         setSuggestions(suggestionsWithIds);
       } else {
+        toast({
+          title: "Error fetching suggestions",
+          description: data.message || "Something went wrong",
+          variant: "destructive"
+        });
         throw new Error(data.message || 'Failed to fetch suggestions');
       }
     } catch (error) {
@@ -409,13 +419,19 @@ const DashboardPage = () => {
 
   useEffect(() => {
     if (text) {
-        debouncedFetchSuggestions(text);
+      // Only use debounced fetch for normal typing
+      // Applied suggestions trigger immediate fetch in the applySuggestion function
+      debouncedFetchSuggestions(text);
     } else {
-        setSuggestions([]);
+      setSuggestions([]);
+      setIsSuggestionsLoading(false);
     }
   }, [text, debouncedFetchSuggestions]);
 
   const applySuggestion = (suggestionToApply: Suggestion) => {
+    console.log("Applying suggestion:", suggestionToApply);
+    console.log("Current suggestions count:", suggestions.length);
+    
     // Find the Nth occurrence of the original text that this suggestion corresponds to.
     const suggestionIndex = suggestions.findIndex(s => s.id === suggestionToApply.id);
     let n = 0;
@@ -441,18 +457,35 @@ const DashboardPage = () => {
         }
     );
 
+    console.log("Text updated from length", text.length, "to", newText.length);
+    
+    // Update text first
     setText(newText);
-    setSuggestions(prevSuggestions => prevSuggestions.filter(s => s.id !== suggestionToApply.id));
+    
+    // Clear all suggestions immediately since the document has changed
+    setSuggestions([]);
+    
+    // Show loading state while fetching new suggestions
+    setIsSuggestionsLoading(true);
 
+    // Update document
     if (activeDocument) {
         debouncedUpdateDocument(activeDocument.id, { content: newText });
     }
-    debouncedFetchSuggestions(newText);
+    
+    // Immediately fetch new suggestions for the entire updated document
+    console.log("Fetching new suggestions for updated document");
+    fetchSuggestions(newText);
   };
 
   const dismissSuggestion = (suggestionId: string) => {
-    setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
-  }
+    console.log("Dismissing suggestion:", suggestionId);
+    setSuggestions(prev => {
+      const filteredSuggestions = prev.filter(s => s.id !== suggestionId);
+      console.log("Suggestions reduced from", prev.length, "to", filteredSuggestions.length);
+      return filteredSuggestions;
+    });
+  };
 
   // Components
   const DocumentSidebar = () => (

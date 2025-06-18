@@ -187,6 +187,13 @@ const Engie: React.FC<EngieProps> = ({
     }
   }, [activeSuggestions]);
 
+  // Ensure currentSuggestionIndex stays in bounds when suggestions change
+  useEffect(() => {
+    if (activeSuggestions.length > 0 && currentSuggestionIndex >= activeSuggestions.length) {
+      setCurrentSuggestionIndex(Math.max(0, activeSuggestions.length - 1));
+    }
+  }, [activeSuggestions.length, currentSuggestionIndex]);
+
   const fetchTypoSuggestions = async (text: string): Promise<Suggestion[]> => {
     if (!text.trim()) return [];
     try {
@@ -446,11 +453,17 @@ const Engie: React.FC<EngieProps> = ({
     if (currentSuggestion) {
       if (internalSuggestions.length > 0) {
         console.log("Applying internal suggestion:", currentSuggestion);
-        setInternalSuggestions(prev => prev.filter(s => s.id !== currentSuggestion.id));
-        if (activeSuggestions.length -1 <= 0) setIdeationMessage(null);
+        // Clear all internal suggestions since the document will change
+        setInternalSuggestions([]);
+        if (ideationMessage) {
+          setIdeationMessage(null);
+        }
       } else {
+        // Pass the suggestion to external handler and let it handle clearing
         onApplyExternal(currentSuggestion);
       }
+      
+      // Reset to index 0 since we're clearing all suggestions
       setCurrentSuggestionIndex(0);
     }
   };
@@ -458,12 +471,33 @@ const Engie: React.FC<EngieProps> = ({
   const handleDismiss = () => {
     if (currentSuggestion) {
       if (internalSuggestions.length > 0) {
-        setInternalSuggestions(prev => prev.filter(s => s.id !== currentSuggestion.id));
-         if (activeSuggestions.length -1 <= 0) setIdeationMessage(null);
+        // Only remove the current suggestion when dismissing
+        setInternalSuggestions(prev => {
+          const filtered = prev.filter(s => s.id !== currentSuggestion.id);
+          return filtered;
+        });
+        
+        if (internalSuggestions.length - 1 <= 0) {
+          setIdeationMessage(null);
+        }
       } else {
         onDismissExternal(currentSuggestion.id);
       }
-       setCurrentSuggestionIndex(0);
+      
+      // Adjust the current suggestion index to handle the removal
+      setCurrentSuggestionIndex(prev => {
+        const remainingSuggestions = internalSuggestions.length > 0 
+          ? internalSuggestions.filter(s => s.id !== currentSuggestion.id).length
+          : activeSuggestions.length - 1;
+        
+        if (remainingSuggestions === 0) {
+          return 0;
+        } else if (prev >= remainingSuggestions) {
+          return Math.max(0, remainingSuggestions - 1);
+        } else {
+          return prev;
+        }
+      });
     }
   };
 
@@ -476,6 +510,7 @@ const Engie: React.FC<EngieProps> = ({
     if (currentSuggestion && currentSuggestionIndex < activeSuggestions.length - 1) {
         setCurrentSuggestionIndex(prev => prev + 1);
     } else {
+        // If we're at the last suggestion, dismiss it instead of cycling
         handleDismiss();
     }
   };
