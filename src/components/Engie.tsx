@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Loader2 } from 'lucide-react'; // Added Loader2
+import { Sparkles, X, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Chat message interface
 interface ChatMessage {
@@ -71,9 +72,26 @@ const Engie: React.FC<EngieProps> = ({
   const [lastEncouragementTone, setLastEncouragementTone] = useState<string | null>(null);
   const [isIdeating, setIsIdeating] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]); // For future chat interactions
+  const [activeTab, setActiveTab] = useState('suggestions');
 
   // Determine which suggestions to use: internal if available, otherwise external
   const activeSuggestions = internalSuggestions.length > 0 ? internalSuggestions : externalSuggestions;
+
+  const resetTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    // Only set new timer if chat is closed OR if chat is open but no suggestions/ideation/tone results are active
+    const shouldSetTimer = !isChatOpen ||
+                           (isChatOpen && activeSuggestions.length === 0 && !ideationMessage && !toneAnalysisResult && !isIdeating && !isScanning);
+
+    if (shouldSetTimer) {
+      inactivityTimerRef.current = setTimeout(() => {
+        console.log("Inactivity detected, triggering ideation.");
+        triggerIdeation();
+      }, 30000); // 30 seconds
+    }
+  }, [isChatOpen, activeSuggestions.length, ideationMessage, toneAnalysisResult, isIdeating, isScanning]);
 
   // Extracts text from a specific target element
   const extractTextFromTarget = (selector: string): string | null => {
@@ -135,8 +153,7 @@ const Engie: React.FC<EngieProps> = ({
     return text.trim();
   };
 
-  // Memoize extract functions if their definitions don't change often,
-  // though their behavior depends on external DOM. For useEffect deps, keep them stable.
+  // Memoize extract functions
   const stableExtractFullPageText = useCallback(extractFullPageText, []);
   const stableExtractTextFromTarget = useCallback(extractTextFromTarget, []);
 
@@ -183,9 +200,6 @@ const Engie: React.FC<EngieProps> = ({
         return [];
       }
       const data = await response.json();
-      // Assuming the API returns an array of objects that match or can be mapped to Suggestion interface
-      // For example, if API returns { id, original, corrected, explanation, type, severity }
-      // We might need to map `corrected` to `suggestion`
       return data.suggestions.map((s: any) => ({ ...s, id: s.id || Math.random().toString(36).substring(2, 15) })) as Suggestion[];
     } catch (error) {
       console.error('Failed to fetch typo suggestions:', error);
@@ -225,7 +239,7 @@ const Engie: React.FC<EngieProps> = ({
         return "Sorry, I couldn't come up with anything right now.";
       }
       const data = await response.json();
-      return data.response; // Assuming API returns { response: "..." }
+      return data.response;
     } catch (error) {
       console.error('Failed to fetch Engie chat response:', error);
       return "My circuits are a bit tangled at the moment. Try again later?";
@@ -234,16 +248,15 @@ const Engie: React.FC<EngieProps> = ({
 
   const triggerIdeation = async (isManualTrigger = false) => {
     if (isIdeating || (activeSuggestions.length > 0 && !isManualTrigger) || (toneAnalysisResult && !isManualTrigger) ) {
-      // Don't trigger if already ideating, or if suggestions/tone analysis are showing (unless manually triggered)
       return;
     }
 
     if (!isChatOpen) {
       setIsChatOpen(true);
     }
-    setIdeationMessage(null); // Clear previous ideation message
-    setInternalSuggestions([]); // Clear suggestions
-    setToneAnalysisResult(null); // Clear tone analysis
+    setIdeationMessage(null);
+    setInternalSuggestions([]);
+    setToneAnalysisResult(null);
 
     setIsIdeating(true);
     setStatusMessage("Engie is brainstorming ideas...");
@@ -252,12 +265,11 @@ const Engie: React.FC<EngieProps> = ({
     if (isManualTrigger) {
       prompt = "Okay, let's brainstorm! What topic or idea should we explore?";
     } else if (prevScannedTextRef.current) {
-      // Simple heuristic: use last scanned text if it's short and recent.
-      const lastText = prevScannedTextRef.current.slice(-200); // last 200 chars
+      const lastText = prevScannedTextRef.current.slice(-200);
       prompt = `I noticed you were working on something related to: "${lastText}". Feeling stuck or want to explore ideas around that? Or is something else on your mind?`;
     }
 
-    const assistantResponse = await callEngieChatAPI(prompt, []); // Start with empty history for proactive
+    const assistantResponse = await callEngieChatAPI(prompt, []);
 
     if (assistantResponse) {
       setIdeationMessage({ role: 'assistant', content: assistantResponse });
@@ -267,181 +279,134 @@ const Engie: React.FC<EngieProps> = ({
     }
 
     setIsIdeating(false);
-    setStatusMessage(""); // Clear "thinking" message, actual message is in ideationMessage
+    setStatusMessage("");
   };
 
-  // Inactivity Timer Logic
-  useEffect(() => {
-    const resetTimer = () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
+  const processScannedTexts = useCallback(async (fullText: string, targetText: string | null) => {
+    if (isIdeating) return;
+
+    const textForComparison = targetText ?? fullText;
+    const currentCombinedTextState = `target:${targetText}_full:${fullText}`;
+
+    if (!textForComparison && !prevScannedTextRef.current) {
+       setIsScanning(false);
+       setStatusMessage("Nothing to scan.");
+       setTimeout(() => setStatusMessage(""), 3000);
+       return;
+    }
+
+    if (currentCombinedTextState === prevScannedTextRef.current) {
+      setIsScanning(false);
+      setStatusMessage("No significant changes detected.");
+      setTimeout(() => setStatusMessage(""), 3000);
+      return;
+    }
+
+    prevScannedTextRef.current = currentCombinedTextState;
+    setIsScanning(true);
+    setStatusMessage("Engie is analyzing text...");
+    setInternalSuggestions([]);
+    setToneAnalysisResult(null);
+    setOverallPageToneAnalysis(null);
+    setIdeationMessage(null);
+
+    let typoPromise: Promise<Suggestion[]> = Promise.resolve([]);
+    let targetTonePromise: Promise<ToneAnalysis | null> = Promise.resolve(null);
+    let pageTonePromise: Promise<ToneAnalysis | null> = Promise.resolve(null);
+
+    if (targetText && targetText.trim()) {
+      typoPromise = fetchTypoSuggestions(targetText);
+      targetTonePromise = fetchToneAnalysis(targetText);
+    } else {
+      setInternalSuggestions([]);
+      setToneAnalysisResult(null);
+    }
+
+    if (fullText && fullText.trim()) {
+      pageTonePromise = fetchToneAnalysis(fullText);
+    } else {
+      setOverallPageToneAnalysis(null);
+    }
+
+    if ((!targetText || !targetText.trim()) && (!fullText || !fullText.trim())) {
+      setStatusMessage("Content is empty, skipping analysis.");
+      setIsScanning(false);
+      setEncouragementMessageApi(null);
+      setTimeout(() => setStatusMessage(""), 3000);
+      return;
+    }
+
+    try {
+      const [typoResults, localToneAnalysis, globalPageToneAnalysis] = await Promise.all([
+        typoPromise,
+        targetTonePromise,
+        pageTonePromise
+      ]);
+
+      const hasTypos = typoResults && typoResults.length > 0;
+      const nonPositiveOrNeutralTones = ['Negative', 'Critical', 'Anxious', 'Frustrated', 'Stressed', 'Worried', 'Sad'];
+      const hasSignificantLocalToneIssue = localToneAnalysis &&
+                                         (nonPositiveOrNeutralTones.includes(localToneAnalysis.overallTone) ||
+                                         (localToneAnalysis.overallScore > 0.6 && nonPositiveOrNeutralTones.includes(localToneAnalysis.overallTone)));
+
+      if (hasTypos) {
+        setInternalSuggestions(typoResults);
       }
-      // Only set new timer if chat is closed OR if chat is open but no suggestions/ideation/tone results are active
-      const shouldSetTimer = !isChatOpen ||
-                             (isChatOpen && activeSuggestions.length === 0 && !ideationMessage && !toneAnalysisResult && !isIdeating && !isScanning);
+      setToneAnalysisResult(localToneAnalysis);
+      setOverallPageToneAnalysis(globalPageToneAnalysis);
 
-      if (shouldSetTimer) {
-        inactivityTimerRef.current = setTimeout(() => {
-          console.log("Inactivity detected, triggering ideation.");
-          triggerIdeation();
-        }, 30000); // 30 seconds
-      }
-    };
-
-    document.addEventListener('keydown', resetTimer);
-    resetTimer(); // Initial setup
-
-    return () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-      }
-      document.removeEventListener('keydown', resetTimer);
-    };
-  }, [isChatOpen, activeSuggestions.length, ideationMessage, toneAnalysisResult, isIdeating, isScanning]);
-
-
-  // Effect for MutationObserver and initial text scan (existing logic)
-  useEffect(() => {
-    const processScannedTexts = async (fullText: string, targetText: string | null) => {
-      if (isIdeating) return;
-
-      // For change detection, we need to decide what to compare.
-      // Let's combine them for simplicity in prevScannedTextRef, or use the target text if available, otherwise full text.
-      const textForComparison = targetText ?? fullText;
-      const currentCombinedTextState = `target:${targetText}_full:${fullText}`;
-
-
-      if (!textForComparison && !prevScannedTextRef.current ) { // Both current and previous are empty/null
-         setIsScanning(false);
-         setStatusMessage("Nothing to scan.");
-         setTimeout(() => setStatusMessage(""), 3000);
-         return;
+      if (hasTypos || hasSignificantLocalToneIssue) {
+        setEncouragementMessageApi(null);
+        setLastEncouragementTone(null);
+      } else if (globalPageToneAnalysis && globalPageToneAnalysis.overallTone) {
+        if (globalPageToneAnalysis.overallTone !== lastEncouragementTone) {
+          const message = await fetchEncouragementMessage(globalPageToneAnalysis.overallTone, globalPageToneAnalysis.overallScore);
+          if (message) {
+            setEncouragementMessageApi({ role: 'assistant', content: message });
+            setLastEncouragementTone(globalPageToneAnalysis.overallTone);
+          } else {
+            setEncouragementMessageApi(null);
+          }
+        }
+      } else {
+        setEncouragementMessageApi(null);
       }
 
-      if (currentCombinedTextState === prevScannedTextRef.current) {
-        setIsScanning(false);
-        setStatusMessage("No significant changes detected.");
-        setTimeout(() => setStatusMessage(""), 3000);
-        return;
-      }
-
-      prevScannedTextRef.current = currentCombinedTextState;
-      setIsScanning(true);
-      setStatusMessage("Engie is analyzing text...");
+      setStatusMessage("Analysis complete.");
+    } catch (error) {
+      console.error("Error during text processing:", error);
+      setStatusMessage("Error during analysis.");
       setInternalSuggestions([]);
       setToneAnalysisResult(null);
       setOverallPageToneAnalysis(null);
-      // setEncouragementMessageApi(null); // Clear previous encouragement before new analysis
-      setIdeationMessage(null);
+      setEncouragementMessageApi(null);
+    } finally {
+      setIsScanning(false);
+      setTimeout(() => setStatusMessage(""), 3000);
+    }
+  }, [isIdeating, fetchEncouragementMessage, lastEncouragementTone]);
 
+  const handleDocumentChange = useCallback(() => {
+    if (isIdeating || (isChatOpen && ideationMessage)) return;
 
-      console.log("Engie: Full Page Text (snippet):", fullText.substring(0, 100) + "...");
-      if (targetEditorSelector && targetText !== null) {
-        console.log(`Engie: Target Editor Text (${targetEditorSelector}) (snippet):`, targetText.substring(0,100) + "...");
-      } else if (targetEditorSelector) {
-        console.log(`Engie: Target Editor Text (${targetEditorSelector}): Not found or empty.`);
+    setStatusMessage("Engie is scanning document...");
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+      const fullPageText = stableExtractFullPageText();
+      let targetEditorText: string | null = null;
+      if (targetEditorSelector) {
+        targetEditorText = stableExtractTextFromTarget(targetEditorSelector);
       }
+      processScannedTexts(fullPageText, targetEditorText);
+    }, 1500);
+  }, [isIdeating, ideationMessage, isChatOpen, targetEditorSelector, stableExtractFullPageText, stableExtractTextFromTarget, processScannedTexts]);
 
-      let typoPromise: Promise<Suggestion[]> = Promise.resolve([]);
-      let targetTonePromise: Promise<ToneAnalysis | null> = Promise.resolve(null);
-      let pageTonePromise: Promise<ToneAnalysis | null> = Promise.resolve(null);
-
-      if (targetText && targetText.trim()) {
-        typoPromise = fetchTypoSuggestions(targetText);
-        targetTonePromise = fetchToneAnalysis(targetText);
-      } else {
-        setInternalSuggestions([]);
-        setToneAnalysisResult(null);
-      }
-
-      if (fullText && fullText.trim()) {
-        pageTonePromise = fetchToneAnalysis(fullText);
-      } else {
-        setOverallPageToneAnalysis(null);
-      }
-
-      if ((!targetText || !targetText.trim()) && (!fullText || !fullText.trim())) {
-        setStatusMessage("Content is empty, skipping analysis.");
-        setIsScanning(false);
-        setEncouragementMessageApi(null);
-        setTimeout(() => setStatusMessage(""), 3000);
-        return;
-      }
-
-      setStatusMessage("Engie is analyzing text...");
-
-      try {
-        const [typoResults, localToneAnalysis, globalPageToneAnalysis] = await Promise.all([
-          typoPromise,
-          targetTonePromise,
-          pageTonePromise
-        ]);
-
-        const hasTypos = typoResults && typoResults.length > 0;
-        const nonPositiveOrNeutralTones = ['Negative', 'Critical', 'Anxious', 'Frustrated', 'Stressed', 'Worried', 'Sad']; // Add more as needed
-        const hasSignificantLocalToneIssue = localToneAnalysis &&
-                                            (nonPositiveOrNeutralTones.includes(localToneAnalysis.overallTone) ||
-                                            (localToneAnalysis.overallScore > 0.6 && nonPositiveOrNeutralTones.includes(localToneAnalysis.overallTone)));
-
-
-        if (hasTypos) {
-          setInternalSuggestions(typoResults);
-        }
-        setToneAnalysisResult(localToneAnalysis);
-        setOverallPageToneAnalysis(globalPageToneAnalysis);
-
-        if (hasTypos || hasSignificantLocalToneIssue) {
-          setEncouragementMessageApi(null);
-          setLastEncouragementTone(null);
-        } else if (globalPageToneAnalysis && globalPageToneAnalysis.overallTone) {
-          if (globalPageToneAnalysis.overallTone !== lastEncouragementTone) {
-            const message = await fetchEncouragementMessage(globalPageToneAnalysis.overallTone, globalPageToneAnalysis.overallScore);
-            if (message) {
-              setEncouragementMessageApi({ role: 'assistant', content: message });
-              setLastEncouragementTone(globalPageToneAnalysis.overallTone);
-            } else {
-              setEncouragementMessageApi(null);
-            }
-          }
-        } else {
-          setEncouragementMessageApi(null);
-        }
-
-        setStatusMessage("Analysis complete.");
-      } catch (error) {
-        console.error("Error during text processing:", error);
-        setStatusMessage("Error during analysis.");
-        setInternalSuggestions([]);
-        setToneAnalysisResult(null);
-        setOverallPageToneAnalysis(null);
-        setEncouragementMessageApi(null);
-      } finally {
-        setIsScanning(false);
-        setTimeout(() => setStatusMessage(""), 3000);
-      }
-    };
-
-    const handleDocumentChange = () => {
-      if (isIdeating || (isChatOpen && ideationMessage)) return;
-
-      setStatusMessage("Engie is scanning document...");
-
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
-      debounceTimeoutRef.current = setTimeout(() => {
-        const fullPageText = stableExtractFullPageText();
-        let targetEditorText: string | null = null;
-        if (targetEditorSelector) {
-          targetEditorText = stableExtractTextFromTarget(targetEditorSelector);
-        }
-        processScannedTexts(fullPageText, targetEditorText);
-      }, 1500);
-    };
-
-    // The MutationObserver should observe document.body to capture all relevant changes.
-    // The specific targeting of editor content is handled by extractTextFromTarget.
+  // Effect for document change detection
+  useEffect(() => {
     const observer = new MutationObserver(handleDocumentChange);
     observer.observe(document.body, {
         childList: true,
@@ -460,14 +425,20 @@ const Engie: React.FC<EngieProps> = ({
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [
-    isIdeating,
-    ideationMessage,
-    isChatOpen,
-    targetEditorSelector,
-    stableExtractFullPageText,
-    stableExtractTextFromTarget
-  ]);
+  }, [handleDocumentChange, isIdeating, ideationMessage]);
+
+  // Inactivity Timer Logic
+  useEffect(() => {
+    document.addEventListener('keydown', resetTimer);
+    resetTimer(); // Initial setup
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      document.removeEventListener('keydown', resetTimer);
+    };
+  }, [resetTimer]);
 
   const currentSuggestion = activeSuggestions.length > 0 ? activeSuggestions[currentSuggestionIndex] : null;
 
@@ -475,10 +446,8 @@ const Engie: React.FC<EngieProps> = ({
     if (currentSuggestion) {
       if (internalSuggestions.length > 0) {
         console.log("Applying internal suggestion:", currentSuggestion);
-        // TODO: Implement actual application of suggestion to the document.
-        // For now, just remove it from the list.
         setInternalSuggestions(prev => prev.filter(s => s.id !== currentSuggestion.id));
-        if (activeSuggestions.length -1 <= 0) setIdeationMessage(null); // Clear ideation if all suggestions handled
+        if (activeSuggestions.length -1 <= 0) setIdeationMessage(null);
       } else {
         onApplyExternal(currentSuggestion);
       }
@@ -490,7 +459,7 @@ const Engie: React.FC<EngieProps> = ({
     if (currentSuggestion) {
       if (internalSuggestions.length > 0) {
         setInternalSuggestions(prev => prev.filter(s => s.id !== currentSuggestion.id));
-         if (activeSuggestions.length -1 <= 0) setIdeationMessage(null); // Clear ideation if all suggestions handled
+         if (activeSuggestions.length -1 <= 0) setIdeationMessage(null);
       } else {
         onDismissExternal(currentSuggestion.id);
       }
@@ -500,27 +469,31 @@ const Engie: React.FC<EngieProps> = ({
 
   const handleDismissIdeation = () => {
     setIdeationMessage(null);
-    setChatHistory([]); // Clear history as well
-    // Potentially trigger a new scan or reset inactivity timer explicitly if needed
+    setChatHistory([]);
   };
 
   const handleNext = () => {
     if (currentSuggestion && currentSuggestionIndex < activeSuggestions.length - 1) {
         setCurrentSuggestionIndex(prev => prev + 1);
     } else {
-        handleDismiss(); // If it's the last one, dismiss it.
+        handleDismiss();
     }
   };
 
-  // Manual ideation trigger from the original button
   const handleManualIdeate = () => {
-    if (onIdeateExternalProp) { // If an external handler is provided, it might have specific behavior
-        onIdeateExternalProp(); // This prop might need to be re-evaluated.
-                                // For now, we assume it might do something external AND we also trigger our internal ideation.
+    if (onIdeateExternalProp) {
+        onIdeateExternalProp();
     }
-    triggerIdeation(true); // Trigger internal ideation manually
+    triggerIdeation(true);
   };
 
+  // Helper function to safely format scores
+  const formatScore = (score: number | undefined | null): string => {
+    if (typeof score === 'number' && !isNaN(score)) {
+      return score.toFixed(2);
+    }
+    return 'N/A';
+  };
 
   const nodeRef = React.useRef(null);
 
@@ -544,7 +517,7 @@ const Engie: React.FC<EngieProps> = ({
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsChatOpen(false)}><X className="h-4 w-4"/></Button>
               </header>
 
-              <div className="p-4 max-h-[60vh] overflow-y-auto"> {/* Increased max-h slightly */}
+              <div className="p-4 max-h-[60vh] overflow-y-auto">
                 {(isScanning || (isIdeating && statusMessage) || (!isIdeating && statusMessage && !ideationMessage)) && (
                   <div className="mb-2 text-xs text-gray-500 dark:text-gray-400 italic text-center">
                     {statusMessage}
@@ -552,7 +525,7 @@ const Engie: React.FC<EngieProps> = ({
                 )}
 
                 {/* Ideation Message Display */}
-                {ideationMessage && !activeSuggestions.length && !encouragementMessageApi && ( // Ensure no clash with encouragement
+                {ideationMessage && !activeSuggestions.length && !encouragementMessageApi && (
                   <Card className="mb-4 bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700">
                     <CardHeader className="p-3">
                       <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Engie's Idea Corner</CardTitle>
@@ -562,82 +535,6 @@ const Engie: React.FC<EngieProps> = ({
                     </CardContent>
                     <CardFooter className="p-3 pt-2 flex justify-end">
                       <Button variant="ghost" size="sm" onClick={handleDismissIdeation}>Dismiss</Button>
-                      {/* Input for chat would go here in future iteration */}
-                    </CardFooter>
-                  </Card>
-                )}
-
-                {/* Suggestions Display */}
-                {currentSuggestion && !ideationMessage && (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
-                      Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
-                    </p>
-                    <Card key={currentSuggestion.id}>
-                      <CardHeader className="flex flex-row items-center gap-2 p-3">
-                        <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
-                        <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
-                        <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-through">"{currentSuggestion.original}"</p>
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">"{currentSuggestion.suggestion}"</p>
-                        <p className="text-xs text-muted-foreground mt-3">{currentSuggestion.explanation}</p>
-                      </CardContent>
-                    </Card>
-                     <div className="flex justify-end gap-2 mt-4">
-                        <Button variant="ghost" size="sm" onClick={handleNext}>
-                            {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
-                        </Button>
-                        <Button variant="default" size="sm" onClick={handleApply}>Apply</Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Overall Page Tone Display */}
-                {overallPageToneAnalysis && !ideationMessage && (
-                  <Card className="mt-4 border-dashed border-sky-300 dark:border-sky-700">
-                    <CardHeader className="p-3 pb-2">
-                      <CardTitle className="text-sm font-medium text-sky-600 dark:text-sky-400">Overall Page Tone</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <p className="text-xs">
-                        General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive' : overallPageToneAnalysis.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize text-xs px-1.5 py-0.5">
-                          {overallPageToneAnalysis.overallTone}
-                          {typeof overallPageToneAnalysis.overallScore === 'number' && ` (${overallPageToneAnalysis.overallScore.toFixed(2)})`}
-                        </Badge>
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Targeted Text Tone Display */}
-                {toneAnalysisResult && !ideationMessage && (
-                  <Card className="mt-4">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-base">
-                        {targetEditorSelector ? "Editable Content Analysis" : "Text Analysis"}
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
-                          {toneAnalysisResult.overallTone} (Score: {typeof toneAnalysisResult.overallScore === 'number' ? toneAnalysisResult.overallScore.toFixed(2) : 'N/A'})
-                        </Badge>
-                      </CardDescription>
-                    </CardHeader>
-                    {toneAnalysisResult.highlightedSentences && toneAnalysisResult.highlightedSentences.length > 0 && (
-                        <CardContent className="p-3 pt-0">
-                            <p className="text-xs text-muted-foreground mb-1">Key Sentences from Editable Content:</p>
-                            <ul className="space-y-1">
-                            {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
-                                <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                    "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {typeof item.score === 'number' ? item.score.toFixed(2) : 'N/A'})
-                                </li>
-                            ))}
-                            </ul>
-                        </CardContent>
-                    )}
-                    <CardFooter className="p-3 pt-2">
-                         <p className="text-xs text-muted-foreground">Analysis of the editable content area.</p>
                     </CardFooter>
                   </Card>
                 )}
@@ -656,38 +553,82 @@ const Engie: React.FC<EngieProps> = ({
                   </Card>
                 )}
 
-                {/* Fallback "Looking good" or "Brainstorm" button */}
-                {!currentSuggestion && !toneAnalysisResult && !overallPageToneAnalysis && !ideationMessage && !encouragementMessageApi && !isIdeating && (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No immediate suggestions or analysis.</p>
-                    <Button variant="link" size="sm" className="mt-2" onClick={handleManualIdeate}>Want to brainstorm ideas?</Button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button 
-          className="handle relative p-3 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 cursor-grab"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9, cursor: 'grabbing' }}
-          onClick={() => setIsChatOpen(!isChatOpen)}
-        >
-          { (isScanning || isIdeating) && !isChatOpen ? (
-            <Loader2 className="h-8 w-8 animate-spin" />
-          ) : (
-            <Sparkles className="h-8 w-8" />
-          )}
-          {activeSuggestions.length > 0 && !isChatOpen && !(isScanning || isIdeating) && (
-            <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}}>
-                <Badge variant="destructive" className="absolute -top-1 -right-1">{activeSuggestions.length}</Badge>
-            </motion.div>
-          )}
-        </motion.button>
-      </div>
-    </Draggable>
-  );
-};
-
-export default Engie; 
+                {!ideationMessage && !encouragementMessageApi && (
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+                      <TabsTrigger value="tone">Tone</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="suggestions">
+                      {/* Suggestions Display */}
+                      {currentSuggestion ? (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+                            Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
+                          </p>
+                          <Card key={currentSuggestion.id}>
+                            <CardHeader className="flex flex-row items-center gap-2 p-3">
+                              <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
+                              <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
+                              <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
+                            </CardHeader>
+                            <CardContent className="p-3 pt-0">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 line-through">"{currentSuggestion.original}"</p>
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">"{currentSuggestion.suggestion}"</p>
+                              <p className="text-xs text-muted-foreground mt-3">{currentSuggestion.explanation}</p>
+                            </CardContent>
+                          </Card>
+                          <div className="flex justify-end gap-2 mt-4">
+                              <Button variant="ghost" size="sm" onClick={handleNext}>
+                                  {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
+                              </Button>
+                              <Button variant="default" size="sm" onClick={handleApply}>Apply</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No suggestions found.</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                    <TabsContent value="tone">
+                      {/* Tone Analysis Display */}
+                      {toneAnalysisResult || overallPageToneAnalysis ? (
+                        <div className="mt-4 space-y-4">
+                          {toneAnalysisResult && (
+                             <Card>
+                                <CardHeader className="p-3">
+                                  <CardTitle className="text-base">
+                                    {targetEditorSelector ? "Editable Content Analysis" : "Text Analysis"}
+                                  </CardTitle>
+                                  <CardDescription className="text-xs">
+                                    Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
+                                      {toneAnalysisResult.overallTone} (Score: {formatScore(toneAnalysisResult.overallScore)})
+                                    </Badge>
+                                  </CardDescription>
+                                </CardHeader>
+                                {toneAnalysisResult.highlightedSentences && toneAnalysisResult.highlightedSentences.length > 0 && (
+                                    <CardContent className="p-3 pt-0">
+                                        <p className="text-xs text-muted-foreground mb-1">Key Sentences:</p>
+                                        <ul className="space-y-1">
+                                        {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
+                                            <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                                                "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {formatScore(item.score)})
+                                            </li>
+                                        ))}
+                                        </ul>
+                                    </CardContent>
+                                )}
+                                <CardFooter className="p-3 pt-2">
+                                     <p className="text-xs text-muted-foreground">Analysis of the editable content area.</p>
+                                </CardFooter>
+                              </Card>
+                          )}
+                          {overallPageToneAnalysis && (
+                              <Card className="border-dashed border-sky-300 dark:border-sky-700">
+                                <CardHeader className="p-3 pb-2">
+                                  <CardTitle className="text-sm font-medium text-sky-600 dark:text-sky-400">Overall Page Tone</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                  <div className="text-xs">
+                                    General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive
