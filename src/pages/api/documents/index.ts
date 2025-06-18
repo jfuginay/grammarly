@@ -21,15 +21,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   if (req.method === 'GET') {
     const documents = await prisma.document.findMany({
-      where: { authorId: session.user.id },
+      where: { authorId: user.id },
       orderBy: { updatedAt: 'desc' },
     });
     return res.status(200).json(documents);
@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         title,
         content,
-        authorId: session.user.id,
+        authorId: user.id,
       },
     });
     return res.status(201).json(newDocument);

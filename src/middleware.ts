@@ -17,8 +17,8 @@ export async function middleware(request: NextRequest) {
   )
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const origin = request.headers.get('origin') || undefined
   
@@ -35,11 +35,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Auth redirects
-  if (session && request.nextUrl.pathname === '/') {
+  if (user && request.nextUrl.pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (!session && request.nextUrl.pathname === '/dashboard') {
+  if (!user && request.nextUrl.pathname === '/dashboard') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

@@ -227,11 +227,11 @@ const DashboardPage = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
         router.replace('/login');
       } else {
-        setUser(session.user);
+        setUser(authUser);
         setIsAuthLoading(false);
       }
     };
