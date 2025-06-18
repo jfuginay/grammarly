@@ -4,12 +4,29 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ClipboardPaste, FileUp, Share2, Sparkles } from 'lucide-react'; // Import ClipboardPaste, FileUp, Share2 and Sparkles icons
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  ClipboardPaste, 
+  FileUp, 
+  Share2, 
+  Sparkles, 
+  FilePlus, 
+  Menu, 
+  Save, 
+  Trash2, 
+  Edit,
+  LayoutGrid,
+  Pen,
+  Book,
+  CheckCircle,
+  AlertCircle,
+  ChevronRight
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { FilePlus, Menu, Save, Trash2, Edit } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import { useDebouncedCallback } from 'use-debounce';
 import Header from '@/components/Header';
@@ -63,6 +80,7 @@ const DashboardPage = () => {
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [newTitle, setNewTitle] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sidebarView, setSidebarView] = useState<'documents' | 'suggestions'>('documents');
 
   const handlePasteFromClipboard = async () => {
     if (!navigator.clipboard || !navigator.clipboard.readText) {
@@ -198,23 +216,14 @@ const DashboardPage = () => {
         await navigator.share({
           title: activeDocument?.title || 'My Engie Document',
           text: text,
-          // url: window.location.href, // Optionally share the current page URL
         });
-        console.log('Content shared successfully');
-        // Most of the time, the browser's share dialog is enough feedback.
-        // A toast here might be overkill or even feel disruptive.
       } catch (error) {
-        // Common error is AbortError if the user cancels the share dialog
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.log('User cancelled sharing');
-        } else {
-          console.error('Error sharing:', error);
-          toast({
-            title: "Error",
-            description: "Could not share content.",
-            variant: "destructive",
-          });
-        }
+        console.error('Error sharing:', error);
+        toast({
+          title: "Error",
+          description: "Failed to share the content.",
+          variant: "destructive",
+        });
       }
     } else {
       toast({
@@ -240,23 +249,15 @@ const DashboardPage = () => {
 
   const fetchDocuments = useCallback(async () => {
     if (!user) return;
-
+    
     try {
         const response = await fetch('/api/documents');
-        if (!response.ok) throw new Error('Could not fetch documents');
-        let docs: Document[] = await response.json();
-
-        if (docs.length === 0) {
-            // This is a new user or a user with no documents. Create one.
-            const createResponse = await fetch('/api/documents', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: 'Untitled Document', content: '' }),
-            });
-            if (!createResponse.ok) throw new Error('Could not create initial document');
-            docs = [await createResponse.json()];
+        if (!response.ok) {
+          throw new Error('Failed to fetch documents');
         }
+        const docs = await response.json();
         
+        // Sort by most recently updated
         const sortedDocs = docs.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         setDocuments(sortedDocs);
         
@@ -307,6 +308,13 @@ const DashboardPage = () => {
     setIsSidebarOpen(false);
   };
 
+  const handleTitleSave = () => {
+    if (activeDocument && newTitle.trim()) {
+      debouncedUpdateDocument(activeDocument.id, { title: newTitle.trim() });
+      setIsEditingTitle(false);
+    }
+  };
+
   const debouncedUpdateDocument = useDebouncedCallback(async (docId: string, data: { content?: string; title?: string }) => {
     try {
       await fetch(`/api/documents/${docId}`, {
@@ -318,85 +326,86 @@ const DashboardPage = () => {
       toast({ title: "Saved", duration: 2000 });
 
       setDocuments((docs: Document[]) =>
-        docs.map((d: Document) => d.id === docId ? { ...d, ...data, updatedAt: new Date().toISOString() } : d)
-            .sort((a: Document, b: Document) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        docs.map((doc) =>
+          doc.id === docId
+            ? {
+                ...doc,
+                ...data,
+                updatedAt: new Date().toISOString(),
+              }
+            : doc
+        )
       );
-
     } catch (error) {
-      console.error(error);
-      toast({ title: "Save Error", description: "Failed to save changes.", variant: "destructive" });
+      console.error("Failed to update document:", error);
+      toast({
+        title: "Error",
+        description: "Could not save your changes.",
+        variant: "destructive",
+      });
     }
-  }, 1500);
-
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setText(newText);
-    if (activeDocument) {
-      debouncedUpdateDocument(activeDocument.id, { content: newText });
-    }
-  };
-
-  const handleTitleSave = () => {
-    if (activeDocument && newTitle.trim() && newTitle.trim() !== activeDocument.title) {
-      setActiveDocument((doc: Document | null) => doc ? {...doc, title: newTitle.trim()} : null);
-      debouncedUpdateDocument(activeDocument.id, { title: newTitle.trim() });
-    }
-    setIsEditingTitle(false);
-  }
+  }, 1000);
 
   const handleDeleteDocument = async (docId: string) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
-    
     try {
-      await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
-      // After deleting, just refetch the document list from the server
-      await fetchDocuments();
-      toast({ title: "Success", description: "Document deleted." });
+      await fetch(`/api/documents/${docId}`, {
+        method: 'DELETE',
+      });
+      
+      // Update the local state
+      setDocuments(docs => {
+        const newDocs = docs.filter(doc => doc.id !== docId);
+        
+        // If the deleted document was active, select another one
+        if (activeDocument?.id === docId && newDocs.length > 0) {
+          const newActiveDoc = newDocs[0];
+          setActiveDocument(newActiveDoc);
+          setText(newActiveDoc.content);
+        } else if (newDocs.length === 0) {
+          setActiveDocument(null);
+          setText('');
+        }
+        
+        return newDocs;
+      });
+      
+      toast({ title: "Document deleted" });
     } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "Could not delete the document.", variant: "destructive" });
+      console.error("Failed to delete document:", error);
+      toast({ 
+        title: "Error", 
+        description: "Could not delete the document.", 
+        variant: "destructive" 
+      });
     }
   };
 
   const fetchSuggestions = useCallback(async (currentText: string) => {
-    // If suggestions are turned off, clear them and stop.
-    if (!showAiSuggestions) {
-      setSuggestions([]);
-      setIsSuggestionsLoading(false);
-      return;
-    }
-    
-    // If text is empty, clear suggestions and stop.
-    if (!currentText.trim()) {
-      setSuggestions([]);
-      lastAnalyzedTextRef.current = '';
-      setIsSuggestionsLoading(false);
-      return;
-    }
-    
-    // If text has not changed since last analysis, do nothing.
-    if (currentText === lastAnalyzedTextRef.current) {
-      setIsSuggestionsLoading(false);
+    // Don't fetch suggestions if the text is the same as the last analyzed text
+    if (currentText === lastAnalyzedTextRef.current || !currentText.trim() || !showAiSuggestions) {
       return;
     }
 
     setIsSuggestionsLoading(true);
-    console.log("Fetching suggestions for text:", currentText.slice(0, 50) + "...");
-    lastAnalyzedTextRef.current = currentText; // Set last analyzed text before fetching
+    lastAnalyzedTextRef.current = currentText;
 
     try {
       const response = await fetch('/api/correct-text', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ text: currentText }),
       });
+
       const data = await response.json();
+
       if (response.ok) {
-        const suggestionsWithIds = (data.suggestions || []).map((s: Omit<Suggestion, 'id'>, index: number) => ({
-          ...s,
-          id: `${s.original}-${index}-${Date.now()}`,
+        // Add unique IDs to each suggestion
+        const suggestionsWithIds = data.suggestions.map((suggestion: Omit<Suggestion, 'id'>, index: number) => ({
+          ...suggestion,
+          id: `suggestion-${Date.now()}-${index}`,
         }));
-        console.log(`Received ${suggestionsWithIds.length} suggestions for updated text`);
         setSuggestions(suggestionsWithIds);
       } else {
         toast({
@@ -489,189 +498,366 @@ const DashboardPage = () => {
 
   // Components
   const DocumentSidebar = () => (
-    <div className="bg-gray-50 dark:bg-gray-950/50 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Documents</h2>
-        <Button size="sm" variant="outline" onClick={() => handleNewDocument()}><FilePlus className="h-4 w-4 mr-2" />New</Button>
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-inner">
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+        <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">My Documents</h2>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="sm" 
+                onClick={() => handleNewDocument()}
+                className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all duration-200 shadow hover:shadow-md"
+              >
+                <FilePlus className="h-4 w-4 mr-1" />
+                New
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Create a new document</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-      <div className="flex-grow overflow-y-auto">
-        {documents.map((doc: Document) => (
-          <div
-            key={doc.id}
-            className={`p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${activeDocument?.id === doc.id ? 'bg-blue-100 dark:bg-blue-900/50' : ''}`}
-            onClick={() => handleSelectDocument(doc)}
-          >
-            <div className="font-medium truncate">{doc.title}</div>
-            <div className="text-xs text-gray-500 truncate">{doc.content || 'No content'}</div>
-            <div className="text-xs text-gray-400 mt-1">{new Date(doc.updatedAt).toLocaleDateString()}</div>
+      <div className="flex-grow overflow-y-auto p-2">
+        {documents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500 dark:text-gray-400">
+            <FilePlus className="h-12 w-12 mb-4 text-blue-500 dark:text-blue-400" />
+            <p className="mb-4">No documents yet</p>
+            <Button 
+              size="sm" 
+              onClick={() => handleNewDocument()}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+            >
+              Create your first document
+            </Button>
           </div>
-        ))}
+        ) : (
+          <div className="grid grid-cols-1 gap-3">
+            {documents.map((doc: Document) => (
+              <div
+                key={doc.id}
+                className={`p-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 ${activeDocument?.id === doc.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''}`}
+                onClick={() => handleSelectDocument(doc)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-medium truncate">{doc.title}</div>
+                  <div className="flex space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (doc.id === activeDocument?.id) {
+                          setNewTitle(doc.title);
+                          setIsEditingTitle(true);
+                        }
+                      }}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{doc.content.substring(0, 60) || 'No content'}</div>
+                <div className="flex justify-between items-center mt-2">
+                  <div className="text-xs text-gray-400 dark:text-gray-500">{new Date(doc.updatedAt).toLocaleDateString()}</div>
+                  {doc.id === activeDocument?.id && (
+                    <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                      Active
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 
   const severityColorMap: { [key in Suggestion['severity']]: string } = {
-    High: 'bg-red-500',
-    Medium: 'bg-yellow-500',
-    Low: 'bg-blue-500',
+    High: 'bg-red-500 dark:bg-red-600',
+    Medium: 'bg-amber-500 dark:bg-amber-600',
+    Low: 'bg-blue-500 dark:bg-blue-600',
+  };
+
+  const severityIconMap: { [key in Suggestion['severity']]: React.ReactNode } = {
+    High: <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400" />,
+    Medium: <AlertCircle className="h-4 w-4 text-amber-500 dark:text-amber-400" />,
+    Low: <CheckCircle className="h-4 w-4 text-blue-500 dark:text-blue-400" />,
   };
 
   if (isAuthLoading) {
     return (
-        <div className="h-screen w-screen flex justify-center items-center">
-            <div>Loading...</div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-950">
+        <div className="animate-pulse bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent text-3xl font-bold mb-4">
+          WriteMaster
         </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400"></div>
+      </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-white dark:bg-gray-950 flex flex-col">
-       <Header user={user} />
-       <div className="flex flex-1 overflow-hidden">
-          <div className="hidden md:block md:w-72 lg:w-80 h-full">
-            <DocumentSidebar />
-          </div>
-
-          <main className="flex-1 flex flex-col p-4 md:p-6 h-full overflow-hidden">
-            <header className="flex-grow-0 flex justify-between items-center mb-4">
-              {activeDocument && isEditingTitle ? (
-                <div className="flex items-center gap-2">
-                  <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} onBlur={handleTitleSave} onKeyDown={(e) => e.key === 'Enter' && handleTitleSave()} autoFocus className="text-2xl font-bold bg-transparent border-b"/>
-                  <Button size="sm" onClick={handleTitleSave}><Save className="h-4 w-4"/></Button>
+    <div className="h-screen w-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+      <Header user={user} />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar - Desktop */}
+        <div className="hidden md:block md:w-72 lg:w-80 border-r border-gray-200 dark:border-gray-800 overflow-hidden">
+          <Tabs defaultValue="documents" className="h-full flex flex-col">
+            <TabsList className="w-full h-12 rounded-none border-b border-gray-200 dark:border-gray-800 bg-transparent gap-4 px-6">
+              <TabsTrigger 
+                value="documents" 
+                className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Documents
+              </TabsTrigger>
+              <TabsTrigger 
+                value="suggestions" 
+                className="flex items-center gap-2 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none"
+              >
+                <Sparkles className="h-4 w-4" />
+                Suggestions
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="documents" className="h-full overflow-hidden flex-1 m-0 p-0">
+              <DocumentSidebar />
+            </TabsContent>
+            <TabsContent value="suggestions" className="h-full overflow-hidden flex-1 m-0 p-0">
+              <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-inner p-4">
+                <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent mb-4">Writing Suggestions</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">AI Suggestions</span>
+                  <Switch
+                    checked={showAiSuggestions}
+                    onCheckedChange={setShowAiSuggestions}
+                    aria-label="Toggle AI Suggestions"
+                  />
                 </div>
-              ) : (
-                <div className="flex items-center gap-2 group">
-                  <h1 className="text-2xl font-bold">{activeDocument?.title || 'Loading...'}</h1>
-                  {activeDocument && <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => {
+                <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+                  {isSuggestionsLoading && <p className='text-center text-gray-500 mt-8'>Analyzing your writing...</p>}
+                  {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 mt-8">No suggestions found.</div>}
+                  {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 mt-8">Start typing to get suggestions.</div>}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <main className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900 shadow-xl rounded-tl-xl md:rounded-none">
+          <header className="flex-grow-0 flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800">
+            {activeDocument && isEditingTitle ? (
+              <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded">
+                <input 
+                  value={newTitle} 
+                  onChange={(e) => setNewTitle(e.target.value)} 
+                  onBlur={handleTitleSave} 
+                  onKeyDown={(e) => e.key === 'Enter' && handleTitleSave()} 
+                  autoFocus 
+                  className="text-xl font-bold bg-transparent border-b border-gray-300 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none px-1 py-0.5"
+                />
+                <Button size="sm" onClick={handleTitleSave} variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <Save className="h-4 w-4"/>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group">
+                <Pen className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
+                <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">{activeDocument?.title || 'Select a document'}</h1>
+                {activeDocument && 
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 rounded-full" 
+                    onClick={() => {
                       if (activeDocument) {
                         setNewTitle(activeDocument.title);
                         setIsEditingTitle(true);
                       }
-                  }}>
-                    <Edit className="h-5 w-5"/>
-                  </Button>}
+                    }}
+                  >
+                    <Edit className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+                  </Button>
+                }
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept=".txt,.md"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={handleFileUploadClick} className="h-9 w-9 rounded-full border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <FileUp className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Import file</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={handlePasteFromClipboard} className="h-9 w-9 rounded-full border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <ClipboardPaste className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Paste from clipboard</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={handleShare} className="h-9 w-9 rounded-full border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Share document</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </header>
+
+          <div className="flex-1 flex overflow-hidden p-4">
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <Card className="flex-1 overflow-hidden border-0 shadow-none">
+                <CardContent className="p-0 h-full flex flex-col">
+                  <Textarea
+                    id="dashboard-editor-textarea"
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      if (activeDocument) {
+                        debouncedUpdateDocument(activeDocument.id, { content: e.target.value });
+                      }
+                    }}
+                    placeholder="Start writing or paste your text here..."
+                    className="flex-1 resize-none border-0 text-base focus-visible:ring-0 shadow-none rounded-xl p-6 bg-white dark:bg-gray-900"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Sidebar - Desktop */}
+            <aside className="hidden lg:flex w-80 xl:w-96 flex-col gap-4 pl-4">
+              <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow transition-shadow duration-200">
+                <CardHeader className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-500/5 dark:to-indigo-500/5 px-4 py-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                    <span>AI Writing Assistant</span>
+                  </CardTitle>
+                  <Switch
+                    checked={showAiSuggestions}
+                    onCheckedChange={setShowAiSuggestions}
+                    aria-label="Toggle AI Suggestions"
+                  />
+                </CardHeader>
+                <CardContent className="px-4 py-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {showAiSuggestions ? 
+                      "AI analysis is enabled. Your writing will be analyzed for grammar, style, and clarity improvements." :
+                      "AI analysis is disabled. Enable to get writing suggestions."
+                    }
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {showAiSuggestions && (
+                <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+                  {isSuggestionsLoading && (
+                    <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                        <p className='text-gray-600 dark:text-gray-300'>Analyzing your writing...</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && (
+                    <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <p className='text-gray-600 dark:text-gray-300'>Your writing looks good! No suggestions found.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {!isSuggestionsLoading && !text && (
+                    <Card className="border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <Pen className="h-5 w-5 text-blue-500" />
+                        <p className='text-gray-600 dark:text-gray-300'>Start typing to get writing suggestions.</p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".txt,.md,text/plain,text/markdown"
-                />
-                <Button variant="outline" size="sm" onClick={handleFileUploadClick} disabled={!activeDocument}>
-                  <FileUp className="h-4 w-4 mr-2" />
-                  Upload
-                </Button>
-                <Button variant="outline" size="sm" onClick={handlePasteFromClipboard} disabled={!activeDocument}>
-                  <ClipboardPaste className="h-4 w-4 mr-2" />
-                  Paste
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleShare} disabled={!activeDocument || !text.trim()}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                 {activeDocument && <Button size="icon" variant="ghost" className='text-red-500 hover:bg-red-100 hover:text-red-600' onClick={() => handleDeleteDocument(activeDocument.id)}><Trash2 className="h-4 w-4"/></Button>}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="md:hidden"
-                  onClick={() => setIsAiSidebarOpen(true)}
-                >
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-              </div>
-            </header>
+            </aside>
+          </div>
+        </main>
 
-            <div className="flex-1 flex gap-6 overflow-hidden">
-              <div className="flex-1 flex flex-col min-w-0">
-                <Card className="flex-1 flex flex-col">
-                  <CardContent className="flex-1 flex p-1">
-                    <Textarea
-                      id="dashboard-editor-textarea" // Added ID
-                      value={text}
-                      onChange={handleTextChange}
-                      placeholder="Create your first document to get started or select one from the sidebar."
-                      className="w-full h-full text-base resize-none border-0 focus:ring-0 p-4"
-                      disabled={!activeDocument}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+        <Engie
+          suggestions={suggestions}
+          onApply={applySuggestion}
+          onDismiss={dismissSuggestion}
+          onIdeate={() => { /* TODO */ }}
+          targetEditorSelector="#dashboard-editor-textarea" // Added prop
+        />
 
-              <aside className="hidden md:flex w-80 lg:w-96 flex-col gap-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-lg font-semibold">AI Writing Assistant</CardTitle>
-                        <Switch
-                            checked={showAiSuggestions}
-                            onCheckedChange={setShowAiSuggestions}
-                            aria-label="Toggle AI Suggestions"
-                        />
-                    </CardHeader>
-                </Card>
-                {showAiSuggestions && (
-                  <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                    {isSuggestionsLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
-                    {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
-                    {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
-                    {/* The suggestion list is now handled by Engie */}
-                  </div>
-                )}
-              </aside>
-            </div>
-          </main>
-
-          <Engie
-            suggestions={suggestions}
-            onApply={applySuggestion}
-            onDismiss={dismissSuggestion}
-            onIdeate={() => { /* TODO */ }}
-            targetEditorSelector="#dashboard-editor-textarea" // Added prop
-          />
-
-          <div className="md:hidden">
-            {/* Document Sidebar Sheet */}
-            <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        {/* Mobile Sidebars */}
+        <div className="md:hidden">
+          {/* Document Sidebar Sheet */}
+          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-20 bg-white dark:bg-gray-800 shadow-lg">
-                <Menu className="h-6 w-6" />
-                </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="fixed top-20 left-4 z-20 bg-white dark:bg-gray-900 shadow-lg rounded-full h-10 w-10"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-                <DocumentSidebar />
-            </SheetContent>
-            </Sheet>
-
-            {/* AI Assistant Sidebar Sheet */}
-            <Sheet open={isAiSidebarOpen} onOpenChange={setIsAiSidebarOpen}>
-              {/* SheetTrigger is handled by the button in the main header for AI Assistant */}
-              <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm p-0">
-                <aside className="flex h-full w-full flex-col gap-4 p-4 overflow-y-auto">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-lg font-semibold">AI Writing Assistant</CardTitle>
+            <SheetContent side="left" className="w-80 p-0 border-r border-gray-200 dark:border-gray-800">
+              <Tabs defaultValue="documents" className="h-full flex flex-col">
+                <TabsList className="w-full h-12 rounded-none border-b border-gray-200 dark:border-gray-800 bg-transparent gap-4 px-6">
+                  <TabsTrigger value="documents" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none">
+                    Documents
+                  </TabsTrigger>
+                  <TabsTrigger value="suggestions" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none rounded-none">
+                    Suggestions
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="documents" className="h-full overflow-hidden flex-1 m-0 p-0">
+                  <DocumentSidebar />
+                </TabsContent>
+                <TabsContent value="suggestions" className="h-full overflow-hidden flex-1 m-0 p-0">
+                  <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-inner p-4">
+                    <h2 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-4">Writing Suggestions</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">AI Suggestions</span>
                       <Switch
                         checked={showAiSuggestions}
                         onCheckedChange={setShowAiSuggestions}
                         aria-label="Toggle AI Suggestions"
                       />
-                    </CardHeader>
-                  </Card>
-                  {showAiSuggestions && (
-                    <div className="overflow-y-auto flex-1 space-y-3 pr-2">
-                      {isSuggestionsLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
-                      {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
-                      {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
-                      {/* The suggestion list is now handled by Engie - this part might be empty if Engie component is the sole display for suggestions */}
                     </div>
-                  )}
-                </aside>
-              </SheetContent>
-            </Sheet>
-          </div>
-       </div>
+                    <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+                      {/* Suggestions content here */}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
     </div>
   );
 };
