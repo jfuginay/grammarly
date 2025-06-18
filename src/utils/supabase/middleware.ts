@@ -24,11 +24,7 @@ export const createClient = (request: NextRequest) => {
             value,
             ...options,
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
+          // Ensure response object is not recreated
           response.cookies.set({
             name,
             value,
@@ -42,11 +38,7 @@ export const createClient = (request: NextRequest) => {
             value: '',
             ...options,
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
+          // Ensure response object is not recreated
           response.cookies.set({
             name,
             value: '',
@@ -81,11 +73,7 @@ export async function updateSession(request: NextRequest) {
               value,
               ...options,
             })
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            })
+            // Ensure response object is not recreated
             response.cookies.set({
               name,
               value,
@@ -98,11 +86,7 @@ export async function updateSession(request: NextRequest) {
               value: '',
               ...options,
             })
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            })
+            // Ensure response object is not recreated
             response.cookies.set({
               name,
               value: '',
