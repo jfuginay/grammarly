@@ -533,7 +533,7 @@ const Engie: React.FC<EngieProps> = ({
   const nodeRef = React.useRef(null);
 
   return (
-    <Draggable handle=".handle" nodeRef={nodeRef}>
+    <Draggable handle=".handle" nodeRef={nodeRef} allowMobileScroll={true}>
       <div ref={nodeRef} id="engie-container" className="fixed bottom-10 right-10 z-50 flex flex-col items-end">
         <AnimatePresence>
           {isChatOpen && (
