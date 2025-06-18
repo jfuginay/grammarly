@@ -631,4 +631,61 @@ const Engie: React.FC<EngieProps> = ({
                                 </CardHeader>
                                 <CardContent className="p-3 pt-0">
                                   <div className="text-xs">
-                                    General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive
+                                    General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive' : overallPageToneAnalysis.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize text-xs px-1.5 py-0.5">
+                                      {overallPageToneAnalysis.overallTone}
+                                      {typeof overallPageToneAnalysis.overallScore === 'number' && ` (${formatScore(overallPageToneAnalysis.overallScore)})`}
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                          )}
+                          {!toneAnalysisResult && !overallPageToneAnalysis && (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-gray-600 dark:text-gray-300">No tone analysis available.</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">No tone analysis available.</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                )}
+
+                {/* Fallback "Looking good" or "Brainstorm" button */}
+                {!currentSuggestion && !toneAnalysisResult && !overallPageToneAnalysis && !ideationMessage && !encouragementMessageApi && !isIdeating && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No immediate suggestions or analysis.</p>
+                    <Button variant="link" size="sm" className="mt-2" onClick={handleManualIdeate}>Want to brainstorm ideas?</Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          className="handle relative p-3 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 cursor-grab"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9, cursor: 'grabbing' }}
+          onClick={() => setIsChatOpen(!isChatOpen)}
+        >
+          { (isScanning || isIdeating) && !isChatOpen ? (
+            <Loader2 className="h-8 w-8 animate-spin" />
+          ) : (
+            <Sparkles className="h-8 w-8" />
+          )}
+          {activeSuggestions.length > 0 && !isChatOpen && !(isScanning || isIdeating) && (
+            <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}}>
+                <Badge variant="destructive" className="absolute -top-1 -right-1">{activeSuggestions.length}</Badge>
+            </motion.div>
+          )}
+        </motion.button>
+      </div>
+    </Draggable>
+  );
+};
+
+export default Engie;
