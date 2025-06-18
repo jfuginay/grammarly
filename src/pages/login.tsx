@@ -100,15 +100,6 @@ const LoginPage = () => {
             </div>
             <div className="flex flex-col gap-4">
               <GoogleButton />
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push('/magic-link-login');
-                }}
-                variant="outline"
-              >
-                Continue with Magic Link
-              </Button>
             </div>
             <div className="flex items-center w-full my-6">
               <Separator className="flex-1" />

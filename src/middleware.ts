@@ -58,7 +58,8 @@ export const config = {
      * - auth (auth routes)
      * - login (login route)
      * - signup (signup route)
+     * - magic-link-login (magic link login route)
      */
-    '/((?!_next/static|_next/image|favicon.ico|images|auth|login|signup).*)',
+    '/((?!_next/static|_next/image|favicon.ico|images|auth|login|signup|magic-link-login).*)',
   ],
 }
