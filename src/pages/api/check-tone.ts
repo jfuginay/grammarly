@@ -52,7 +52,7 @@ export default async function handler(
 
     const analysis = JSON.parse(completion.choices[0].message.content || '{}');
 
-    res.status(200).json({ analysis });
+    res.status(200).json(analysis);
   } catch (error) {
     console.error('Error analyzing tone:', error);
     res.status(500).json({ message: 'Internal Server Error' });
