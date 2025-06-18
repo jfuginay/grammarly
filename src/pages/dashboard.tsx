@@ -4,7 +4,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ClipboardPaste, FileUp, Share2 } from 'lucide-react'; // Import ClipboardPaste, FileUp, and Share2 icons
+import { ClipboardPaste, FileUp, Share2, Sparkles } from 'lucide-react'; // Import ClipboardPaste, FileUp, Share2 and Sparkles icons
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -58,7 +58,8 @@ const DashboardPage = () => {
   const [showAiSuggestions, setShowAiSuggestions] = useState<boolean>(true);
   const lastAnalyzedTextRef = useRef<string>('');
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // For document sidebar
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState<boolean>(false); // For AI assistant sidebar
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
   const [newTitle, setNewTitle] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -539,6 +540,14 @@ const DashboardPage = () => {
                   Share
                 </Button>
                  {activeDocument && <Button size="icon" variant="ghost" className='text-red-500 hover:bg-red-100 hover:text-red-600' onClick={() => handleDeleteDocument(activeDocument.id)}><Trash2 className="h-4 w-4"/></Button>}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="md:hidden"
+                  onClick={() => setIsAiSidebarOpen(true)}
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
               </div>
             </header>
 
@@ -558,7 +567,7 @@ const DashboardPage = () => {
                 </Card>
               </div>
 
-              <aside className="w-80 lg:w-96 flex flex-col gap-4">
+              <aside className="hidden md:flex w-80 lg:w-96 flex-col gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-lg font-semibold">AI Writing Assistant</CardTitle>
@@ -581,7 +590,7 @@ const DashboardPage = () => {
             </div>
           </main>
 
-          <Engie 
+          <Engie
             suggestions={suggestions}
             onApply={applySuggestion}
             onDismiss={dismissSuggestion}
@@ -590,6 +599,7 @@ const DashboardPage = () => {
           />
 
           <div className="md:hidden">
+            {/* Document Sidebar Sheet */}
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-20 bg-white dark:bg-gray-800 shadow-lg">
@@ -599,6 +609,33 @@ const DashboardPage = () => {
             <SheetContent side="left" className="w-72 p-0">
                 <DocumentSidebar />
             </SheetContent>
+            </Sheet>
+
+            {/* AI Assistant Sidebar Sheet */}
+            <Sheet open={isAiSidebarOpen} onOpenChange={setIsAiSidebarOpen}>
+              {/* SheetTrigger is handled by the button in the main header for AI Assistant */}
+              <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm p-0">
+                <aside className="flex h-full w-full flex-col gap-4 p-4 overflow-y-auto">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg font-semibold">AI Writing Assistant</CardTitle>
+                      <Switch
+                        checked={showAiSuggestions}
+                        onCheckedChange={setShowAiSuggestions}
+                        aria-label="Toggle AI Suggestions"
+                      />
+                    </CardHeader>
+                  </Card>
+                  {showAiSuggestions && (
+                    <div className="overflow-y-auto flex-1 space-y-3 pr-2">
+                      {isSuggestionsLoading && <p className='text-center text-gray-500'>Loading suggestions...</p>}
+                      {!isSuggestionsLoading && suggestions.length === 0 && showAiSuggestions && text && <div className="text-center text-gray-500 pt-10">No suggestions found.</div>}
+                      {!isSuggestionsLoading && !text && <div className="text-center text-gray-500 pt-10">Start typing to get suggestions.</div>}
+                      {/* The suggestion list is now handled by Engie - this part might be empty if Engie component is the sole display for suggestions */}
+                    </div>
+                  )}
+                </aside>
+              </SheetContent>
             </Sheet>
           </div>
        </div>
