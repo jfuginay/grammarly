@@ -56,6 +56,9 @@ const Engie: React.FC<EngieProps> = ({
   onIdeate: onIdeateExternalProp,
   targetEditorSelector
 }) => {
+  // Hook to detect if the device is a touch screen
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
@@ -522,6 +525,12 @@ const Engie: React.FC<EngieProps> = ({
     triggerIdeation(true);
   };
 
+  // Handler for closing Engie
+  const handleEngieClose = useCallback(() => {
+    setIsChatOpen(false);
+    console.log("Engie closed via", isTouchDevice ? "touch" : "click");
+  }, [isTouchDevice]);
+
   // Helper function to safely format scores
   const formatScore = (score: number | undefined | null): string => {
     if (typeof score === 'number' && !isNaN(score)) {
@@ -532,8 +541,104 @@ const Engie: React.FC<EngieProps> = ({
 
   const nodeRef = React.useRef(null);
 
+  // Detect touch capability on component mount
+  useEffect(() => {
+    const detectTouch = () => {
+      const isTouch = 'ontouchstart' in window || 
+        navigator.maxTouchPoints > 0 ||
+        (navigator as any).msMaxTouchPoints > 0;
+      
+      setIsTouchDevice(isTouch);
+      console.log("Touch device detection:", isTouch ? "Device supports touch" : "Device does not support touch");
+    };
+    
+    detectTouch();
+    
+    detectTouch();
+    
+    // Also check on resize as user might switch between devices or orientations
+    window.addEventListener('resize', detectTouch);
+    
+    return () => {
+      window.removeEventListener('resize', detectTouch);
+    };
+  }, []);
+
+  // Enhanced handler for both click and touch events
+  const handleEngieTrigger = useCallback(() => {
+    setIsChatOpen(!isChatOpen);
+    console.log("Engie triggered via", isTouchDevice ? "touch" : "click");
+  }, [isChatOpen, isTouchDevice]);
+
+  // Mobile-specific styling adjustments
+  useEffect(() => {
+    // Add specific CSS for touch devices
+    if (isTouchDevice) {
+      // Add a larger hit area for touch targets
+      const style = document.createElement('style');
+      style.id = 'engie-mobile-styles';
+      style.innerHTML = `
+        #engie-container button {
+          min-height: 44px;
+          min-width: 44px;
+        }
+        #engie-container .handle {
+          cursor: move;
+          touch-action: none;
+        }
+        #engie-main-button {
+          transform: scale(1.2);
+          transition: transform 0.3s ease;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        // Clean up when component unmounts
+        const existingStyle = document.getElementById('engie-mobile-styles');
+        if (existingStyle) {
+          existingStyle.remove();
+        }
+      };
+    }
+  }, [isTouchDevice]);
+
+  // Function to prevent default touch behavior to avoid scrolling issues
+  const preventDefaultForScrolling = useCallback((e: Event) => {
+    // Ensure we're only preventing default for touch events to avoid issues with other event types
+    if (e.type.startsWith('touch')) {
+      e.preventDefault();
+      
+      // Log touch event handling for debugging purposes
+      console.log('Preventing default touch behavior for Engie dragging');
+    }
+  }, []);
+
+  // Add touch event listeners to handle dragging better on mobile
+  useEffect(() => {
+    if (isTouchDevice) {
+      const engieContainer = document.getElementById('engie-container');
+      if (engieContainer) {
+        const handleElement = engieContainer.querySelector('.handle');
+        if (handleElement) {
+          handleElement.addEventListener('touchmove', preventDefaultForScrolling, { passive: false });
+        }
+      }
+      
+      return () => {
+        const engieContainer = document.getElementById('engie-container');
+        if (engieContainer) {
+          const handleElement = engieContainer.querySelector('.handle');
+          if (handleElement) {
+            handleElement.removeEventListener('touchmove', preventDefaultForScrolling);
+          }
+        }
+      };
+    }
+  }, [isTouchDevice, preventDefaultForScrolling]);
+
   return (
-    <Draggable handle=".handle" nodeRef={nodeRef} allowMobileScroll={true}>
+    <Draggable handle=".handle" nodeRef={nodeRef}>
       <div ref={nodeRef} id="engie-container" className="fixed bottom-10 right-10 z-50 flex flex-col items-end">
         <AnimatePresence>
           {isChatOpen && (
@@ -549,7 +654,17 @@ const Engie: React.FC<EngieProps> = ({
                     <Sparkles className="h-6 w-6 text-purple-500"/>
                     <h3 className="font-semibold">Engie</h3>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsChatOpen(false)}><X className="h-4 w-4"/></Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6" 
+                  onClick={handleEngieClose}
+                  onTouchStart={isTouchDevice ? handleEngieClose : undefined}
+                  aria-label="Close Engie"
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  <X className="h-4 w-4"/>
+                </Button>
               </header>
 
               <div className="p-4 max-h-[60vh] overflow-y-auto">
@@ -702,10 +817,16 @@ const Engie: React.FC<EngieProps> = ({
         </AnimatePresence>
 
         <motion.button
+          id="engie-main-button"
           className="handle relative p-3 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 cursor-grab"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9, cursor: 'grabbing' }}
-          onClick={() => setIsChatOpen(!isChatOpen)}
+          onClick={handleEngieTrigger}
+          onTouchStart={isTouchDevice ? handleEngieTrigger : undefined}
+          role="button"
+          tabIndex={0}
+          aria-label="Open Engie Assistant"
+          style={{ touchAction: 'manipulation' }}
         >
           { (isScanning || isIdeating) && !isChatOpen ? (
             <Loader2 className="h-8 w-8 animate-spin" />
