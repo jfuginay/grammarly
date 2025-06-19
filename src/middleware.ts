@@ -1,49 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateSession } from '@/utils/supabase/middleware'
-import { createServerClient } from '@supabase/ssr'
 import { CORS_HEADERS, getAllowedOrigin } from '@/lib/cors'
 
 export async function middleware(request: NextRequest) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-      },
-    }
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   const origin = request.headers.get('origin') || undefined
-  
+
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
     const response = new NextResponse(null, { status: 200 })
-    
     response.headers.set('Access-Control-Allow-Origin', getAllowedOrigin(origin))
     Object.entries(CORS_HEADERS).forEach(([key, value]) => {
       response.headers.set(key, value)
     })
-    
     return response
   }
 
-  // Auth redirects
-  if (user && request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  if (!user && request.nextUrl.pathname === '/dashboard') {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  return await updateSession(request)
+  return NextResponse.next()
 }
 
 export const config = {
