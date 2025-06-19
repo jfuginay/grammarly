@@ -1,35 +1,27 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import prisma from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies[name];
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          res.setHeader('Set-Cookie', `${name}=${value}; Path=/; HttpOnly; SameSite=Lax`);
-        },
-        remove(name: string, options: CookieOptions) {
-          res.setHeader('Set-Cookie', `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-        },
-      },
-    }
-  );
+  const token = req.cookies.auth_token;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided.' });
+  }
 
-  if (!user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  let userId;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    userId = decoded.userId;
+  } catch (error) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid token.' });
   }
 
   if (req.method === 'GET') {
     const documents = await prisma.document.findMany({
-      where: { authorId: user.id },
+      where: { authorId: userId },
       orderBy: { updatedAt: 'desc' },
     });
     return res.status(200).json(documents);
@@ -39,9 +31,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { title, content } = req.body;
     const newDocument = await prisma.document.create({
       data: {
-        title,
-        content,
-        authorId: user.id,
+        title: title || 'Untitled Document',
+        content: content || '',
+        authorId: userId,
       },
     });
     return res.status(201).json(newDocument);

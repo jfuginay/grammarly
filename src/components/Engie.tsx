@@ -41,6 +41,7 @@ interface EngieProps {
   onDismiss: (suggestionId: string) => void;
   onIdeate: () => void;
   targetEditorSelector?: string; // Selector for the main text editing area
+  onIdea?: (idea: string) => void; // <-- new prop
 }
 
 const severityColorMap: { [key in Suggestion['severity']]: string } = {
@@ -54,7 +55,8 @@ const Engie: React.FC<EngieProps> = ({
   onApply: onApplyExternal,
   onDismiss: onDismissExternal,
   onIdeate: onIdeateExternalProp,
-  targetEditorSelector
+  targetEditorSelector,
+  onIdea // <-- new prop
 }) => {
   // Hook to detect if the device is a touch screen
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -76,6 +78,27 @@ const Engie: React.FC<EngieProps> = ({
   const [isIdeating, setIsIdeating] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]); // For future chat interactions
   const [activeTab, setActiveTab] = useState('suggestions');
+
+  // Notification panel state
+  const [ideaNotifications, setIdeaNotifications] = useState<string[]>([]);
+  const [showSparkle, setShowSparkle] = useState(false);
+  const engieRef = useRef<HTMLDivElement>(null);
+  const [engiePos, setEngiePos] = useState({ x: 0, y: 0 });
+
+  // Track if notification is open
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  // Track unread ideas
+  const unreadCount = ideaNotifications.length;
+
+  // Hide notification if no unread ideas
+  useEffect(() => {
+    if (unreadCount === 0) setNotificationOpen(false);
+  }, [unreadCount]);
+
+  // Show notification on Engie click if there are unread ideas
+  const handleEngieClick = () => {
+    if (unreadCount > 0) setNotificationOpen((v) => !v);
+  };
 
   // Determine which suggestions to use: internal if available, otherwise external
   const activeSuggestions = internalSuggestions.length > 0 ? internalSuggestions : externalSuggestions;
@@ -539,8 +562,6 @@ const Engie: React.FC<EngieProps> = ({
     return 'N/A';
   };
 
-  const nodeRef = React.useRef(null);
-
   // Detect touch capability on component mount
   useEffect(() => {
     const detectTouch = () => {
@@ -637,9 +658,102 @@ const Engie: React.FC<EngieProps> = ({
     }
   }, [isTouchDevice, preventDefaultForScrolling]);
 
+  // Notify parent when ideationMessage changes
+  useEffect(() => {
+    if (onIdea && ideationMessage && ideationMessage.content) {
+      onIdea(ideationMessage.content);
+    }
+  }, [ideationMessage, onIdea]);
+
+  // When a new idea arrives, sparkle Engie and add to notifications
+  useEffect(() => {
+    if (onIdea && ideationMessage && ideationMessage.content) {
+      setShowSparkle(true);
+      setTimeout(() => setShowSparkle(false), 1500);
+      setIdeaNotifications((prev) => [ideationMessage.content, ...prev]);
+    }
+  }, [ideationMessage, onIdea]);
+
+  // Update Engie position on drag
+  const handleDrag = (e: any, data: any) => {
+    setEngiePos({ x: data.x, y: data.y });
+  };
+
+  // Remove notification
+  const dismissNotification = (idx: number) => {
+    setIdeaNotifications((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Notification peek style (partially hidden behind Engie)
+  const notificationPeek = (
+    unreadCount > 0 && !notificationOpen && (
+      <div
+        className="absolute top-1/2 left-full -translate-y-1/2 -ml-2 z-40"
+        style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #a78bfa, #6366f1)', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
+        aria-label="New Engie Idea"
+      >
+        <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">{unreadCount}</span>
+      </div>
+    )
+  );
+
+  // Notification popout (smaller than Engie)
+  const notificationPopout = (
+    notificationOpen && unreadCount > 0 && (
+      <div
+        className="absolute top-1/2 left-full -translate-y-1/2 ml-2 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-2 flex flex-col items-center animate-fade-in"
+        style={{ width: 180, minHeight: 48, maxWidth: 200 }}
+      >
+        <div className="flex items-center justify-between w-full mb-1">
+          <span className="text-blue-600 dark:text-blue-300 font-semibold text-xs">Engie Idea</span>
+          <button onClick={() => dismissNotification(0)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-base font-bold">×</button>
+        </div>
+        <div className="text-gray-800 dark:text-gray-100 text-xs whitespace-pre-line min-h-[32px]">{ideaNotifications[0]}</div>
+        {unreadCount > 1 && (
+          <div className="mt-1 text-2xs text-gray-400">+{unreadCount - 1} more</div>
+        )}
+      </div>
+    )
+  );
+
   return (
-    <Draggable handle=".handle" nodeRef={nodeRef}>
-      <div ref={nodeRef} id="engie-container" className="fixed bottom-10 right-10 z-50 flex flex-col items-end">
+    <Draggable
+      nodeRef={engieRef}
+      bounds="parent"
+      onDrag={handleDrag}
+      defaultPosition={{ x: 40, y: 120 }}
+    >
+      <div ref={engieRef} className="fixed z-50" style={{ left: engiePos.x, top: engiePos.y }}>
+        {/* Engie Main Widget */}
+        <div
+          className={`relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-xl p-4 flex items-center justify-center cursor-pointer ${showSparkle ? 'animate-pulse ring-4 ring-pink-400' : ''}`}
+          style={{ width: 64, height: 64 }}
+          aria-label="Engie Assistant Hub"
+          onClick={handleEngieClick}
+        >
+          <span className="text-white text-3xl">✨</span>
+          {showSparkle && (
+            <span className="absolute -top-2 -right-2 bg-pink-500 text-white rounded-full px-2 py-0.5 text-xs animate-bounce">New Idea!</span>
+          )}
+          {notificationPeek}
+        </div>
+        {notificationPopout}
+        {/* Notification Panel (top-right of Engie) */}
+        {ideaNotifications.length > 0 && (
+          <div
+            className="absolute top-0 left-full ml-4 w-72 max-w-xs bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-4 animate-fade-in"
+            style={{ zIndex: 100 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-blue-600 dark:text-blue-300">Engie's Idea</span>
+              <button onClick={() => dismissNotification(0)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl font-bold">×</button>
+            </div>
+            <div className="text-gray-800 dark:text-gray-100 whitespace-pre-line min-h-[48px]">{ideaNotifications[0]}</div>
+            {ideaNotifications.length > 1 && (
+              <div className="mt-2 text-xs text-gray-400">+{ideaNotifications.length - 1} more</div>
+            )}
+          </div>
+        )}
         <AnimatePresence>
           {isChatOpen && (
             <motion.div
