@@ -44,6 +44,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // Initialize proper position on client-side mount
   useEffect(() => {
+    console.log('EngieBot component mounted');
     // Recalculate position after component mounts to get real window dimensions
     const stateManager = controller.getStateManager();
     const currentPos = stateManager.getState().engiePos;
@@ -52,6 +53,11 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     if (currentPos.x === 100 && currentPos.y === 100) {
       stateManager.resetEngiePosition();
     }
+    
+    // Force a position update to ensure visibility
+    setTimeout(() => {
+      stateManager.resetEngiePosition();
+    }, 100);
   }, [controller]);
 
   // Handle window resize to keep Engie within bounds
@@ -99,14 +105,10 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   // Debug logging
   useEffect(() => {
     console.log('Engie position:', state.engiePos);
-    console.log('Window dimensions:', { 
-      width: typeof window !== 'undefined' ? window.innerWidth : 'SSR', 
-      height: typeof window !== 'undefined' ? window.innerHeight : 'SSR' 
-    });
   }, [state.engiePos]);
 
   return (
-    <div id="engie-container">
+    <div id="engie-container" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }}>
       <Draggable
         nodeRef={engieRef}
         defaultPosition={{ x: state.engiePos.x, y: state.engiePos.y }}
@@ -114,13 +116,13 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
         onDrag={handleDrag}
         onStop={onStopDrag}
         handle=".engie-handle"
+        bounds="parent"
       >
         <div 
           ref={engieRef} 
-          className="fixed z-50" 
           style={{ 
-            border: '2px solid red', // Debug border
-            backgroundColor: 'rgba(255, 0, 0, 0.1)' // Debug background
+            pointerEvents: 'auto', // Re-enable pointer events for the bot
+            position: 'absolute'
           }}
         >
           <div className="relative">
@@ -131,30 +133,20 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
               role="button"
               tabIndex={0}
               aria-label="Open Engie Assistant"
+              style={{
+                width: '64px',
+                height: '64px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'grab'
+              }}
             >
               <AnimatedEngieBot 
                 animationState={state.botAnimation} 
                 speed={state.botSpeed} 
                 direction={state.botDirection} 
               />
-              {/* Fallback visible element for debugging */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '64px',
-                height: '64px',
-                backgroundColor: 'blue',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '12px',
-                zIndex: 1000
-              }}>
-                ENGIE
-              </div>
               
               {/* Status indicators overlaid on the bot */}
               <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">

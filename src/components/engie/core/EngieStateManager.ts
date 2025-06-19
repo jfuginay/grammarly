@@ -40,13 +40,19 @@ export class EngieStateManager {
   }
 
   private calculateInitialPosition(): { x: number; y: number } {
-    // Position Engie at center of the viewport
+    // Position Engie at bottom-right of the viewport with some padding
     const engieSize = 64;
+    const padding = 20;
+    
     if (typeof window === 'undefined') {
+      // SSR fallback - position in center
       return { x: 400, y: 300 };
     }
-    const x = Math.max(0, window.innerWidth / 2 - engieSize / 2);
-    const y = Math.max(0, window.innerHeight / 2 - engieSize / 2);
+    
+    // Calculate bottom-right position
+    const x = Math.max(padding, window.innerWidth - engieSize - padding);
+    const y = Math.max(padding, window.innerHeight - engieSize - padding);
+    
     return { x, y };
   }
 
