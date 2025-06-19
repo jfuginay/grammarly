@@ -52,6 +52,8 @@ interface Suggestion {
   explanation: string;
   type: 'Spelling' | 'Grammar' | 'Style' | 'Punctuation' | 'Clarity';
   severity: 'High' | 'Medium' | 'Low';
+  startIndex?: number;
+  endIndex?: number;
 }
 
 interface Document {
@@ -82,32 +84,63 @@ const FONT_SIZES = [16, 18, 20, 22, 24];
 const TEXT_WIDTHS = ["40ch", "60ch", "80ch", "100ch"];
 
 export const applySuggestionLogic = (
-  currentText: string, // Renamed from 'text' to avoid conflict with state variable 'text'
+  currentText: string,
   suggestionToApply: Suggestion,
   setText: (newText: string) => void,
   setSuggestions: (updater: (currentSuggestions: Suggestion[]) => Suggestion[]) => void,
   activeDocument: Document | null,
-  debouncedUpdateDocument: (docId: string, data: { content?: string }) => void // Ensure content is optional if title can also be updated
+  debouncedUpdateDocument: (docId: string, data: { content?: string }) => void
 ) => {
   console.log("Original text:", currentText);
   console.log("Suggestion to apply (original):", suggestionToApply.original);
   console.log("Suggestion to apply (suggestion):", suggestionToApply.suggestion);
+  console.log("Suggestion indices:", suggestionToApply.startIndex, suggestionToApply.endIndex);
 
-  if (suggestionToApply.original === "") { // Check for empty string specifically
-    console.error("Error: suggestionToApply.original is empty. Skipping replacement.");
+  if (suggestionToApply.original === "" && (suggestionToApply.startIndex === undefined || suggestionToApply.endIndex === undefined)) {
+    // If original is empty AND we don't have indices, it's ambiguous.
+    // If original is empty but we DO have indices, it means "insert suggestion at this point".
+    console.error("Error: suggestionToApply.original is empty and no start/end indices provided. Skipping replacement.");
     return;
   }
 
-  const newText = currentText.replace(suggestionToApply.original, suggestionToApply.suggestion);
+  let newText = currentText;
+
+  if (
+    typeof suggestionToApply.startIndex === 'number' &&
+    typeof suggestionToApply.endIndex === 'number' &&
+    suggestionToApply.startIndex >= 0 &&
+    suggestionToApply.endIndex >= suggestionToApply.startIndex &&
+    suggestionToApply.endIndex <= currentText.length
+  ) {
+    // Prioritize using startIndex and endIndex if available and valid
+    newText =
+      currentText.substring(0, suggestionToApply.startIndex) +
+      suggestionToApply.suggestion +
+      currentText.substring(suggestionToApply.endIndex);
+    console.log("Applied suggestion using start/end indices.");
+  } else {
+    // Fallback for when indices are not available or invalid
+    // This method replaces only the *first* occurrence of `suggestionToApply.original`.
+    // This is a known limitation if the original text appears multiple times and
+    // precise range data (startIndex, endIndex) is not provided with the suggestion.
+    // The case of (suggestionToApply.original === "" AND no valid indices) should be caught by the initial check.
+    if (suggestionToApply.original === "") {
+        // This path should ideally not be taken if the initial check is robust.
+        // This implies original is empty, and indices were present but invalid.
+        console.error("Error: suggestionToApply.original is empty and indices were invalid. Skipping replacement.");
+        // setText(currentText); // No change
+        return; // Explicitly do nothing further.
+    }
+    newText = currentText.replace(suggestionToApply.original, suggestionToApply.suggestion);
+    console.log("Applied suggestion using string replace (first occurrence).");
+  }
+
   console.log("New text after replacement:", newText);
 
   setText(newText);
   setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionToApply.id));
+
   if (activeDocument) {
-    // Ensure that debouncedUpdateDocument is called with a compatible data object.
-    // If debouncedUpdateDocument expects `content` to always be a string, this is fine.
-    // If it can also update `title`, then the call should reflect that,
-    // but here we are only updating content.
     debouncedUpdateDocument(activeDocument.id, { content: newText });
   }
 };

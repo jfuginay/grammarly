@@ -22,6 +22,8 @@ export interface Suggestion {
   explanation: string;
   type: 'Spelling' | 'Grammar' | 'Style' | 'Punctuation' | 'Clarity';
   severity: 'High' | 'Medium' | 'Low';
+  startIndex?: number;
+  endIndex?: number;
 }
 
 export interface EngieProps {
