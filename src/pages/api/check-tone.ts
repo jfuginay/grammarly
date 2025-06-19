@@ -2,6 +2,20 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { setCorsHeaders } from '@/lib/cors';
 
+interface ToneAnalysisHighlight {
+  sentence: string;
+  tone: string;
+  score: number;
+  startIndex?: number;
+  endIndex?: number;
+}
+
+interface ToneAnalysis {
+  overallTone: string;
+  overallScore: number;
+  highlightedSentences: ToneAnalysisHighlight[];
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -13,19 +27,48 @@ Respond with a JSON object that has the following structure:
   "overallScore": 0.85, // Add this: AI's confidence in the overallTone, a number between 0 and 1.
   "highlightedSentences": [
     {
-      "text": "The sentence or phrase to highlight.",
+      "sentence": "The sentence or phrase to highlight.",
       "tone": "The specific tone of this sentence (e.g., 'Formal', 'Confident').",
-      "score": 0.9, // Add this: AI's confidence in the tone for this specific sentence, a number between 0 and 1.
-      "startIndex": 0,
-      "endIndex": 25
+      "score": 0.9 // Add this: AI's confidence in the tone for this specific sentence, a number between 0 and 1.
     }
   ]
 }
 Analyze the text and identify up to 3-5 key sentences or phrases that most strongly contribute to the overall tone.
 For the "overallTone", provide an "overallScore" which is a number between 0 and 1 representing your confidence in this assessment.
-For each highlighted sentence, provide the "text", its specific "tone", its start and end "startIndex" and "endIndex" in the original text, and a "score" (a number between 0 and 1) representing your confidence in the tone identified for that specific sentence.
-Do not include the "toneScores" object that was previously requested.
+For each highlighted sentence, provide the "sentence", its specific "tone", and a "score" (a number between 0 and 1) representing your confidence in the tone identified for that specific sentence.
+IMPORTANT: The "sentence" must be an exact substring from the original text, not paraphrased.
 Ensure your response is only the JSON object.`;
+
+// Helper function to find all occurrences of a substring in text
+function findAllOccurrences(text: string, substring: string): number[] {
+  const indices: number[] = [];
+  let index = text.indexOf(substring);
+  
+  while (index !== -1) {
+    indices.push(index);
+    index = text.indexOf(substring, index + 1);
+  }
+  
+  return indices;
+}
+
+// Add indices to the highlighted sentences
+function addIndicesToHighlights(text: string, highlights: ToneAnalysisHighlight[]): ToneAnalysisHighlight[] {
+  return highlights.map(highlight => {
+    // Only calculate indices if they're not already present
+    if (highlight.startIndex === undefined || highlight.endIndex === undefined) {
+      const occurrences = findAllOccurrences(text, highlight.sentence);
+      
+      // If we found the text, use the first occurrence
+      if (occurrences.length > 0) {
+        highlight.startIndex = occurrences[0];
+        highlight.endIndex = occurrences[0] + highlight.sentence.length;
+      }
+    }
+    
+    return highlight;
+  });
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -72,8 +115,13 @@ export default async function handler(
       return res.status(500).json({ message: 'No response from OpenAI' });
     }
     
-    const analysis = JSON.parse(responseContent || '{}');
+    const analysis = JSON.parse(responseContent || '{}') as ToneAnalysis;
     console.log('API: Parsed tone analysis:', analysis.overallTone);
+    
+    // Add indices to highlighted sentences
+    if (analysis.highlightedSentences) {
+      analysis.highlightedSentences = addIndicesToHighlights(text, analysis.highlightedSentences);
+    }
 
     res.status(200).json(analysis);
   } catch (error: any) {
@@ -95,4 +143,4 @@ export default async function handler(
     
     res.status(500).json({ message: 'Internal Server Error' });
   }
-} 
+}
