@@ -1,32 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import prisma from '@/lib/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies[name];
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          res.setHeader('Set-Cookie', `${name}=${value}; Path=/; HttpOnly; SameSite=Lax`);
-        },
-        remove(name: string, options: CookieOptions) {
-          res.setHeader('Set-Cookie', `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
   const { id } = req.query;
 
   if (req.method === 'PUT') {
@@ -47,4 +22,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   res.setHeader('Allow', ['PUT', 'DELETE']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
-} 
+}

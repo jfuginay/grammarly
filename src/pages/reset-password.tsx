@@ -5,7 +5,6 @@ import * as Yup from 'yup';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { AuthContext } from '@/contexts/AuthContext';
 import Logo from '@/components/Logo';
-import { createClient } from '@/util/supabase/component';
 
 const ResetPasswordPage = () => {
   const router = useRouter();
@@ -13,7 +12,6 @@ const ResetPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const supabase = createClient();
 
   const validationSchema = Yup.object().shape({
     password: Yup.string()
@@ -35,15 +33,7 @@ const ResetPasswordPage = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.auth.updateUser({ password: values.password });
-        
-        if (error) throw error;
-
-        // Sign in the user with the new password
-        await signIn(data.user.email ?? '', values.password);
-
-        // Redirect to dashboard or show success message
-        router.push('/dashboard');
+        // Supabase reset password logic removed. Implement new logic here.
       } catch (error) {
         console.error('Error resetting password:', error);
         // Handle error (show error message to user)

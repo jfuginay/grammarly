@@ -1,3 +1,10 @@
+# Google Sign-In Fix
+
+This document previously referenced Supabase. Please update your Google sign-in logic to use your new authentication provider.
+
+- Remove all Supabase environment variables and logic.
+- Implement Google OAuth using your new backend or authentication service.
+
 # Google Sign-In User Creation Fix
 
 ## Problem
@@ -87,9 +94,6 @@ model User {
 
 ## Environment Variables Required
 Make sure these are set in your environment:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `DATABASE_URL`
 - `NEXT_PUBLIC_SITE_URL`
 
 This implementation ensures that **every user can always sign in successfully**, either by signing into their existing account or having a new account created automatically during the authentication process.

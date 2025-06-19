@@ -35,8 +35,6 @@ This project uses environment variables to manage sensitive data like API keys a
 
 - `DATABASE_URL` - PostgreSQL connection string
 - `DIRECT_URL` - Direct database connection (optional for pooling)
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase Project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase Anonymous Key
 - `OPENAI_API_KEY` - OpenAI API Key
 - `NEXT_PUBLIC_SITE_URL` - Your site URL (optional)
 

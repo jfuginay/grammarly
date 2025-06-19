@@ -1,24 +1,24 @@
-# Manual Database Setup Guide
+# Database Setup Guide
 
-Since we're experiencing connection issues with the Prisma CLI, please follow these steps to manually set up your database tables in Supabase:
+This guide previously referenced Supabase. Please follow your new database provider's instructions for setup and migration.
 
-## Step 1: Access Supabase Dashboard
+## Step 1: Access Your Database Dashboard
 
-1. Go to [https://supabase.com](https://supabase.com)
+1. Go to your database provider's website
 2. Sign in to your account
 3. Navigate to your project: `your-project-id`
 
 ## Step 2: Open SQL Editor
 
-1. In your Supabase project dashboard, click on **"SQL Editor"** in the left sidebar
-2. Click **"New Query"**
+1. In your project dashboard, find the SQL editor or query tool
+2. Create a new query or script
 
 ## Step 3: Run the Database Setup SQL
 
-Copy and paste the following SQL code into the SQL Editor and click **"Run"**:
+Copy and paste the following SQL code into the SQL editor and execute the script:
 
 ```sql
--- Migration SQL for Supabase Database
+-- Migration SQL for Your Database
 -- This creates the required tables for your Grammarly app
 
 -- CreateTable: User
@@ -102,20 +102,20 @@ DELETE FROM "User" WHERE id = 'test-user-123';
 
 ## Step 6: Update Environment Variables
 
-Once the tables are created, make sure your Vercel environment variables are properly set:
+Once the tables are created, make sure your environment variables are properly set:
 
 ### Required Environment Variables:
-- `DATABASE_URL`: Your Supabase database URL
-- `DIRECT_URL`: Your Supabase direct connection URL (if using connection pooling)
-- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `DATABASE_URL`: Your database URL
+- `DIRECT_URL`: Your direct connection URL (if using connection pooling)
+- `NEXT_PUBLIC_SUPABASE_URL`: Your project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your anonymous key
 - `OPENAI_API_KEY`: Your OpenAI API key
 
 ## Step 7: Test Your Application
 
 After setting up the database:
 
-1. Deploy your application to Vercel (should work now with the previous fixes)
+1. Deploy your application
 2. Try signing in with Google - it should automatically create a user record
 3. Try creating a document - it should be stored in the Document table
 
@@ -135,4 +135,4 @@ Once the database is set up:
 - ✅ Documents can be created and linked to users
 - ✅ Your application will have full CRUD functionality
 
-The database setup is complete once you see the tables listed in your Supabase dashboard under **"Table Editor"**.
+The database setup is complete once you see the tables listed in your database dashboard under **"Table Editor"**.

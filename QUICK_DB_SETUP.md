@@ -1,13 +1,15 @@
-# Quick Database Setup Instructions
+# Quick Database Setup
 
-## Step 1: Check Supabase Database Status
-1. Go to [https://supabase.com](https://supabase.com)
+This guide previously referenced Supabase. Please follow your new database provider's instructions for setup and migration.
+
+## Step 1: Check Database Status
+1. Go to your database provider's website
 2. Sign in and go to your project `your-project-id`
 3. Check if you see any "Database Paused" messages
 4. If paused, click "Resume" or "Unpause"
 
 ## Step 2: Create Tables Manually
-1. In Supabase dashboard, go to **SQL Editor**
+1. In your database dashboard, go to **SQL Editor**
 2. Click **New Query**
 3. Paste this SQL and click **Run**:
 
@@ -70,7 +72,7 @@ WHERE table_schema = 'public' AND table_name IN ('User', 'Document');
 
 ## Step 3: Verify in Table Editor
 After running the SQL:
-1. Go to **Table Editor** in Supabase
+1. Go to **Table Editor** in your database dashboard
 2. You should see both **User** and **Document** tables
 3. The tables should be empty but ready to use
 

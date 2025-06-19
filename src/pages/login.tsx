@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { createBrowserClient } from '@supabase/ssr';
 import { Button } from "@/components/ui/button";
 import GoogleButton from '@/components/GoogleButton';
 import Logo from '@/components/Logo';
@@ -11,39 +10,20 @@ import { Label } from "@/components/ui/label";
 
 const LoginPage = () => {
   const router = useRouter();
-  const [supabase] = useState(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push('/dashboard');
-      } else {
-        setIsAuthLoading(false);
-      }
-    };
-    checkSession();
-  }, [router, supabase.auth]);
+    // Supabase login logic removed. Implement new login logic here.
+    setIsAuthLoading(false);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      setError(error.message);
-    } else {
-      router.push('/dashboard');
-    }
+    // Implement login logic here
   };
 
   if (isAuthLoading) {

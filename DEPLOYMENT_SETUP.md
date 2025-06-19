@@ -11,17 +11,7 @@ To deploy this application to Vercel, you need to configure the following enviro
    postgresql://your_username:your_password@your_host:5432/your_database
    ```
 
-2. **NEXT_PUBLIC_SUPABASE_URL** - Supabase project URL
-   ```
-   https://your-project-id.supabase.co
-   ```
-
-3. **NEXT_PUBLIC_SUPABASE_ANON_KEY** - Supabase anonymous key
-   ```
-   your_supabase_anon_key_here
-   ```
-
-4. **OPENAI_API_KEY** - OpenAI API key for text correction features
+2. **OPENAI_API_KEY** - OpenAI API key for text correction features
    ```
    your_openai_api_key_here
    ```

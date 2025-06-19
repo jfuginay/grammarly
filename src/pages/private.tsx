@@ -1,29 +1,20 @@
-import type { User } from '@supabase/supabase-js'
+import React from 'react'
 import type { GetServerSidePropsContext } from 'next'
 
 import { createClient } from '@/util/supabase/server-props'
 
-export default function PrivatePage({ user }: { user: User }) {
-  return <h1>Hello, {user.email || 'user'}!</h1>
+const PrivatePage = () => {
+  return <div>Private page (auth logic not implemented)</div>
 }
+
+export default PrivatePage
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const supabase = createClient(context)
 
-  const { data, error } = await supabase.auth.getUser()
-
-  if (error || !data) {
-    return {
-      redirect: {
-        destination: '/',
-        permanent: false,
-      },
-    }
-  }
+  // Implement new private page logic here.
 
   return {
-    props: {
-      user: data.user,
-    },
+    props: {},
   }
 }

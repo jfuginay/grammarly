@@ -21,8 +21,6 @@ Go to your Vercel project → Settings → Environment Variables and update:
    ```
 
 ### Keep These Variables (No Changes):
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` 
 - `OPENAI_API_KEY`
 - `NEXT_PUBLIC_SITE_URL`
 
