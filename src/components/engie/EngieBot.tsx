@@ -92,10 +92,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const handleNext = () => controller.handleNext();
   const handleDismissIdeation = () => controller.handleDismissIdeation();
   const handleManualIdeate = () => controller.handleManualIdeate();
-  const handleAnalyzeStyle = () => controller.handleAnalyzeStyle();
-  const handleDocSelectionChange = (docId: string) => controller.handleDocSelectionChange(docId);
   const handleTabChange = (tab: string) => controller.getStateManager().setActiveTab(tab);
-  const handleStyleModalOpenChange = (isOpen: boolean) => controller.getStateManager().setStyleModalOpen(isOpen);
   const dismissNotification = (index: number) => controller.dismissNotification(index);
   const handleDrag = (e: any, data: any) => controller.handleDrag(e, data);
   const onStartDrag = () => controller.onStartDrag();
@@ -186,10 +183,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
                     onNext={handleNext}
                     onDismissIdeation={handleDismissIdeation}
                     onManualIdeate={handleManualIdeate}
-                    onAnalyzeStyle={handleAnalyzeStyle}
-                    onDocSelectionChange={handleDocSelectionChange}
                     onTabChange={handleTabChange}
-                    onStyleModalOpenChange={handleStyleModalOpenChange}
                     formatScore={formatScore}
                   />
                 )}

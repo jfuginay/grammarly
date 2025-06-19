@@ -52,8 +52,6 @@ export interface EngieState {
   showSparkle: boolean;
   engiePos: { x: number; y: number };
   notificationOpen: boolean;
-  isStyleModalOpen: boolean;
-  selectedDocIds: string[];
   botAnimation: 'idle' | 'walking';
   botSpeed: 'normal' | 'fast';
   botDirection: 'left' | 'right';

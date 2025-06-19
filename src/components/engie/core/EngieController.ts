@@ -275,22 +275,6 @@ export class EngieController {
     this.triggerIdeation(true);
   }
 
-  async handleAnalyzeStyle(): Promise<void> {
-    const state = this.stateManager.getState();
-    console.log("Analyzing style for documents:", state.selectedDocIds);
-    
-    try {
-      await this.apiService.analyzeStyle(state.selectedDocIds);
-      this.stateManager.setStyleModalOpen(false);
-    } catch (error) {
-      console.error('Failed to analyze style:', error);
-    }
-  }
-
-  handleDocSelectionChange(docId: string): void {
-    this.stateManager.toggleDocSelection(docId);
-  }
-
   dismissNotification(index: number): void {
     this.stateManager.removeIdeaNotification(index);
   }

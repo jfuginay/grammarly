@@ -5,7 +5,6 @@ import { Sparkles, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SuggestionsTab } from './tabs/SuggestionsTab';
 import { ToneTab } from './tabs/ToneTab';
-import { VoiceTab } from './tabs/VoiceTab';
 import { IdeationCard } from './cards/IdeationCard';
 import { EncouragementCard } from './cards/EncouragementCard';
 import { ChatMessage, ToneAnalysis, Suggestion, EngieState } from '../types';
@@ -21,10 +20,7 @@ interface EngieChatWindowProps {
   onNext: () => void;
   onDismissIdeation: () => void;
   onManualIdeate: () => void;
-  onAnalyzeStyle: () => void;
-  onDocSelectionChange: (docId: string) => void;
   onTabChange: (tab: string) => void;
-  onStyleModalOpenChange: (isOpen: boolean) => void;
   formatScore: (score: number | undefined | null) => string;
 }
 
@@ -39,10 +35,7 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
   onNext,
   onDismissIdeation,
   onManualIdeate,
-  onAnalyzeStyle,
-  onDocSelectionChange,
   onTabChange,
-  onStyleModalOpenChange,
   formatScore,
 }) => {
   return (
@@ -93,10 +86,9 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
 
         {!state.ideationMessage && !state.encouragementMessageApi && (
           <Tabs value={state.activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
               <TabsTrigger value="tone">Tone</TabsTrigger>
-              <TabsTrigger value="voice">Voice</TabsTrigger>
             </TabsList>
             
             <TabsContent value="suggestions">
@@ -115,17 +107,6 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
                 toneAnalysisResult={state.toneAnalysisResult}
                 overallPageToneAnalysis={state.overallPageToneAnalysis}
                 formatScore={formatScore}
-              />
-            </TabsContent>
-            
-            <TabsContent value="voice">
-              <VoiceTab
-                documents={documents}
-                selectedDocIds={state.selectedDocIds}
-                isStyleModalOpen={state.isStyleModalOpen}
-                onDocSelectionChange={onDocSelectionChange}
-                onAnalyzeStyle={onAnalyzeStyle}
-                onStyleModalOpenChange={onStyleModalOpenChange}
               />
             </TabsContent>
           </Tabs>

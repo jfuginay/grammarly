@@ -86,20 +86,4 @@ export class EngieApiService {
       return null;
     }
   }
-
-  async analyzeStyle(documentIds: string[]): Promise<void> {
-    try {
-      const response = await fetch('/api/style/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentIds }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to analyze style');
-      }
-    } catch (error) {
-      console.error('Error analyzing style:', error);
-      throw error;
-    }
-  }
 } 

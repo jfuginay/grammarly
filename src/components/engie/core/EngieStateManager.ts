@@ -30,8 +30,6 @@ export class EngieStateManager {
       showSparkle: false,
       engiePos: initialPosition,
       notificationOpen: false,
-      isStyleModalOpen: false,
-      selectedDocIds: [],
       botAnimation: 'idle',
       botSpeed: 'normal',
       botDirection: 'right',
@@ -211,26 +209,6 @@ export class EngieStateManager {
 
   setNotificationOpen(isOpen: boolean): void {
     this.state.notificationOpen = isOpen;
-    this.notify();
-  }
-
-  setStyleModalOpen(isOpen: boolean): void {
-    this.state.isStyleModalOpen = isOpen;
-    this.notify();
-  }
-
-  setSelectedDocIds(docIds: string[]): void {
-    this.state.selectedDocIds = docIds;
-    this.notify();
-  }
-
-  toggleDocSelection(docId: string): void {
-    const isSelected = this.state.selectedDocIds.includes(docId);
-    if (isSelected) {
-      this.state.selectedDocIds = this.state.selectedDocIds.filter(id => id !== docId);
-    } else {
-      this.state.selectedDocIds = [...this.state.selectedDocIds, docId];
-    }
     this.notify();
   }
 
