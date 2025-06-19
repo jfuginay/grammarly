@@ -200,7 +200,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       const fragments: TextFragment[] = [];
       
       // Regular expression to match words, punctuation, spaces, and newlines
-      const tokenRegex = /(\w+|\s+|[^\w\s]+)/g;
+      // Enhanced to better separate words and ensure every word gets a fragment
+      const tokenRegex = /(\b\w+\b|\s+|[^\w\s]+)/g;
       let match;
       
       while ((match = tokenRegex.exec(value)) !== null) {
@@ -504,11 +505,16 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     };
   }, [value, autoAnalyze, debouncedAnalyzeText]);
   
-  // Sync with showFragments prop
+  // Sync with showFragments prop and ensure proper styling based on readOnly mode
   useEffect(() => {
     // Override fragment visibility if showFragments prop is provided
     setShouldShowFragments(showFragments);
-  }, [showFragments]);
+    
+    // For read-only mode (analysis view), perform analysis if we don't have fragments
+    if (readOnly && showFragments && textFragments.length === 0 && value.trim() !== '') {
+      performLocalAnalysis();
+    }
+  }, [showFragments, readOnly, value, textFragments.length, performLocalAnalysis]);
   
   // Update editor content and highlights
   useEffect(() => {
@@ -666,18 +672,45 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     let html = '';
     let lastIndex = 0;
     let openTags: string[] = [];
-    let currentSpanText: string | null = null;
-    let currentStartIndex: number | null = null;
+    const fragmentTexts = new Map<number, {text: string, endIndex: number}>();
     
+    // First pass: collect all fragment text
+    highlightMarkers
+      .filter(marker => marker.isStart && (marker.fragment || marker.suggestion))
+      .forEach(marker => {
+        if (marker.index >= 0 && marker.index <= processedText.length) {
+          const endIndex = marker.fragment?.endIndex || 
+                          (marker.suggestion?.endIndex || 
+                           marker.index + (marker.suggestion?.original.length || 0));
+          
+          if (endIndex > marker.index) {
+            const text = processedText.substring(marker.index, endIndex);
+            fragmentTexts.set(marker.index, {text, endIndex});
+          }
+        }
+      });
+    
+    // Second pass: build the HTML
     highlightMarkers.forEach(marker => {
       if (marker.index >= 0 && marker.index <= processedText.length) {
         // Add text since last marker
-        html += processedText.substring(lastIndex, marker.index).replace(/\n/g, '<br>');
+        if (!readOnly) {
+          // For input box, we don't need the actual text in highlights
+          html += processedText.substring(lastIndex, marker.index).replace(/\n/g, '<br>');
+        } else if (lastIndex < marker.index && !fragmentTexts.has(lastIndex)) {
+          // For analysis view, add text that's not part of any fragment
+          const textToAdd = processedText.substring(lastIndex, marker.index);
+          if (textToAdd.trim()) {
+            // If this is plain text not in a fragment, wrap it in a default fragment
+            html += `<span class="fragment-word default-fragment">${textToAdd.replace(/\n/g, '<br>')}</span>`;
+          } else {
+            html += textToAdd.replace(/\n/g, '<br>');
+          }
+        }
         lastIndex = marker.index;
         
         if (marker.isStart) {
           let attributesString = '';
-          currentStartIndex = marker.index;
           
           // Add suggestion-specific attributes
           if (marker.suggestion) {
@@ -691,14 +724,19 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
             });
           }
           
-          // If we have a fragment, extract the text that will go in this span
-          if (marker.fragment && currentStartIndex !== null) {
-            const endIndex = marker.fragment.endIndex;
-            currentSpanText = processedText.substring(currentStartIndex, endIndex);
+          // Start the span tag
+          html += `<span class="${marker.class}"${attributesString}>`;
+          
+          // For analysis view, always add the text directly inside the span
+          if (readOnly && fragmentTexts.has(marker.index)) {
+            const fragmentInfo = fragmentTexts.get(marker.index);
+            if (fragmentInfo) {
+              // Ensure the text is safely rendered inside the span
+              html += fragmentInfo.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              lastIndex = fragmentInfo.endIndex; // Skip to end of this fragment
+            }
           }
           
-          html += `<span class="${marker.class}"${attributesString}>`;
-          // Always add an empty span - text will be handled by the textarea on top
           openTags.push('</span>');
         } else {
           if (openTags.length > 0) {
@@ -829,19 +867,37 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         ref={textareaRef}
         value={value}
         onChange={handleTextareaChange}
-        className="editor-textarea"
+        className={`editor-textarea ${readOnly ? 'read-only' : 'input-mode'}`}
         placeholder={placeholder}
-        style={{ opacity: readOnly ? '0' : '0.2' }} // Fully transparent if read-only
+        style={{ 
+          opacity: readOnly ? '0' : '1', // Hide completely in read-only mode
+          caretColor: 'currentColor' // Ensure cursor is visible
+        }}
         readOnly={readOnly}
         spellCheck={false} // We're handling our own error highlighting
         onFocus={() => {
+          // Keep input box clean with no ghosting
           if (textareaRef.current && !readOnly) {
-            textareaRef.current.style.opacity = '0.9';
+            textareaRef.current.style.opacity = '1';
+            
+            // Ensure the highlight div doesn't interfere with editing
+            if (editorRef.current) {
+              const highlights = editorRef.current.querySelector('.editor-highlights') as HTMLElement;
+              if (highlights) {
+                highlights.style.pointerEvents = 'none';
+                
+                // For input mode, make highlights fully transparent
+                if (!readOnly && !showFragments) {
+                  highlights.style.opacity = '0';
+                }
+              }
+            }
           }
         }}
         onBlur={() => {
+          // Keep input box clean with no ghosting
           if (textareaRef.current && !readOnly) {
-            textareaRef.current.style.opacity = '0.2';
+            textareaRef.current.style.opacity = '1';
           }
         }}
         onKeyUp={() => {
