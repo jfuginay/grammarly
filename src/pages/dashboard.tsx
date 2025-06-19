@@ -81,6 +81,37 @@ const LINE_HEIGHTS = [1.4, 1.6, 1.8, 2.0];
 const FONT_SIZES = [16, 18, 20, 22, 24];
 const TEXT_WIDTHS = ["40ch", "60ch", "80ch", "100ch"];
 
+export const applySuggestionLogic = (
+  currentText: string, // Renamed from 'text' to avoid conflict with state variable 'text'
+  suggestionToApply: Suggestion,
+  setText: (newText: string) => void,
+  setSuggestions: (updater: (currentSuggestions: Suggestion[]) => Suggestion[]) => void,
+  activeDocument: Document | null,
+  debouncedUpdateDocument: (docId: string, data: { content?: string }) => void // Ensure content is optional if title can also be updated
+) => {
+  console.log("Original text:", currentText);
+  console.log("Suggestion to apply (original):", suggestionToApply.original);
+  console.log("Suggestion to apply (suggestion):", suggestionToApply.suggestion);
+
+  if (suggestionToApply.original === "") { // Check for empty string specifically
+    console.error("Error: suggestionToApply.original is empty. Skipping replacement.");
+    return;
+  }
+
+  const newText = currentText.replace(suggestionToApply.original, suggestionToApply.suggestion);
+  console.log("New text after replacement:", newText);
+
+  setText(newText);
+  setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionToApply.id));
+  if (activeDocument) {
+    // Ensure that debouncedUpdateDocument is called with a compatible data object.
+    // If debouncedUpdateDocument expects `content` to always be a string, this is fine.
+    // If it can also update `title`, then the call should reflect that,
+    // but here we are only updating content.
+    debouncedUpdateDocument(activeDocument.id, { content: newText });
+  }
+};
+
 const DashboardPage = () => {
   const router = useRouter();
   const { toast } = useToast();
@@ -249,19 +280,20 @@ const DashboardPage = () => {
   }, [text, activeDocument, debouncedCheckText]);
 
   const applySuggestion = (suggestionToApply: Suggestion) => {
-    const newText = text.replace(suggestionToApply.original, suggestionToApply.suggestion);
-    setText(newText);
-    setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionToApply.id));
-    if (activeDocument) {
-        debouncedUpdateDocument(activeDocument.id, { content: newText });
-    }
+    applySuggestionLogic(text, suggestionToApply, setText, setSuggestions, activeDocument, debouncedUpdateDocument);
   };
 
   const dismissSuggestion = (suggestionId: string) => {
-    setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionId));
-  };
 
-  // Debug logging for Engie visibility
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [activeDocument, setActiveDocument] = useState<Document | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  // const [text, setText] = useState<string>(''); // This will be defined in the primary DashboardPage component
+  // const [suggestions, setSuggestions] = useState<Suggestion[]>([]); // This will be defined in the primary DashboardPage component
+  // Note: The second DashboardPage component definition and its contents are removed by this diff.
+  // The primary DashboardPage component, defined earlier in the file, is retained.
+  // The applySuggestion, dismissSuggestion, and useEffect for debug logging
+  // are part of the primary DashboardPage component.
   useEffect(() => {
     console.log('Dashboard state update:', {
       hasActiveDocument: !!activeDocument,
