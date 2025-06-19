@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Loader2 } from 'lucide-react';
+import { Sparkles, X, Loader2, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import AnimatedEngieBot from './AnimatedEngieBot';
 
 // Chat message interface
 interface ChatMessage {
@@ -42,6 +46,7 @@ interface EngieProps {
   onIdeate: () => void;
   targetEditorSelector?: string; // Selector for the main text editing area
   onIdea?: (idea: string) => void; // <-- new prop
+  documents: Array<{ id: string; title: string }>; // Add documents to props
 }
 
 const severityColorMap: { [key in Suggestion['severity']]: string } = {
@@ -56,7 +61,8 @@ const Engie: React.FC<EngieProps> = ({
   onDismiss: onDismissExternal,
   onIdeate: onIdeateExternalProp,
   targetEditorSelector,
-  onIdea // <-- new prop
+  onIdea, // <-- new prop
+  documents
 }) => {
   // Hook to detect if the device is a touch screen
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -674,10 +680,24 @@ const Engie: React.FC<EngieProps> = ({
     }
   }, [ideationMessage, onIdea]);
 
-  // Update Engie position on drag
+  // Update Engie position and animation state on drag
   const handleDrag = (e: any, data: any) => {
+    if (data.x > lastX.current) {
+      setBotDirection('right');
+    } else if (data.x < lastX.current) {
+      setBotDirection('left');
+    }
+    lastX.current = data.x;
     setEngiePos({ x: data.x, y: data.y });
   };
+
+  const onStartDrag = () => {
+    setBotAnimation('walking');
+    if (engieRef.current) {
+      lastX.current = engieRef.current.getBoundingClientRect().left;
+    }
+  };
+  const onStopDrag = () => setBotAnimation('idle');
 
   // Remove notification
   const dismissNotification = (idx: number) => {
@@ -716,243 +736,302 @@ const Engie: React.FC<EngieProps> = ({
     )
   );
 
+  const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+
+  const handleAnalyzeStyle = async () => {
+    // In a real implementation, you would hit the /api/style/analyze endpoint
+    console.log("Analyzing style for documents:", selectedDocIds);
+    //
+    // try {
+    //   await fetch('/api/style/analyze', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ documentIds: selectedDocIds }), // Assuming API takes doc IDs
+    //   });
+    //   // Show success toast, refresh profile data
+    // } catch (error) {
+    //   // Show error toast
+    // }
+    //
+    setIsStyleModalOpen(false);
+  };
+
+  const handleDocSelectionChange = (docId: string) => {
+    setSelectedDocIds(prev =>
+      prev.includes(docId)
+        ? prev.filter(id => id !== docId)
+        : [...prev, docId]
+    );
+  };
+
+  const [botAnimation, setBotAnimation] = useState<'idle' | 'walking'>('idle');
+  const [botSpeed, setBotSpeed] = useState<'normal' | 'fast'>('normal');
+  const [botDirection, setBotDirection] = useState<'left' | 'right'>('right');
+  const lastX = useRef(0);
+
   return (
     <Draggable
       nodeRef={engieRef}
       bounds="parent"
+      onStart={onStartDrag}
       onDrag={handleDrag}
-      defaultPosition={{ x: 40, y: 120 }}
+      onStop={onStopDrag}
+      handle=".engie-handle"
     >
       <div ref={engieRef} className="fixed z-50" style={{ left: engiePos.x, top: engiePos.y }}>
-        {/* Engie Main Widget */}
-        <div
-          className={`relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-xl p-4 flex items-center justify-center cursor-pointer ${showSparkle ? 'animate-pulse ring-4 ring-pink-400' : ''}`}
-          style={{ width: 64, height: 64 }}
-          aria-label="Engie Assistant Hub"
-          onClick={handleEngieClick}
-        >
-          <span className="text-white text-3xl">✨</span>
-          {showSparkle && (
-            <span className="absolute -top-2 -right-2 bg-pink-500 text-white rounded-full px-2 py-0.5 text-xs animate-bounce">New Idea!</span>
-          )}
-          {notificationPeek}
-        </div>
-        {notificationPopout}
-        {/* Notification Panel (top-right of Engie) */}
-        {ideaNotifications.length > 0 && (
-          <div
-            className="absolute top-0 left-full ml-4 w-72 max-w-xs bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-4 animate-fade-in"
-            style={{ zIndex: 100 }}
+        <div className="relative">
+          {/* The Bot */}
+          <div 
+            className={`engie-handle engie-bot-wrapper facing-${botDirection}`}
+            onClick={handleEngieTrigger}
+            role="button"
+            tabIndex={0}
+            aria-label="Open Engie Assistant"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold text-blue-600 dark:text-blue-300">Engie's Idea</span>
-              <button onClick={() => dismissNotification(0)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl font-bold">×</button>
+            <AnimatedEngieBot animationState={botAnimation} speed={botSpeed} direction={botDirection} />
+             {/* Status indicators overlaid on the bot */}
+            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+              {(isScanning || isIdeating) && !isChatOpen && (
+                <Loader2 className="h-8 w-8 text-white animate-spin" />
+              )}
+              {activeSuggestions.length > 0 && !isChatOpen && !(isScanning || isIdeating) && (
+                <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}}>
+                  <Badge variant="destructive" className="absolute top-0 right-0">{activeSuggestions.length}</Badge>
+                </motion.div>
+              )}
             </div>
-            <div className="text-gray-800 dark:text-gray-100 whitespace-pre-line min-h-[48px]">{ideaNotifications[0]}</div>
-            {ideaNotifications.length > 1 && (
-              <div className="mt-2 text-xs text-gray-400">+{ideaNotifications.length - 1} more</div>
-            )}
           </div>
-        )}
-        <AnimatePresence>
-          {isChatOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-              <header className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <div className='flex items-center gap-2'>
-                    <Sparkles className="h-6 w-6 text-purple-500"/>
-                    <h3 className="font-semibold">Engie</h3>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6" 
-                  onClick={handleEngieClose}
-                  onTouchStart={isTouchDevice ? handleEngieClose : undefined}
-                  aria-label="Close Engie"
-                  style={{ touchAction: 'manipulation' }}
+
+          {/* Chat Window and Notifications */}
+          <div className="absolute top-0 left-full ml-4">
+            {/* ... all the popups and notification logic ... */}
+            <AnimatePresence>
+              {isChatOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
                 >
-                  <X className="h-4 w-4"/>
-                </Button>
-              </header>
+                  <header className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <div className='flex items-center gap-2'>
+                        <Sparkles className="h-6 w-6 text-purple-500"/>
+                        <h3 className="font-semibold">Engie</h3>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={handleEngieClose}
+                      onTouchStart={isTouchDevice ? handleEngieClose : undefined}
+                      aria-label="Close Engie"
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      <X className="h-4 w-4"/>
+                    </Button>
+                  </header>
 
-              <div className="p-4 max-h-[60vh] overflow-y-auto">
-                {(isScanning || (isIdeating && statusMessage) || (!isIdeating && statusMessage && !ideationMessage)) && (
-                  <div className="mb-2 text-xs text-gray-500 dark:text-gray-400 italic text-center">
-                    {statusMessage}
-                  </div>
-                )}
+                  <div className="p-4 max-h-[60vh] overflow-y-auto">
+                    {(isScanning || (isIdeating && statusMessage) || (!isIdeating && statusMessage && !ideationMessage)) && (
+                      <div className="mb-2 text-xs text-gray-500 dark:text-gray-400 italic text-center">
+                        {statusMessage}
+                      </div>
+                    )}
 
-                {/* Ideation Message Display */}
-                {ideationMessage && !activeSuggestions.length && !encouragementMessageApi && (
-                  <Card className="mb-4 bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Engie's Idea Corner</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{ideationMessage.content}</p>
-                    </CardContent>
-                    <CardFooter className="p-3 pt-2 flex justify-end">
-                      <Button variant="ghost" size="sm" onClick={handleDismissIdeation}>Dismiss</Button>
-                    </CardFooter>
-                  </Card>
-                )}
+                    {/* Ideation Message Display */}
+                    {ideationMessage && !activeSuggestions.length && !encouragementMessageApi && (
+                      <Card className="mb-4 bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700">
+                        <CardHeader className="p-3">
+                          <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Engie's Idea Corner</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-0">
+                          <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{ideationMessage.content}</p>
+                        </CardContent>
+                        <CardFooter className="p-3 pt-2 flex justify-end">
+                          <Button variant="ghost" size="sm" onClick={handleDismissIdeation}>Dismiss</Button>
+                        </CardFooter>
+                      </Card>
+                    )}
 
-                {/* Encouragement Message Display */}
-                {encouragementMessageApi && !activeSuggestions.length && !toneAnalysisResult && !ideationMessage && (
-                  <Card className="mb-4 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700">
-                    <CardHeader className="p-3 pb-2">
-                      <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">A little boost from Engie!</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                        {encouragementMessageApi.content}
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {!ideationMessage && !encouragementMessageApi && (
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
-                      <TabsTrigger value="tone">Tone</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="suggestions">
-                      {/* Suggestions Display */}
-                      {currentSuggestion ? (
-                        <div className="mt-4">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
-                            Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
+                    {/* Encouragement Message Display */}
+                    {encouragementMessageApi && !activeSuggestions.length && !toneAnalysisResult && !ideationMessage && (
+                      <Card className="mb-4 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700">
+                        <CardHeader className="p-3 pb-2">
+                          <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">A little boost from Engie!</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-0">
+                          <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                            {encouragementMessageApi.content}
                           </p>
-                          <Card key={currentSuggestion.id}>
-                            <CardHeader className="flex flex-row items-center gap-2 p-3">
-                              <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
-                              <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
-                              <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
-                            </CardHeader>
-                            <CardContent className="p-3 pt-0">
-                              <p className="text-sm text-gray-500 dark:text-gray-400 line-through">"{currentSuggestion.original}"</p>
-                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">"{currentSuggestion.suggestion}"</p>
-                              <p className="text-xs text-muted-foreground mt-3">{currentSuggestion.explanation}</p>
-                            </CardContent>
-                          </Card>
-                          <div className="flex justify-end gap-2 mt-4">
-                              <Button variant="ghost" size="sm" onClick={handleNext}>
-                                  {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
-                              </Button>
-                              <Button variant="default" size="sm" onClick={handleApply}>Apply</Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No suggestions found.</p>
-                        </div>
-                      )}
-                    </TabsContent>
-                    <TabsContent value="tone">
-                      {/* Tone Analysis Display */}
-                      {toneAnalysisResult || overallPageToneAnalysis ? (
-                        <div className="mt-4 space-y-4">
-                          {toneAnalysisResult && (
-                             <Card>
-                                <CardHeader className="p-3">
-                                  <CardTitle className="text-base">
-                                    {targetEditorSelector ? "Editable Content Analysis" : "Text Analysis"}
-                                  </CardTitle>
-                                  <CardDescription className="text-xs">
-                                    Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
-                                      {toneAnalysisResult.overallTone} (Score: {formatScore(toneAnalysisResult.overallScore)})
-                                    </Badge>
-                                  </CardDescription>
-                                </CardHeader>
-                                {toneAnalysisResult.highlightedSentences && toneAnalysisResult.highlightedSentences.length > 0 && (
-                                    <CardContent className="p-3 pt-0">
-                                        <p className="text-xs text-muted-foreground mb-1">Key Sentences:</p>
-                                        <ul className="space-y-1">
-                                        {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
-                                            <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                                "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {formatScore(item.score)})
-                                            </li>
-                                        ))}
-                                        </ul>
-                                    </CardContent>
-                                )}
-                                <CardFooter className="p-3 pt-2">
-                                     <p className="text-xs text-muted-foreground">Analysis of the editable content area.</p>
-                                </CardFooter>
-                              </Card>
-                          )}
-                          {overallPageToneAnalysis && (
-                              <Card className="border-dashed border-sky-300 dark:border-sky-700">
-                                <CardHeader className="p-3 pb-2">
-                                  <CardTitle className="text-sm font-medium text-sky-600 dark:text-sky-400">Overall Page Tone</CardTitle>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {!ideationMessage && !encouragementMessageApi && (
+                      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+                          <TabsTrigger value="tone">Tone</TabsTrigger>
+                          <TabsTrigger value="voice">Voice</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="suggestions">
+                          {/* Suggestions Display */}
+                          {currentSuggestion ? (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
+                                Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
+                              </p>
+                              <Card key={currentSuggestion.id}>
+                                <CardHeader className="flex flex-row items-center gap-2 p-3">
+                                  <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
+                                  <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
+                                  <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
                                 </CardHeader>
                                 <CardContent className="p-3 pt-0">
-                                  <div className="text-xs">
-                                    General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive' : overallPageToneAnalysis.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize text-xs px-1.5 py-0.5">
-                                      {overallPageToneAnalysis.overallTone}
-                                      {typeof overallPageToneAnalysis.overallScore === 'number' && ` (${formatScore(overallPageToneAnalysis.overallScore)})`}
-                                    </Badge>
-                                  </div>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 line-through">"{currentSuggestion.original}"</p>
+                                  <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">"{currentSuggestion.suggestion}"</p>
+                                  <p className="text-xs text-muted-foreground mt-3">{currentSuggestion.explanation}</p>
                                 </CardContent>
                               </Card>
+                              <div className="flex justify-end gap-2 mt-4">
+                                  <Button variant="ghost" size="sm" onClick={handleNext}>
+                                      {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
+                                  </Button>
+                                  <Button variant="default" size="sm" onClick={handleApply}>Apply</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No suggestions found.</p>
+                            </div>
                           )}
-                          {!toneAnalysisResult && !overallPageToneAnalysis && (
+                        </TabsContent>
+                        <TabsContent value="tone">
+                          {/* Tone Analysis Display */}
+                          {toneAnalysisResult || overallPageToneAnalysis ? (
+                            <div className="mt-4 space-y-4">
+                              {toneAnalysisResult && (
+                                 <Card>
+                                    <CardHeader className="p-3">
+                                      <CardTitle className="text-base">
+                                        {targetEditorSelector ? "Editable Content Analysis" : "Text Analysis"}
+                                      </CardTitle>
+                                      <CardDescription className="text-xs">
+                                        Overall Tone: <Badge variant={toneAnalysisResult.overallTone === 'Negative' ? 'destructive' : toneAnalysisResult.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize">
+                                          {toneAnalysisResult.overallTone} (Score: {formatScore(toneAnalysisResult.overallScore)})
+                                        </Badge>
+                                      </CardDescription>
+                                    </CardHeader>
+                                    {toneAnalysisResult.highlightedSentences && toneAnalysisResult.highlightedSentences.length > 0 && (
+                                        <CardContent className="p-3 pt-0">
+                                            <p className="text-xs text-muted-foreground mb-1">Key Sentences:</p>
+                                            <ul className="space-y-1">
+                                            {toneAnalysisResult.highlightedSentences.slice(0,3).map((item, index) => (
+                                                <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                                                    "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {formatScore(item.score)})
+                                                </li>
+                                            ))}
+                                            </ul>
+                                        </CardContent>
+                                    )}
+                                    <CardFooter className="p-3 pt-2">
+                                         <p className="text-xs text-muted-foreground">Analysis of the editable content area.</p>
+                                    </CardFooter>
+                                  </Card>
+                              )}
+                              {overallPageToneAnalysis && (
+                                  <Card className="border-dashed border-sky-300 dark:border-sky-700">
+                                    <CardHeader className="p-3 pb-2">
+                                      <CardTitle className="text-sm font-medium text-sky-600 dark:text-sky-400">Overall Page Tone</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-3 pt-0">
+                                      <div className="text-xs">
+                                        General tone of the page: <Badge variant={overallPageToneAnalysis.overallTone === 'Negative' ? 'destructive' : overallPageToneAnalysis.overallTone === 'Positive' ? 'default' : 'secondary'} className="capitalize text-xs px-1.5 py-0.5">
+                                          {overallPageToneAnalysis.overallTone}
+                                          {typeof overallPageToneAnalysis.overallScore === 'number' && ` (${formatScore(overallPageToneAnalysis.overallScore)})`}
+                                        </Badge>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                              )}
+                              {!toneAnalysisResult && !overallPageToneAnalysis && (
+                                <div className="text-center py-4">
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">No tone analysis available.</p>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
                             <div className="text-center py-4">
                               <p className="text-sm text-gray-600 dark:text-gray-300">No tone analysis available.</p>
                             </div>
                           )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-600 dark:text-gray-300">No tone analysis available.</p>
-                        </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                )}
+                        </TabsContent>
+                        <TabsContent value="voice">
+                          <Card className="mt-4">
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2">
+                                <Bot className="h-5 w-5" />
+                                My Voice Profile
+                              </CardTitle>
+                              <CardDescription>
+                                Analyze your writing to create a personalized style profile.
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Your voice profile is empty. Select documents to analyze and build your profile.
+                              </p>
+                              <Dialog open={isStyleModalOpen} onOpenChange={setIsStyleModalOpen}>
+                                <DialogTrigger asChild>
+                                  <Button className="w-full">Analyze My Style</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Select Style Samples</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4 max-h-[50vh] overflow-y-auto">
+                                    {documents.map(doc => (
+                                      <div key={doc.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`doc-${doc.id}`}
+                                          checked={selectedDocIds.includes(doc.id)}
+                                          onCheckedChange={() => handleDocSelectionChange(doc.id)}
+                                        />
+                                        <Label htmlFor={`doc-${doc.id}`} className="flex-1 truncate">
+                                          {doc.title}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="ghost" onClick={() => setIsStyleModalOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleAnalyzeStyle} disabled={selectedDocIds.length === 0}>
+                                      Analyze {selectedDocIds.length} Document(s)
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+                      </Tabs>
+                    )}
 
-                {/* Fallback "Looking good" or "Brainstorm" button */}
-                {!currentSuggestion && !toneAnalysisResult && !overallPageToneAnalysis && !ideationMessage && !encouragementMessageApi && !isIdeating && (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No immediate suggestions or analysis.</p>
-                    <Button variant="link" size="sm" className="mt-2" onClick={handleManualIdeate}>Want to brainstorm ideas?</Button>
+                    {/* Fallback "Looking good" or "Brainstorm" button */}
+                    {!currentSuggestion && !toneAnalysisResult && !overallPageToneAnalysis && !ideationMessage && !encouragementMessageApi && !isIdeating && (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No immediate suggestions or analysis.</p>
+                        <Button variant="link" size="sm" className="mt-2" onClick={handleManualIdeate}>Want to brainstorm ideas?</Button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          id="engie-main-button"
-          className="handle relative p-3 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 cursor-grab"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9, cursor: 'grabbing' }}
-          onClick={handleEngieTrigger}
-          onTouchStart={isTouchDevice ? handleEngieTrigger : undefined}
-          role="button"
-          tabIndex={0}
-          aria-label="Open Engie Assistant"
-          style={{ touchAction: 'manipulation' }}
-        >
-          { (isScanning || isIdeating) && !isChatOpen ? (
-            <Loader2 className="h-8 w-8 animate-spin" />
-          ) : (
-            <Sparkles className="h-8 w-8" />
-          )}
-          {activeSuggestions.length > 0 && !isChatOpen && !(isScanning || isIdeating) && (
-            <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}}>
-                <Badge variant="destructive" className="absolute -top-1 -right-1">{activeSuggestions.length}</Badge>
-            </motion.div>
-          )}
-        </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </Draggable>
   );

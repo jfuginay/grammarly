@@ -316,7 +316,14 @@ const DashboardPage = () => {
             <Card className="shadow-lg">
               <Textarea value={text} onChange={handleTextChange} className="main-editor-textarea min-h-[calc(100vh-240px)] text-base sm:text-lg border-0 p-4 sm:p-6 rounded-xl focus-visible:ring-0 bg-background" placeholder="Start writing your masterpiece..." />
             </Card>
-            <Engie suggestions={suggestions} onApply={applySuggestion} onDismiss={dismissSuggestion} onIdeate={() => {}} targetEditorSelector=".main-editor-textarea"/>
+            <Engie
+                suggestions={suggestions}
+                onApply={applySuggestion}
+                onDismiss={dismissSuggestion}
+                onIdeate={() => {}}
+                targetEditorSelector=".main-editor-textarea"
+                documents={documents.map(d => ({ id: d.id, title: d.title }))}
+            />
           </div>
         )}
       </div>

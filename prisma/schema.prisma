@@ -17,14 +17,25 @@ model User {
   passwordHash String
   createdAt    DateTime   @default(now())
   documents    Document[]
+  styleProfile StyleProfile?
 }
 
 model Document {
+  id            String   @id @default(cuid())
+  title         String
+  content       String   @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  author        User     @relation(fields: [authorId], references: [id])
+  authorId      String
+  isStyleSample Boolean  @default(false)
+}
+
+model StyleProfile {
   id        String   @id @default(cuid())
-  title     String
-  content   String   @db.Text
-  createdAt DateTime @default(now())
+  summary   String?  @db.Text
   updatedAt DateTime @updatedAt
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
+  
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
 }
