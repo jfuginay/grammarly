@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useUser } from '@auth0/nextjs-auth0/client'; // Replaced useAuth0
 import { Button } from "@/components/ui/button";
 import GoogleButton from '@/components/GoogleButton';
 import Logo from '@/components/Logo';
@@ -8,14 +8,14 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const LoginPage = () => {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { user, isLoading } = useUser(); // Use user object
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) { // Check for user object
       router.push('/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [user, router]); // Depend on user object
 
   if (isLoading) {
     return (
@@ -39,6 +39,14 @@ const LoginPage = () => {
           <CardContent>
             <div className="flex flex-col gap-4">
               <GoogleButton />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/api/auth/login')} // Navigate to /api/auth/login
+                className="w-full"
+              >
+                Log in with Email
+              </Button>
               <div className="text-center mt-4">
                 <Button
                   type="button"
