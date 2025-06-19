@@ -1,41 +1,49 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import prisma from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies[name];
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          res.setHeader('Set-Cookie', `${name}=${value}; Path=/; HttpOnly; SameSite=Lax`);
-        },
-        remove(name: string, options: CookieOptions) {
-          res.setHeader('Set-Cookie', `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-        },
-      },
-    }
-  );
+  const token = req.cookies.auth_token;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided.' });
+  }
 
-  if (!user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  let userId;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    userId = decoded.userId;
+  } catch (error) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid token.' });
   }
 
   const { id } = req.query;
 
+  // Fetch the document first to ensure it exists and belongs to the user.
+  const document = await prisma.document.findUnique({
+    where: { id: String(id) },
+  });
+
+  if (!document) {
+    return res.status(404).json({ message: 'Document not found.' });
+  }
+
+  if (document.authorId !== userId) {
+    return res.status(403).json({ message: 'Forbidden: You do not own this document.' });
+  }
+
   if (req.method === 'PUT') {
     const { title, content } = req.body;
-    const document = await prisma.document.update({
+    const updatedDocument = await prisma.document.update({
       where: { id: String(id) },
-      data: { title, content },
+      data: { 
+        ...(title !== undefined && { title }),
+        ...(content !== undefined && { content }),
+      },
     });
-    return res.status(200).json(document);
+    return res.status(200).json(updatedDocument);
   }
 
   if (req.method === 'DELETE') {
