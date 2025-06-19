@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Logo from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 
 interface User {
   id: string;
@@ -69,33 +70,36 @@ const Header = () => {
       <div onClick={() => router.push('/dashboard')} className="cursor-pointer">
         <Logo />
       </div>
-      <nav>
-        {isLoading ? (
-          <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
-        ) : user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="cursor-pointer">
-                <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.email} />
-                <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/dashboard')}>Dashboard</DropdownMenuItem>
-              <DropdownMenuItem disabled>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => router.push('/login')}>Log In</Button>
-            <Button onClick={() => router.push('/signup')}>Sign Up</Button>
-          </div>
-        )}
-      </nav>
+      <div className="flex items-center gap-4">
+        <ThemeToggle />
+        <nav>
+          {isLoading ? (
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer">
+                  <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.email} />
+                  <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/dashboard')}>Dashboard</DropdownMenuItem>
+                <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => router.push('/login')}>Log In</Button>
+              <Button onClick={() => router.push('/signup')}>Sign Up</Button>
+            </div>
+          )}
+        </nav>
+      </div>
     </header>
   );
 };
