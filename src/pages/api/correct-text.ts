@@ -25,6 +25,7 @@ export default async function handler(
   console.log('API: correct-text endpoint called');
   console.log('API: OpenAI API key present:', !!process.env.OPENAI_API_KEY);
   console.log('API: OpenAI API key length:', process.env.OPENAI_API_KEY?.length || 0);
+  console.log('API: Available env vars:', Object.keys(process.env).filter(key => key.includes('OPENAI') || key.includes('VERCEL')));
   
   setCorsHeaders(res, req.headers.origin);
 
