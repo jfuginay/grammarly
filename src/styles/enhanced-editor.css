@@ -1,0 +1,882 @@
+.enhanced-editor {
+  position: relative;
+  min-height: 200px;
+  width: 100%;
+}
+
+.editor-highlights,
+.editor-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  margin: 0;
+  border: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  overflow: auto;
+  /* Ensure exact alignment between textarea and highlights */
+  text-align: left;
+}
+
+.editor-highlights {
+  pointer-events: none;
+  z-index: 1;
+  background: transparent;
+  /* Critical change: Keep color visible instead of transparent */
+  color: inherit;
+  caret-color: transparent;
+  /* Better text rendering to match textarea exactly */
+  -webkit-text-fill-color: currentColor;
+  -webkit-text-stroke: 0;
+  /* Ensure correct alignment */
+  box-sizing: border-box;
+}
+
+.editor-textarea {
+  z-index: 2;
+  background: transparent !important;
+  color: inherit;
+  resize: none;
+  caret-color: currentColor;
+  /* Ensure text is visible and clickable */
+  opacity: 0.25; /* Make textarea semi-transparent so highlight text shows through */
+  /* Improve text visibility within highlighted boxes */
+  -webkit-text-fill-color: currentColor;
+  /* Ensure the text is visible on all backgrounds */
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.2);
+  /* Make sure the textarea is on top and receives input */
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Critical fix: Make sure span content is visible */
+.editor-highlights span {
+  color: inherit !important;
+}
+
+/* Ensure proper text display in highlight boxes */
+.editor-highlights span[class*="fragment-"] {
+  display: inline-block;
+  position: relative;
+  color: inherit !important;
+  background-clip: text;
+}
+
+/* Focus state styling for improved text visibility */
+.enhanced-editor.textarea-focused .editor-textarea {
+  caret-color: #000;  /* Ensure cursor is visible */
+}
+
+.dark .enhanced-editor.textarea-focused .editor-textarea {
+  caret-color: #fff;  /* Ensure cursor is visible in dark mode */
+}
+
+/* Improve text rendering inside highlight boxes */
+.enhanced-editor .editor-highlights span[data-text] {
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Ensure text in the textarea aligns perfectly with highlight boxes */
+.editor-textarea {
+  position: relative; 
+  z-index: 2;
+}
+
+/* Improve text contrast within different highlight backgrounds */
+.priority-1 ~ .editor-textarea,
+.priority-2 ~ .editor-textarea,
+.priority-3 ~ .editor-textarea {
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.dark .priority-1 ~ .editor-textarea,
+.dark .priority-2 ~ .editor-textarea,
+.dark .priority-3 ~ .editor-textarea {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Text Fragment Highlighting Styles */
+.enhanced-editor:not(.show-fragments) .fragment-word,
+.enhanced-editor:not(.show-fragments) .fragment-phrase,
+.enhanced-editor:not(.show-fragments) .fragment-punctuation {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Priority-Based Highlighting System */
+.fragment-word {
+  border-radius: 3px;
+  margin: 0 1px;
+  padding: 0 2px;
+  transition: all 0.2s ease;
+  position: relative;
+  display: inline-block;
+  white-space: normal;
+  word-break: normal;
+  /* Make text visible inside the box */
+  color: inherit;
+  background-clip: padding-box;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  /* Ensure text displays within the box */
+  overflow: visible;
+  text-align: left;
+}
+
+/* Priority levels based on co-developer brief */
+.priority-1, .fragment-word.priority-1 {
+  background-color: rgba(254, 226, 226, 0.7); /* bg-red-200 */
+  border: 2px solid rgba(239, 68, 68, 0.7); /* border-red-500 */
+  z-index: 15;
+}
+
+.priority-2, .fragment-word.priority-2 {
+  background-color: rgba(254, 249, 195, 0.7); /* bg-yellow-100 */
+  border: 1px solid rgba(250, 204, 21, 0.7); /* border-yellow-400 */
+  z-index: 10;
+}
+
+.priority-3, .fragment-word.priority-3 {
+  background-color: rgba(219, 234, 254, 0.7); /* bg-blue-50 */
+  border: 1px solid rgba(147, 197, 253, 0.7); /* border-blue-300 */
+  opacity: 0.85;
+  z-index: 5;
+}
+
+/* Hover states for priority levels */
+.priority-1:hover, .fragment-word.priority-1:hover {
+  background-color: rgba(254, 226, 226, 0.9);
+  border-color: rgba(239, 68, 68, 0.9);
+  z-index: 25;
+}
+
+.priority-2:hover, .fragment-word.priority-2:hover {
+  background-color: rgba(254, 249, 195, 0.9);
+  border-color: rgba(250, 204, 21, 0.9);
+  z-index: 20;
+}
+
+.priority-3:hover, .fragment-word.priority-3:hover {
+  background-color: rgba(219, 234, 254, 0.9);
+  border-color: rgba(147, 197, 253, 0.9);
+  opacity: 1;
+  z-index: 15;
+}
+
+/* Dark mode adaptations */
+.dark .priority-1, .dark .fragment-word.priority-1 {
+  background-color: rgba(185, 28, 28, 0.2);
+  border: 2px solid rgba(239, 68, 68, 0.5);
+}
+
+.dark .priority-2, .dark .fragment-word.priority-2 {
+  background-color: rgba(161, 98, 7, 0.2);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+}
+
+.dark .priority-3, .dark .fragment-word.priority-3 {
+  background-color: rgba(30, 58, 138, 0.2);
+  border: 1px solid rgba(147, 197, 253, 0.5);
+}
+
+/* Original fragment types with priority-based styling */
+.fragment-word {
+  background-color: rgba(41, 128, 185, 0.08);
+  border: 1px solid rgba(41, 128, 185, 0.2);
+}
+
+.fragment-word:hover {
+  background-color: rgba(41, 128, 185, 0.15);
+  border-color: rgba(41, 128, 185, 0.3);
+  z-index: 5;
+}
+
+.dark .fragment-word {
+  background-color: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.dark .fragment-word:hover {
+  background-color: rgba(52, 152, 219, 0.2);
+  border-color: rgba(52, 152, 219, 0.4);
+}
+
+.fragment-phrase {
+  background-color: rgba(39, 174, 96, 0.08);
+  border: 1px solid rgba(39, 174, 96, 0.2);
+  border-radius: 3px;
+  margin: 0 1px;
+  padding: 0 2px;
+  transition: all 0.2s ease;
+  position: relative;
+  display: inline-block;
+  white-space: normal;
+  word-break: normal;
+  /* Ensure text is visible inside the box */
+  color: inherit;
+  background-clip: padding-box;
+  box-decoration-break: clone;
+}
+
+.fragment-phrase:hover {
+  background-color: rgba(39, 174, 96, 0.15);
+  border-color: rgba(39, 174, 96, 0.3);
+  z-index: 5;
+}
+
+.dark .fragment-phrase {
+  background-color: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.dark .fragment-phrase:hover {
+  background-color: rgba(46, 204, 113, 0.2);
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+.fragment-punctuation {
+  background-color: rgba(142, 68, 173, 0.08);
+  border: 1px solid rgba(142, 68, 173, 0.2);
+  border-radius: 3px;
+  position: relative;
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+
+.fragment-punctuation:hover {
+  background-color: rgba(142, 68, 173, 0.15);
+  border-color: rgba(142, 68, 173, 0.3);
+  z-index: 5;
+}
+
+.dark .fragment-punctuation {
+  background-color: rgba(155, 89, 182, 0.1);
+  border: 1px solid rgba(155, 89, 182, 0.2);
+}
+
+.dark .fragment-punctuation:hover {
+  background-color: rgba(155, 89, 182, 0.2);
+  border-color: rgba(155, 89, 182, 0.4);
+}
+
+.fragment-paragraph {
+  display: block;
+  margin: 0.5em 0;
+}
+
+/* Part of speech colors */
+.pos-noun {
+  background-color: rgba(52, 152, 219, 0.12);
+  border-color: rgba(52, 152, 219, 0.25);
+}
+
+.pos-verb {
+  background-color: rgba(46, 204, 113, 0.12);
+  border-color: rgba(46, 204, 113, 0.25);
+}
+
+.pos-adjective {
+  background-color: rgba(155, 89, 182, 0.12);
+  border-color: rgba(155, 89, 182, 0.25);
+}
+
+.pos-adverb {
+  background-color: rgba(243, 156, 18, 0.12);
+  border-color: rgba(243, 156, 18, 0.25);
+}
+
+.pos-preposition {
+  background-color: rgba(231, 76, 60, 0.12);
+  border-color: rgba(231, 76, 60, 0.25);
+}
+
+.pos-conjunction {
+  background-color: rgba(22, 160, 133, 0.12);
+  border-color: rgba(22, 160, 133, 0.25);
+}
+
+.pos-article {
+  background-color: rgba(127, 140, 141, 0.12);
+  border-color: rgba(127, 140, 141, 0.25);
+}
+
+/* Loading indicator */
+.editor-loading-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 10;
+  font-size: 0.75rem;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.is-analyzing .editor-loading-indicator {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Suggestion highlights - Improved for better visibility */
+.suggestion-spelling {
+  background-color: rgba(255, 50, 50, 0.15);
+  text-decoration: wavy underline rgba(255, 50, 50, 0.7);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-spelling:hover {
+  background-color: rgba(255, 50, 50, 0.25);
+}
+
+.suggestion-grammar {
+  background-color: rgba(255, 150, 0, 0.15);
+  text-decoration: wavy underline rgba(255, 150, 0, 0.7);
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-grammar:hover {
+  background-color: rgba(255, 150, 0, 0.25);
+}
+
+.suggestion-style {
+  background-color: rgba(0, 100, 255, 0.15);
+  text-decoration: wavy underline rgba(0, 100, 255, 0.7);
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-style:hover {
+  background-color: rgba(0, 100, 255, 0.25);
+}
+
+.suggestion-punctuation {
+  background-color: rgba(128, 0, 255, 0.15);
+  text-decoration: wavy underline rgba(128, 0, 255, 0.7);
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-punctuation:hover {
+  background-color: rgba(128, 0, 255, 0.25);
+}
+
+.suggestion-clarity {
+  background-color: rgba(0, 175, 0, 0.15);
+  text-decoration: wavy underline rgba(0, 175, 0, 0.7);
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-clarity:hover {
+  background-color: rgba(0, 175, 0, 0.25);
+}
+
+/* Severity modifiers */
+.suggestion-high {
+  opacity: 1;
+}
+
+.suggestion-medium {
+  opacity: 0.8;
+}
+
+.suggestion-low {
+  opacity: 0.6;
+}
+
+/* Tone highlights with improved visibility */
+.tone-highlight {
+  background-color: rgba(100, 100, 100, 0.12);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.tone-negative {
+  background-color: rgba(255, 100, 100, 0.18);
+}
+
+.tone-negative:hover {
+  background-color: rgba(255, 100, 100, 0.25);
+}
+
+.tone-critical {
+  background-color: rgba(255, 50, 50, 0.18);
+}
+
+.tone-critical:hover {
+  background-color: rgba(255, 50, 50, 0.25);
+}
+
+.tone-anxious {
+  background-color: rgba(255, 150, 50, 0.18);
+}
+
+.tone-anxious:hover {
+  background-color: rgba(255, 150, 50, 0.25);
+}
+
+.tone-formal {
+  background-color: rgba(50, 50, 255, 0.18);
+}
+
+.tone-formal:hover {
+  background-color: rgba(50, 50, 255, 0.25);
+}
+
+.tone-professional {
+  background-color: rgba(50, 100, 255, 0.18);
+}
+
+.tone-professional:hover {
+  background-color: rgba(50, 100, 255, 0.25);
+}
+
+.tone-friendly {
+  background-color: rgba(100, 255, 100, 0.18);
+}
+
+.tone-friendly:hover {
+  background-color: rgba(100, 255, 100, 0.25);
+}
+
+/* Dark mode adjustments */
+.dark .suggestion-spelling {
+  background-color: rgba(255, 80, 80, 0.2);
+  text-decoration-color: rgba(255, 80, 80, 0.7);
+}
+
+.dark .suggestion-grammar {
+  background-color: rgba(255, 170, 0, 0.2);
+  text-decoration-color: rgba(255, 170, 0, 0.7);
+}
+
+.dark .suggestion-style {
+  background-color: rgba(50, 150, 255, 0.2);
+  text-decoration-color: rgba(50, 150, 255, 0.7);
+}
+
+.dark .suggestion-punctuation {
+  background-color: rgba(160, 50, 255, 0.2);
+  text-decoration-color: rgba(160, 50, 255, 0.7);
+}
+
+.dark .suggestion-clarity {
+  background-color: rgba(50, 200, 50, 0.2);
+  text-decoration-color: rgba(50, 200, 50, 0.7);
+}
+
+/* Animation for applying suggestions */
+@keyframes highlight-success {
+  0% { background-color: rgba(50, 200, 50, 0.4); }
+  100% { background-color: transparent; }
+}
+
+.suggestion-applied {
+  animation: highlight-success 1.5s ease forwards;
+}
+
+/* Tooltip-like hints on hover */
+.editor-highlights span[data-id]::after {
+  content: attr(data-suggestion);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 10;
+}
+
+.editor-highlights span[data-id]:hover::after {
+  opacity: 0.9;
+  transform: translateY(0);
+}
+
+/* Fragment tooltips with priority information */
+.editor-highlights span[data-fragment-type]::after {
+  content: attr(data-fragment-type);
+  position: absolute;
+  bottom: -20px;  /* Changed from top to bottom for better visibility */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Different tooltip content based on available attributes */
+.editor-highlights span[data-priority]::after {
+  content: attr(data-fragment-type) " (Priority: " attr(data-priority) ")";
+}
+
+.editor-highlights span[data-pos][data-priority]::after {
+  content: attr(data-fragment-type) " (" attr(data-pos) ", Priority: " attr(data-priority) ")";
+}
+
+.editor-highlights span[data-pos]:not([data-priority])::after {
+  content: attr(data-fragment-type) " (" attr(data-pos) ")";
+}
+
+.show-fragments .editor-highlights span[data-fragment-type]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Priority styles for tooltips */
+.editor-highlights span.priority-1::after {
+  background: rgba(220, 38, 38, 0.95);
+  font-weight: bold;
+}
+
+.editor-highlights span.priority-2::after {
+  background: rgba(234, 179, 8, 0.95);
+}
+
+.editor-highlights span.priority-3::after {
+  background: rgba(59, 130, 246, 0.95);
+}
+
+/* Transition effect when fragments appear/disappear */
+.editor-highlights span[class*="fragment-"] {
+  transition: background-color 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+}
+
+.enhanced-editor:not(.show-fragments) .editor-highlights span[class*="fragment-"] {
+  opacity: 0;
+}
+
+.enhanced-editor.show-fragments .editor-highlights span[class*="fragment-"] {
+  opacity: 1;
+}
+
+/* Fragment transition effects */
+.enhanced-editor .editor-highlights span[class*="fragment-"] {
+  transition: all 0.3s ease;
+}
+
+.enhanced-editor.show-fragments .editor-highlights span[class*="fragment-"] {
+  animation: fadeInFragments 0.3s ease forwards;
+}
+
+/* Toggle animation */
+@keyframes fadeInFragments {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Fragment analysis indicator */
+.fragment-analysis-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(52, 152, 219, 0.9);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  z-index: 10;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.show-fragments .fragment-analysis-indicator {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Z-index management for overlapping highlights - co-developer brief requirement */
+.editor-highlights span {
+  position: relative;
+}
+
+/* Base z-index for all highlights */
+.editor-highlights span[class*="fragment-"] {
+  z-index: 1;
+}
+
+/* Priority based z-index management */
+.editor-highlights span.priority-1 {
+  z-index: 30; /* Highest priority on top */
+}
+
+.editor-highlights span.priority-2 {
+  z-index: 20;
+}
+
+.editor-highlights span.priority-3 {
+  z-index: 10;
+}
+
+/* Increase z-index on hover */
+.editor-highlights span[class*="fragment-"]:hover {
+  z-index: 50 !important;
+}
+
+/* Handle overlapping suggestion rendering */
+.editor-highlights span[data-priority="1"] {
+  opacity: 1 !important; /* Always fully visible */
+}
+
+.editor-highlights span[data-priority="2"] {
+  opacity: 0.95;
+}
+
+/* Fade out lower priority when overlapped by higher priority */
+.editor-highlights span.priority-1:hover ~ span.priority-2,
+.editor-highlights span.priority-1:hover ~ span.priority-3 {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+.editor-highlights span.priority-2:hover ~ span.priority-3 {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+/* Improve text visibility when overlapped */
+.editor-textarea {
+  mix-blend-mode: normal;
+  isolation: isolate;
+}
+
+/* Add animation for new highlights */
+@keyframes highlightFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.editor-highlights span[class*="fragment-"] {
+  animation: highlightFadeIn 0.3s ease-out forwards;
+}
+
+/* Performance optimization for rendering */
+.enhanced-editor {
+  contain: layout;
+  will-change: transform; /* Hardware acceleration hint */
+}
+
+/* Ensure text wrapping works properly within highlight boxes */
+.editor-highlights span[class*="fragment-"] {
+  position: relative;
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Improve text wrapping at line breaks */
+.editor-highlights br {
+  display: block;
+  content: "";
+  margin-top: 0.5em;
+}
+
+/* Ensure highlight boxes wrap properly */
+.fragment-word, .fragment-phrase, .fragment-punctuation {
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 2px 0;
+}
+
+/* Handle text wrapping within highlight boxes */
+@supports (box-decoration-break: clone) or (-webkit-box-decoration-break: clone) {
+  .editor-highlights span[class*="fragment-"] {
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+/* Reset opacity for better text visibility */
+.enhanced-editor.textarea-focused .editor-textarea {
+  opacity: 0.2 !important;
+}
+
+/* Make sure the editor highlights show text correctly */
+.editor-highlights {
+  -webkit-text-fill-color: currentColor !important;
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.dark .editor-highlights {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Handle line wrapping properly */
+.editor-highlights span {
+  white-space: pre-wrap !important;
+}
+
+/* Ensure proper z-stacking */
+.enhanced-editor .editor-highlights {
+  z-index: 1;
+}
+
+.enhanced-editor .editor-textarea {
+  z-index: 2;
+  background: transparent !important;
+}
+
+/* Fix text visibility in dark mode */
+.dark .editor-highlights span[class*="fragment-"] {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Dual text box layout styling */
+.analysis-view {
+  min-height: 200px;
+  max-height: 300px;
+  background-color: rgba(241, 245, 249, 0.5) !important;
+}
+
+.dark .analysis-view {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+.analysis-view .editor-highlights {
+  opacity: 1 !important;
+  color: inherit !important;
+  padding: 8px !important;
+  overflow: auto;
+  max-height: 100%;
+  font-size: inherit;
+  line-height: 1.6;
+}
+
+.analysis-view .editor-highlights span {
+  color: inherit !important;
+}
+
+.analysis-view .editor-textarea {
+  opacity: 0 !important;
+  pointer-events: none; /* Prevent interaction with analysis view textarea */
+}
+
+/* Make fragments always visible in analysis view */
+.analysis-view.enhanced-editor:not(.show-fragments) .fragment-word,
+.analysis-view.enhanced-editor:not(.show-fragments) .fragment-phrase,
+.analysis-view.enhanced-editor:not(.show-fragments) .fragment-punctuation {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  opacity: 1 !important;
+}
+
+.analysis-view.enhanced-editor .editor-highlights span[class*="fragment-"] {
+  opacity: 1 !important;
+}
+
+/* Visualization enhancement for analysis view */
+.analysis-view .priority-1 {
+  background-color: rgba(254, 202, 202, 0.5) !important;
+  border: 2px solid rgba(239, 68, 68, 0.5) !important;
+}
+
+.analysis-view .priority-2 {
+  background-color: rgba(254, 240, 138, 0.5) !important;
+  border: 1px solid rgba(250, 204, 21, 0.5) !important;
+}
+
+.analysis-view .priority-3 {
+  background-color: rgba(186, 230, 253, 0.5) !important;
+  border: 1px solid rgba(14, 165, 233, 0.5) !important;
+}
+
+/* Transition between the two editors */
+.analysis-view,
+.main-editor-textarea {
+  transition: all 0.3s ease;
+}
+
+/* Improve layout for the dual text box design */
+@media (min-width: 768px) {
+  .analysis-view {
+    min-height: 200px;
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 767px) {
+  .analysis-view {
+    min-height: 150px;
+    max-height: 200px;
+  }
+}
+
+/* Visual connection between the two boxes */
+.analysis-view::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='16' fill='none'%3E%3Cpath d='M15 16L30 0H0L15 16Z' fill='%23CBD5E1'/%3E%3C/svg%3E") no-repeat center center;
+  z-index: 10;
+}
+
+.dark .analysis-view::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='16' fill='none'%3E%3Cpath d='M15 16L30 0H0L15 16Z' fill='%23334155'/%3E%3C/svg%3E") no-repeat center center;
+}
