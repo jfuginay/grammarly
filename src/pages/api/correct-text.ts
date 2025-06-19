@@ -23,6 +23,9 @@ export default async function handler(
   res: NextApiResponse<ApiResponse | { message: string }>
 ) {
   console.log('API: correct-text endpoint called');
+  console.log('API: OpenAI API key present:', !!process.env.OPENAI_API_KEY);
+  console.log('API: OpenAI API key length:', process.env.OPENAI_API_KEY?.length || 0);
+  
   setCorsHeaders(res, req.headers.origin);
 
   if (req.method === 'OPTIONS') {

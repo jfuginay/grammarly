@@ -31,6 +31,8 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('API: check-tone endpoint called');
+  console.log('API: OpenAI API key present:', !!process.env.OPENAI_API_KEY);
+  console.log('API: OpenAI API key length:', process.env.OPENAI_API_KEY?.length || 0);
   
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -58,12 +60,32 @@ export default async function handler(
     const responseContent = completion.choices[0].message.content;
     console.log('API: OpenAI tone response received, content length:', responseContent?.length || 0);
     
+    if (!responseContent) {
+      console.log('API: No response content from OpenAI for tone analysis');
+      return res.status(500).json({ message: 'No response from OpenAI' });
+    }
+    
     const analysis = JSON.parse(responseContent || '{}');
     console.log('API: Parsed tone analysis:', analysis.overallTone);
 
     res.status(200).json(analysis);
-  } catch (error) {
+  } catch (error: any) {
     console.error('API: Error analyzing tone:', error);
+    console.error('API: Error details:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    });
+    
+    if (error instanceof OpenAI.APIError) {
+      console.error('API: OpenAI API Error details:', {
+        status: error.status,
+        code: error.code,
+        type: error.type
+      });
+      return res.status(error.status || 500).json({ message: 'OpenAI API Error' });
+    }
+    
     res.status(500).json({ message: 'Internal Server Error' });
   }
 } 
