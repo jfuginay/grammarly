@@ -27,7 +27,6 @@ A comprehensive CORS (Cross-Origin Resource Sharing) solution that allows the Gr
 ### 3. **Comprehensive API Coverage**
 All API routes now include CORS support:
 - `/api/correct-text` - Grammar checking endpoint
-- `/api/cors-test` - CORS testing and validation
 - `/api/hello` - Basic API test
 - `/api/users` - User management
 
@@ -56,30 +55,6 @@ process.env.ADDITIONAL_ALLOWED_ORIGINS
 - Multiple port support
 - Console testing utilities
 - Detailed debugging information
-
-## 🧪 Testing Utilities
-
-### Browser Console Testing
-```javascript
-// Quick validation
-corsQuickTest()
-
-// Advanced testing
-window.testCors.testBasicCors()
-window.testCors.getTestReport()
-```
-
-### API Testing
-```bash
-# Test CORS functionality
-curl -H "Origin: https://app.co.dev" http://localhost:3000/api/cors-test
-
-# Get full configuration report
-curl "http://localhost:3000/api/cors-test?report=true"
-```
-
-### Pattern Testing
-The system automatically validates domain patterns and provides detailed test reports.
 
 ## 🔧 Configuration Options
 
@@ -126,22 +101,6 @@ export const ORIGIN_PATTERNS = {
 - Proper credential handling
 - Secure header configuration
 - Maximum age caching for performance
-
-## 📊 Monitoring & Debugging
-
-### Test Endpoint
-`/api/cors-test` provides:
-- Real-time CORS validation
-- Configuration reports
-- Origin checking
-- Pattern matching results
-
-### Console Utilities
-Browser-based testing tools for:
-- CORS validation
-- Cross-origin testing
-- Configuration debugging
-- Performance monitoring
 
 ## 🎉 Benefits Achieved
 

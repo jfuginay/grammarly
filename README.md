@@ -64,29 +64,6 @@ ADDITIONAL_ALLOWED_ORIGINS=https://custom-domain.com,https://another-domain.org
 
 The application includes comprehensive CORS support:
 
-### Testing CORS
-
-1. **Browser Console Testing**:
-   ```javascript
-   // Quick test
-   corsQuickTest()
-   
-   // Advanced testing
-   window.testCors.testBasicCors()
-   window.testCors.getTestReport()
-   ```
-
-2. **API Testing**:
-   ```bash
-   # Test CORS endpoint
-   curl -H "Origin: https://app.co.dev" http://localhost:3000/api/cors-test
-   ```
-
-3. **Get Test Report**:
-   ```bash
-   curl "http://localhost:3000/api/cors-test?report=true"
-   ```
-
 ### Adding New Origins
 
 1. **Environment Variable** (Recommended):
@@ -103,11 +80,6 @@ The application includes comprehensive CORS support:
 - **Method**: POST
 - **Body**: `{ "text": "Your text to check" }`
 - **Response**: Array of suggestions with corrections
-
-### `/api/cors-test`
-- **Method**: GET
-- **Query**: `?report=true` for full configuration report
-- **Response**: CORS test results and configuration
 
 ## Deployment
 
@@ -134,19 +106,6 @@ The application includes comprehensive CORS support:
 - **Dashboard** - Main text editing interface
 - **AuthContext** - User authentication management
 
-## Testing
-
-### CORS Testing
-```bash
-# Test specific origin
-curl -H "Origin: https://app.co.dev" http://localhost:3000/api/cors-test
-```
-
-### Manual Testing
-1. Open browser console on any supported domain
-2. Run `corsQuickTest()` for comprehensive CORS validation
-3. Check network tab for CORS headers
-
 ## Troubleshooting
 
 ### Common CORS Issues
@@ -154,7 +113,6 @@ curl -H "Origin: https://app.co.dev" http://localhost:3000/api/cors-test
 1. **"CORS Error" in browser**:
    - Check if your origin is in the allowed list
    - Verify HTTPS vs HTTP protocol matching
-   - Test with the CORS test endpoint
 
 2. **Preflight request failed**:
    - Ensure OPTIONS method is handled
@@ -163,19 +121,6 @@ curl -H "Origin: https://app.co.dev" http://localhost:3000/api/cors-test
 3. **Credentials blocked**:
    - Verify `Access-Control-Allow-Credentials: true` is set
    - Ensure origin is explicitly allowed (not wildcard)
-
-### Debug Tools
-
-1. **Browser Console**:
-   ```javascript
-   corsQuickTest() // Quick CORS validation
-   window.testCors.getTestReport() // Detailed report
-   ```
-
-2. **API Testing**:
-   ```bash
-   curl -v -H "Origin: your-origin" http://localhost:3000/api/cors-test
-   ```
 
 ## Learn More
 
