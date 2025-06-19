@@ -6,7 +6,7 @@ Since we're experiencing connection issues with the Prisma CLI, please follow th
 
 1. Go to [https://supabase.com](https://supabase.com)
 2. Sign in to your account
-3. Navigate to your project: `xelfhhaoukaqwedslngb`
+3. Navigate to your project: `your-project-id`
 
 ## Step 2: Open SQL Editor
 

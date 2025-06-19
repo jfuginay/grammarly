@@ -12,12 +12,12 @@ Go to your Vercel project → Settings → Environment Variables and update:
 
 1. **DATABASE_URL**
    ```
-   postgres://neondb_owner:npg_LoArg5clUq3W@ep-curly-poetry-a6jv04ie-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require
+   your_neon_database_url_with_pooling
    ```
 
 2. **DIRECT_URL** (if you have it)
    ```
-   postgres://neondb_owner:npg_LoArg5clUq3W@ep-curly-poetry-a6jv04ie.us-west-2.aws.neon.tech/neondb?sslmode=require
+   your_neon_database_direct_url
    ```
 
 ### Keep These Variables (No Changes):

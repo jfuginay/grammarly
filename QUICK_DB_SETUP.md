@@ -2,7 +2,7 @@
 
 ## Step 1: Check Supabase Database Status
 1. Go to [https://supabase.com](https://supabase.com)
-2. Sign in and go to your project `xelfhhaoukaqwedslngb`
+2. Sign in and go to your project `your-project-id`
 3. Check if you see any "Database Paused" messages
 4. If paused, click "Resume" or "Unpause"
 
