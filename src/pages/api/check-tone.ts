@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
+import { setCorsHeaders } from '@/lib/cors';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -33,6 +34,12 @@ export default async function handler(
   console.log('API: check-tone endpoint called');
   console.log('API: OpenAI API key present:', !!process.env.OPENAI_API_KEY);
   console.log('API: OpenAI API key length:', process.env.OPENAI_API_KEY?.length || 0);
+  
+  setCorsHeaders(res, req.headers.origin);
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
   
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
