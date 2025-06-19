@@ -23,6 +23,33 @@ const AuthCallback = () => {
           console.error('Error exchanging code for session:', error)
           router.replace('/login?error=AuthenticationFailed')
         } else {
+          // After successful authentication, ensure user exists in database
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            
+            if (user) {
+              // Create or update user in database
+              const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  id: user.id,
+                  email: user.email,
+                }),
+              })
+
+              if (!response.ok) {
+                console.error('Failed to create/update user in database')
+                // Continue to dashboard anyway since auth succeeded
+              }
+            }
+          } catch (dbError) {
+            console.error('Error ensuring user exists in database:', dbError)
+            // Continue to dashboard anyway since auth succeeded
+          }
+          
           router.replace('/dashboard')
         }
       }

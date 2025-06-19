@@ -22,26 +22,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Missing required fields: id and email' });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id }
-    });
-
-    if (existingUser) {
-      return res.status(200).json({ message: 'User already exists', user: existingUser });
-    }
-
-    // Create new user
-    const newUser = await prisma.user.create({
-      data: {
+    // Use upsert to create or update user
+    const user = await prisma.user.upsert({
+      where: { id },
+      update: {
+        email, // Update email in case it changed
+      },
+      create: {
         id,
         email,
       }
     });
 
-    return res.status(201).json({ message: 'User created successfully', user: newUser });
+    return res.status(200).json({ 
+      message: user ? 'User created/updated successfully' : 'User already exists', 
+      user 
+    });
+
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error creating/updating user:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

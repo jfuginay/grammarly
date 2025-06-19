@@ -39,6 +39,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const fetchSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      
+      // If user exists, ensure they're in our database
+      if (user) {
+        try {
+          await createUser(user);
+        } catch (error) {
+          console.error('Error ensuring user exists in database:', error);
+          // Don't fail the auth process if database creation fails
+        }
+      }
+      
       setInitializing(false);
     };
 
@@ -47,7 +58,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       // The setTimeout is necessary to allow Supabase functions to trigger inside onAuthStateChange
       setTimeout(async () => {
-        setUser(session?.user ?? null);
+        const newUser = session?.user ?? null;
+        setUser(newUser);
+        
+        // If user signed in and we have a user, ensure they're in our database
+        if (event === 'SIGNED_IN' && newUser) {
+          try {
+            await createUser(newUser);
+          } catch (error) {
+            console.error('Error ensuring user exists in database:', error);
+            // Don't fail the auth process if database creation fails
+          }
+        }
+        
         setInitializing(false);
       }, 0);
     });
@@ -71,25 +94,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create user');
+        // If user already exists, that's OK - don't throw an error
+        if (response.status === 200 && responseData.message === 'User already exists') {
+          console.log('User already exists in database');
+          return;
+        }
+        
+        console.error('Error creating user:', responseData.error);
+        throw new Error(responseData.error || 'Failed to create user');
       }
+
+      console.log('User created/verified in database:', responseData);
     } catch (error) {
       console.error('Error creating user:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create user profile",
-      });
-      throw error;
+      // Only show toast error if it's not a "user already exists" scenario
+      if (error instanceof Error && !error.message.includes('already exists')) {
+        toast({
+          variant: "destructive",
+          title: "Error", 
+          description: "Failed to create user profile",
+        });
+      }
+      // Don't throw the error - we want auth to continue even if DB creation fails
     }
   };
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
     if (!error && data.user) {
-      await createUser(data.user);
+      try {
+        await createUser(data.user);
+      } catch (userError) {
+        console.error('Error creating user during sign in:', userError);
+        // Don't fail the sign-in process if user creation fails
+      }
     }
     
     if (error) {
@@ -114,7 +156,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (data.user) {
-      await createUser(data.user);
+      try {
+        await createUser(data.user);
+      } catch (userError) {
+        console.error('Error creating user during sign up:', userError);
+        // Don't fail the sign-up process if user creation fails
+      }
     }
 
     if (error) {
@@ -136,13 +183,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false,
+        shouldCreateUser: true, // Allow creating new users with magic link
         emailRedirectTo: `${window.location.origin}/dashboard`,
       },
     });
+    
     if (!error && data.user) {
-      await createUser(data.user);
+      try {
+        await createUser(data.user);
+      } catch (userError) {
+        console.error('Error creating user during magic link sign in:', userError);
+        // Don't fail the sign-in process if user creation fails
+      }
     }
+    
     if (error) {
       toast({
         variant: "destructive",
@@ -159,7 +213,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google' as Provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`
@@ -174,6 +228,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       throw error;
     }
+    
+    // Note: The actual user creation will happen in the auth callback
+    // and in the onAuthStateChange listener
   };
 
   const signOut = async () => {
