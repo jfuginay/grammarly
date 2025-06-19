@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Premium color palette with deep blues and soft grays */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Premium deep blue as primary */
+    --primary: 220 85% 45%;
+    --primary-foreground: 210 40% 98%;
+    
+    /* Refined secondary and accent colors */
+    --secondary: 218 35% 94%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 215 30% 94%;
+    --muted-foreground: 215 25% 40%;
+    --accent: 220 70% 90%;
+    --accent-foreground: 220 80% 25%;
+    
+    /* Other UI colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 220 85% 45%;
+    
+    /* Chart colors for data visualization */
+    --chart-1: 220 85% 45%;
+    --chart-2: 262 83% 58%;
+    --chart-3: 199 85% 45%;
+    --chart-4: 150 75% 40%;
+    --chart-5: 30 85% 55%;
+    
+    /* Smooth rounded corners */
+    --radius: 0.75rem;
+  }
+  
+  .dark {
+    /* Dark mode with richer, deeper colors */
+    --background: 222 45% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 45% 11%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Deep blues for dark mode */
+    --primary: 217 90% 60%;
+    --primary-foreground: 222 47% 11%;
+    
+    /* Refined dark mode secondary colors */
+    --secondary: 217 32% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 25% 70%;
+    --accent: 217 35% 25%;
+    --accent-foreground: 210 40% 98%;
+    
+    /* Other UI colors for dark mode */
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 32% 18%;
+    --input: 217 32% 18%;
+    --ring: 224 76% 48%;
+    
+    /* Chart colors for dark mode */
+    --chart-1: 217 90% 60%;
+    --chart-2: 262 83% 58%;
+    --chart-3: 199 85% 60%;
+    --chart-4: 150 70% 50%;
+    --chart-5: 30 85% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    @apply transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Typography improvements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium tracking-tight;
+  }
+}
+
+@layer components {
+  /* Premium gradients */
+  .premium-gradient {
+    @apply bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600;
+  }
+  
+  .premium-gradient-subtle {
+    @apply bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30;
+  }
+  
+  .premium-text-gradient {
+    @apply bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent;
+  }
+  
+  /* Premium card styling */
+  .premium-card {
+    @apply bg-white dark:bg-gray-800/90 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 dark:border-gray-800;
+  }
+  
+  .premium-card-active {
+    @apply bg-blue-50/70 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800;
+  }
+  
+  /* Premium buttons with micro-interactions */
+  .premium-button {
+    @apply rounded-full transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50;
+  }
+  
+  .premium-button-gradient {
+    @apply premium-button bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white;
+  }
+  
+  /* Premium sidebar items with hover effects */
+  .premium-sidebar-item {
+    @apply flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400;
+  }
+  
+  .premium-sidebar-item-active {
+    @apply bg-blue-50/70 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800;
+  }
+  
+  /* Micro-interactions for interactive elements */
+  .premium-hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md;
+  }
+  
+  /* Card hover effect for document cards */
+  .premium-document-card {
+    @apply p-4 rounded-xl border border-gray-100 dark:border-gray-800 transition-all duration-200 
+           hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md 
+           bg-white dark:bg-gray-800/90 hover:bg-blue-50/30 dark:hover:bg-blue-900/10;
+  }
+  
+  .premium-document-card-active {
+    @apply border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-900/20;
+  }
+}
