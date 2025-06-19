@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -79,7 +79,7 @@ const TEXT_WIDTHS = ["40ch", "60ch", "80ch", "100ch"];
 
 const DashboardPage = () => {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: isAuthLoading, getAccessTokenSilently } = useAuth0();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [userMetadata, setUserMetadata] = useState<User | null>(null);
   const { toast } = useToast();
 

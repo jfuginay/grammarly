@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthCallback = () => {
   const router = useRouter();
-  const { isAuthenticated, isLoading, error } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
   const [processingState, setProcessingState] = useState('Processing authentication...');
+  const [error, setError] = useState<any>(null);
 
   useEffect(() => {
     // Debug logs for troubleshooting

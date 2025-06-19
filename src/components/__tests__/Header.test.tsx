@@ -13,8 +13,8 @@ jest.mock('next/router', () => ({
 
 // Mock Auth0 useAuth0 hook
 const mockLogout = jest.fn(() => Promise.resolve());
-jest.mock('@auth0/auth0-react', () => ({
-  useAuth0: jest.fn(() => ({
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: jest.fn(() => ({
     isAuthenticated: true,
     user: {
       email: 'test@example.com',

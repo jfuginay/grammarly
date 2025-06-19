@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,10 +25,11 @@ interface HeaderProps {
 
 const Header = ({ user: propUser }: HeaderProps) => {
   const router = useRouter();
-  const { user: auth0User, logout } = useAuth0();
+  const { user: authUser, logout } = useAuth();
   
-  // Use either the passed in user prop or the Auth0 user
-  const user = propUser || auth0User;
+  // Use either the passed in user prop or the Auth context user
+  const user = propUser || authUser;
+  
   
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const [isDarkMode, setIsDarkMode] = useState<boolean | null>(null);
@@ -58,11 +59,7 @@ const Header = ({ user: propUser }: HeaderProps) => {
   };
 
   const handleSignOut = async () => {
-    logout({
-      logoutParams: {
-        returnTo: window.location.origin
-      }
-    });
+    logout();
     router.push('/login');
   };
 
