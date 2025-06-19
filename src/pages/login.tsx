@@ -1,32 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth0 } from '@auth0/auth0-react';
 import { Button } from "@/components/ui/button";
 import GoogleButton from '@/components/GoogleButton';
 import Logo from '@/components/Logo';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const LoginPage = () => {
   const router = useRouter();
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading } = useAuth0();
 
+  // Redirect if already authenticated
   useEffect(() => {
-    // Supabase login logic removed. Implement new login logic here.
-    setIsAuthLoading(false);
-  }, []);
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    // Implement login logic here
-  };
-
-  if (isAuthLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
@@ -46,55 +37,18 @@ const LoginPage = () => {
             <CardTitle className="text-center">Log in</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <Button type="submit" className="w-full">
-                Sign In
-              </Button>
-            </form>
-            <div className="flex items-center w-full my-4">
-              <Separator className="flex-1" />
-              <span className="mx-4 text-muted-foreground text-sm font-semibold whitespace-nowrap">or</span>
-              <Separator className="flex-1" />
-            </div>
             <div className="flex flex-col gap-4">
               <GoogleButton />
-            </div>
-            <div className="flex items-center w-full my-6">
-              <Separator className="flex-1" />
-              <span className="mx-4 text-muted-foreground text-sm font-semibold whitespace-nowrap">or</span>
-              <Separator className="flex-1" />
-            </div>
-            <div className="text-center">
-              <Button
-                type="button"
-                variant="link"
-                className="p-0"
-                onClick={() => router.push('/signup')}
-              >
-                Need an account? Sign up
-              </Button>
+              <div className="text-center mt-4">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="p-0"
+                  onClick={() => router.push('/signup')}
+                >
+                  Need an account? Sign up
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

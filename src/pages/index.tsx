@@ -1,19 +1,38 @@
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth0 } from '@auth0/auth0-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 
 const IndexPage = () => {
   const router = useRouter();
+  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router, isLoading]);
+
+  const handleSignIn = () => {
+    loginWithRedirect({
+      authorizationParams: {
+        connection: 'google-oauth2',
+        scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
+      }
+    });
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="py-4 px-6 md:px-10 flex justify-between items-center">
         <Logo />
         <nav className="flex gap-4">
-          <Button variant="ghost" onClick={() => router.push('/login')}>
+          <Button variant="ghost" onClick={handleSignIn}>
             Log In
           </Button>
-          <Button onClick={() => router.push('/signup')}>Sign Up</Button>
+          <Button onClick={handleSignIn}>Sign Up with Google</Button>
         </nav>
       </header>
 
@@ -29,8 +48,8 @@ const IndexPage = () => {
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Stop wrestling with words. Our (surprisingly clever) writing assistant helps you craft text that's clear, compelling, and actually sounds like you. We handle the grammar, spelling, tone, and style—so you can focus on, well, anything else.
           </p>
-          <Button size="lg" onClick={() => router.push('/signup')}>
-            Get Started for Free (Your Sanity Will Thank You)
+          <Button size="lg" onClick={handleSignIn}>
+            Sign In with Google
           </Button>
         </section>
 

@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import type { User } from '@supabase/supabase-js';
+import { useAuth0 } from '@auth0/auth0-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,12 +15,20 @@ import { Moon, Sun, Settings, LogOut, User as UserIcon, CreditCard } from 'lucid
 import Logo from './Logo';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
-const Header = ({ user }: { user: User | null }) => {
+interface HeaderProps {
+  user?: {
+    email?: string;
+    name?: string;
+    picture?: string;
+  } | null;
+}
+
+const Header = ({ user: propUser }: HeaderProps) => {
   const router = useRouter();
-  const [supabase] = useState(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
+  const { user: auth0User, logout } = useAuth0();
+  
+  // Use either the passed in user prop or the Auth0 user
+  const user = propUser || auth0User;
   
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const [isDarkMode, setIsDarkMode] = useState<boolean | null>(null);
@@ -51,7 +58,11 @@ const Header = ({ user }: { user: User | null }) => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin
+      }
+    });
     router.push('/login');
   };
 
@@ -103,7 +114,7 @@ const Header = ({ user }: { user: User | null }) => {
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="premium-hover-lift rounded-full p-0 h-10 w-10 overflow-hidden border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300">
                         <Avatar>
-                          <AvatarImage src={user.user_metadata?.avatar_url} />
+                          <AvatarImage src={user.picture} />
                           <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                             {user.email?.[0]?.toUpperCase() || 'U'}
                           </AvatarFallback>

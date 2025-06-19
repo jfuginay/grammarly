@@ -1,17 +1,10 @@
-import { createClient } from '@/util/supabase/static-props'
+import React from 'react';
 
-export default function PublicPage({ data }: { data?: any[] }) {
-  return <pre>{data && JSON.stringify(data, null, 2)}</pre>
-}
-
-export async function getStaticProps() {
-  const supabase = createClient()
-
-  const { data, error } = await supabase.from('countries').select()
-
-  if (error || !data) {
-    return { props: {} }
-  }
-
-  return { props: { data } }
+export default function PublicPage() {
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Public Page</h1>
+      <p>This is a public page that anyone can access.</p>
+    </div>
+  );
 }

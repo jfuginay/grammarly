@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
-import { createBrowserClient } from '@supabase/ssr';
-import type { User } from '@supabase/supabase-js';
+import { useAuth0 } from '@auth0/auth0-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -57,6 +56,13 @@ interface Document {
   updatedAt: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  picture?: string;
+}
+
 // Helper function to escape strings for use in a regular expression
 function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
@@ -73,13 +79,8 @@ const TEXT_WIDTHS = ["40ch", "60ch", "80ch", "100ch"];
 
 const DashboardPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [supabase] = useState(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
-
+  const { user, isAuthenticated, isLoading: isAuthLoading, getAccessTokenSilently } = useAuth0();
+  const [userMetadata, setUserMetadata] = useState<User | null>(null);
   const { toast } = useToast();
 
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -227,29 +228,26 @@ const DashboardPage = () => {
     reader.readAsText(file);
   };
 
-  const handleShare = async () => {
-    if (!text.trim()) {
-      toast({
-        title: "Info",
-        description: "Nothing to share. Write some text first!",
-        variant: "default",
-      });
-      return;
-    }
-
+  const handleShareText = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: activeDocument?.title || 'My Engie Document',
+          title: activeDocument?.title || 'Shared text',
           text: text,
         });
-      } catch (error) {
-        console.error('Error sharing:', error);
         toast({
-          title: "Error",
-          description: "Failed to share the content.",
-          variant: "destructive",
+          title: "Success",
+          description: "Text shared successfully.",
         });
+      } catch (error) {
+        console.error("Error sharing:", error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          toast({
+            title: "Error",
+            description: "Failed to share text.",
+            variant: "destructive",
+          });
+        }
       }
     } else {
       toast({
@@ -261,23 +259,31 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        router.replace('/login');
-      } else {
-        setUser(authUser);
-        setIsAuthLoading(false);
-      }
-    };
-    checkSession();
-  }, [router, supabase]);
+    // Redirect to login if not authenticated
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace('/login');
+    } else if (isAuthenticated && user) {
+      // Set user data from Auth0
+      setUserMetadata({
+        id: user.sub || '',
+        email: user.email || '',
+        name: user.name,
+        picture: user.picture
+      });
+    }
+  }, [isAuthLoading, isAuthenticated, user, router]);
 
   const fetchDocuments = useCallback(async () => {
-    if (!user) return;
+    if (!isAuthenticated || !user) return;
     
     try {
-        const response = await fetch('/api/documents');
+        const token = await getAccessTokenSilently();
+        const response = await fetch('/api/documents', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
         if (!response.ok) {
           throw new Error('Failed to fetch documents');
         }
@@ -285,6 +291,8 @@ const DashboardPage = () => {
         
         // Sort by most recently updated
         const sortedDocs = docs.sort((a: Document, b: Document) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        setDocuments(sortedDocs);
+        
         const activeDocStillExists = activeDocument && sortedDocs.some((d: Document) => d.id === activeDocument.id);
         if (!activeDocStillExists && sortedDocs.length > 0) {
             setActiveDocument(sortedDocs[0]);
@@ -295,21 +303,28 @@ const DashboardPage = () => {
         console.error("Failed to fetch documents:", error);
         toast({ title: "Error", description: "Could not load your documents.", variant: "destructive" });
     }
-  }, [user, activeDocument]);
+  }, [isAuthenticated, user, activeDocument, getAccessTokenSilently]);
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       fetchDocuments();
     }
-  }, [user, fetchDocuments]);
+  }, [isAuthenticated, user, fetchDocuments]);
 
   const handleNewDocument = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
     try {
+      const token = await getAccessTokenSilently();
       const response = await fetch('/api/documents', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ title: 'Untitled Document', content: '' }),
       });
+      
       if (!response.ok) throw new Error('Failed to create document');
       const newDoc = await response.json();
       
@@ -323,7 +338,7 @@ const DashboardPage = () => {
       console.error(error);
       toast({ title: "Error", description: "Could not create a new document.", variant: "destructive" });
     }
-  }, [fetchDocuments]);
+  }, [fetchDocuments, isAuthenticated, getAccessTokenSilently]);
 
   const handleSelectDocument = (doc: Document) => {
     setActiveDocument(doc);
@@ -340,13 +355,23 @@ const DashboardPage = () => {
   };
 
   const debouncedUpdateDocument = useDebouncedCallback(async (docId: string, data: { content?: string; title?: string }) => {
+    if (!isAuthenticated) return;
+    
     try {
-      await fetch(`/api/documents/${docId}`, {
+      setAutoSaveState('saving');
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`/api/documents/${docId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(data),
       });
-
+      
+      if (!response.ok) throw new Error('Failed to update document');
+      
+      setAutoSaveState('saved');
       toast({ title: "Saved", duration: 2000 });
 
       setDocuments((docs: Document[]) =>
@@ -362,6 +387,7 @@ const DashboardPage = () => {
       );
     } catch (error) {
       console.error("Failed to update document:", error);
+      setAutoSaveState('error');
       toast({
         title: "Error",
         description: "Could not save your changes.",
@@ -371,10 +397,18 @@ const DashboardPage = () => {
   }, 1000);
 
   const handleDeleteDocument = async (docId: string) => {
+    if (!isAuthenticated) return;
+    
     try {
-      await fetch(`/api/documents/${docId}`, {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`/api/documents/${docId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
+      
+      if (!response.ok) throw new Error('Failed to delete document');
       
       // Update the local state
       setDocuments(docs => {
@@ -752,7 +786,7 @@ const DashboardPage = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={handleShare} className="h-9 w-9 rounded-full border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <Button variant="outline" size="icon" onClick={handleShareText} className="h-9 w-9 rounded-full border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Share2 className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

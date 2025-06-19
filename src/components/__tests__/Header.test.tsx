@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Header from '../Header'; // Adjust path as necessary
-import { User } from '@supabase/supabase-js';
 
 // Mock Next.js router
 const mockPush = jest.fn();
@@ -12,14 +11,17 @@ jest.mock('next/router', () => ({
   }),
 }));
 
-// Mock Supabase createBrowserClient and auth.signOut
-const mockSignOut = jest.fn(() => Promise.resolve());
-jest.mock('@supabase/ssr', () => ({
-  ...jest.requireActual('@supabase/ssr'), // Import and retain default behavior
-  createBrowserClient: jest.fn(() => ({
-    auth: {
-      signOut: mockSignOut,
+// Mock Auth0 useAuth0 hook
+const mockLogout = jest.fn(() => Promise.resolve());
+jest.mock('@auth0/auth0-react', () => ({
+  useAuth0: jest.fn(() => ({
+    isAuthenticated: true,
+    user: {
+      email: 'test@example.com',
+      name: 'Test User',
+      picture: 'http://example.com/avatar.png'
     },
+    logout: mockLogout,
   })),
 }));
 
@@ -34,18 +36,13 @@ describe('Header Component', () => {
   beforeEach(() => {
     // Clear mock history before each test
     mockPush.mockClear();
-    mockSignOut.mockClear();
-    const { createBrowserClient } = require('@supabase/ssr');
-    createBrowserClient.mockClear();
+    mockLogout.mockClear();
   });
 
-  const mockUser: User = {
-    id: 'user-id-123',
-    app_metadata: {},
-    user_metadata: { avatar_url: 'http://example.com/avatar.png' },
-    aud: 'authenticated',
-    created_at: new Date().toISOString(),
+  const mockUser = {
     email: 'test@example.com',
+    name: 'Test User',
+    picture: 'http://example.com/avatar.png'
   };
 
   it('renders logo and title', () => {
@@ -94,7 +91,7 @@ describe('Header Component', () => {
     expect(await screen.findByText('Sign Out')).toBeInTheDocument();
   });
 
-  it('calls signOut and redirects on "Sign Out" click', async () => {
+  it('calls logout and redirects on "Sign Out" click', async () => {
     render(<Header user={mockUser} />);
     const fallbackTextElement = screen.getByText(mockUser.email![0].toUpperCase());
     const avatarTrigger = fallbackTextElement.parentElement!; // This should be the trigger span
@@ -107,7 +104,7 @@ describe('Header Component', () => {
     const signOutButton = await screen.findByText('Sign Out');
     await userEvent.click(signOutButton);
 
-    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockLogout).toHaveBeenCalledTimes(1);
     // Wait for promises to resolve (e.g., async signOut and router.push)
     // We can check for the router push, as the sign out button might disappear after click.
     await expect(mockPush).toHaveBeenCalledWith('/login');
