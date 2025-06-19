@@ -260,6 +260,15 @@ const DashboardPage = () => {
   const dismissSuggestion = (suggestionId: string) => {
     setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionId));
   };
+
+  // Debug logging for Engie visibility
+  useEffect(() => {
+    console.log('Dashboard state update:', {
+      hasActiveDocument: !!activeDocument,
+      suggestionsCount: suggestions.length,
+      documentsCount: documents.length
+    });
+  }, [activeDocument, suggestions, documents]);
   
   if (!user) return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
 
@@ -277,8 +286,9 @@ const DashboardPage = () => {
   );
   
   return (
-    <DashboardLayout sidebar={sidebarComponent} header={headerComponent}>
-      <div className="p-4 sm:p-8 relative">
+    <>
+      <DashboardLayout sidebar={sidebarComponent} header={headerComponent}>
+        <div className="p-4 sm:p-8 relative">
         {!activeDocument ? (
           <div>
             <div className="flex justify-between items-center mb-8">
@@ -317,12 +327,12 @@ const DashboardPage = () => {
               <Textarea value={text} onChange={handleTextChange} className="main-editor-textarea min-h-[calc(100vh-240px)] text-base sm:text-lg border-0 p-4 sm:p-6 rounded-xl focus-visible:ring-0 bg-background" placeholder="Start writing your masterpiece..." />
             </Card>
             <Engie
-                suggestions={suggestions}
-                onApply={applySuggestion}
-                onDismiss={dismissSuggestion}
-                onIdeate={() => {}}
-                targetEditorSelector=".main-editor-textarea"
-                documents={documents.map(d => ({ id: d.id, title: d.title }))}
+              suggestions={suggestions}
+              onApply={applySuggestion}
+              onDismiss={dismissSuggestion}
+              onIdeate={() => {}}
+              targetEditorSelector=".main-editor-textarea"
+              documents={documents.map(d => ({ id: d.id, title: d.title }))}
             />
           </div>
         )}
@@ -338,6 +348,7 @@ const DashboardPage = () => {
         </DialogContent>
       </Dialog>
     </DashboardLayout>
+    </>
   );
 };
 

@@ -134,6 +134,8 @@ export class EngieController {
       this.stateManager.setCurrentSuggestionIndex(0);
 
       if (suggestions.length > 0) {
+        // Move Engie to the first suggestion
+        this.stateManager.moveEngieToSuggestion(suggestions[0]);
         this.stateManager.setChatOpen(true);
         this.stateManager.setActiveTab('suggestions');
       }
@@ -207,6 +209,11 @@ export class EngieController {
 
   handleEngieClose(): void {
     this.stateManager.setChatOpen(false);
+    // Reset position when closing if no active suggestions
+    const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
+    if (activeSuggestions.length === 0) {
+      this.stateManager.resetEngiePosition();
+    }
   }
 
   handleApply(): void {
@@ -246,10 +253,17 @@ export class EngieController {
     const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
     
     if (state.currentSuggestionIndex < activeSuggestions.length - 1) {
-      this.stateManager.setCurrentSuggestionIndex(state.currentSuggestionIndex + 1);
+      const nextIndex = state.currentSuggestionIndex + 1;
+      this.stateManager.setCurrentSuggestionIndex(nextIndex);
+      // Move Engie to the next suggestion
+      if (activeSuggestions[nextIndex]) {
+        this.stateManager.moveEngieToSuggestion(activeSuggestions[nextIndex]);
+      }
     } else {
       this.stateManager.setCurrentSuggestionIndex(0);
       this.stateManager.resetSuggestions();
+      // Reset Engie position when no more suggestions
+      this.stateManager.resetEngiePosition();
     }
   }
 
@@ -315,5 +329,27 @@ export class EngieController {
     if (this.inactivityTimerRef) {
       clearTimeout(this.inactivityTimerRef);
     }
+  }
+
+  /**
+   * Move Engie one step toward the mouse position
+   */
+  public stepTowardMouse(): void {
+    if (typeof window === 'undefined') return;
+    const mouse = (window as any).__engieMousePos;
+    if (!mouse) return;
+    const { x: botX, y: botY } = this.stateManager.getState().engiePos;
+    const dx = mouse.x - botX;
+    const dy = mouse.y - botY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 5) return; // Already close
+    const step = 24; // pixels per step
+    const ratio = step / dist;
+    const newX = botX + dx * ratio;
+    const newY = botY + dy * ratio;
+    this.stateManager.setEngiePos({ x: newX, y: newY });
+    this.stateManager.setBotDirection(dx > 0 ? 'right' : 'left');
+    this.stateManager.setBotAnimation('walking');
+    setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
 } 

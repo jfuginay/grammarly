@@ -18,8 +18,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
   }
 
+  // Normalize email to lowercase to prevent case sensitivity issues
+  const normalizedEmail = email.toLowerCase().trim();
+
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(409).json({ message: 'User with this email already exists.' });
     }
@@ -28,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const newUser = await prisma.user.create({
       data: {
-        email: email,
+        email: normalizedEmail,
         passwordHash: passwordHash,
       },
     });

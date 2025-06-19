@@ -21,9 +21,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Email and password are required.' });
   }
 
+  // Normalize email to lowercase to prevent case sensitivity issues
+  const normalizedEmail = email.toLowerCase().trim();
+
   try {
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {

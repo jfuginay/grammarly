@@ -9,6 +9,9 @@ export class EngieStateManager {
   }
 
   private getInitialState(): EngieState {
+    // Calculate initial position at bottom-right of screen
+    const initialPosition = this.calculateInitialPosition();
+    
     return {
       isChatOpen: false,
       currentSuggestionIndex: 0,
@@ -25,7 +28,7 @@ export class EngieStateManager {
       activeTab: 'suggestions',
       ideaNotifications: [],
       showSparkle: false,
-      engiePos: { x: 0, y: 0 },
+      engiePos: initialPosition,
       notificationOpen: false,
       isStyleModalOpen: false,
       selectedDocIds: [],
@@ -34,6 +37,17 @@ export class EngieStateManager {
       botDirection: 'right',
       isTouchDevice: false,
     };
+  }
+
+  private calculateInitialPosition(): { x: number; y: number } {
+    // Position Engie at center of the viewport
+    const engieSize = 64;
+    if (typeof window === 'undefined') {
+      return { x: 400, y: 300 };
+    }
+    const x = Math.max(0, window.innerWidth / 2 - engieSize / 2);
+    const y = Math.max(0, window.innerHeight / 2 - engieSize / 2);
+    return { x, y };
   }
 
   getState(): EngieState {
@@ -140,6 +154,53 @@ export class EngieStateManager {
   setEngiePos(pos: { x: number; y: number }): void {
     this.state.engiePos = pos;
     this.notify();
+  }
+
+  // Position Engie near suggested text
+  moveEngieToSuggestion(suggestion: Suggestion): void {
+    if (typeof window === 'undefined') return;
+
+    // Try to find the text in the DOM
+    const textElements = document.querySelectorAll('p, div, span, textarea, input[type="text"]');
+    let targetElement: Element | null = null;
+    
+    for (let i = 0; i < textElements.length; i++) {
+      const element = textElements[i];
+      const textContent = element.textContent || '';
+      if (textContent.includes(suggestion.original)) {
+        targetElement = element;
+        break;
+      }
+    }
+    
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const engieSize = 64;
+      const padding = 20;
+      
+      // Position Engie to the left of the target text, with some padding
+      let newX = Math.max(padding, rect.left - engieSize - padding);
+      let newY = Math.max(padding, rect.top);
+      
+      // Ensure Engie stays within viewport bounds
+      const maxX = window.innerWidth - engieSize - padding;
+      const maxY = window.innerHeight - engieSize - padding;
+      
+      newX = Math.min(newX, maxX);
+      newY = Math.min(newY, maxY);
+      
+      this.setEngiePos({ x: newX, y: newY });
+      
+      // Face towards the text
+      this.setBotDirection(newX < rect.left ? 'right' : 'left');
+    }
+  }
+
+  // Reset Engie to initial position
+  resetEngiePosition(): void {
+    const initialPosition = this.calculateInitialPosition();
+    this.setEngiePos(initialPosition);
+    this.setBotDirection('right');
   }
 
   setNotificationOpen(isOpen: boolean): void {
