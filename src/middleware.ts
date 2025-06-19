@@ -11,9 +11,11 @@ export async function middleware(request: NextRequest) {
     Object.entries(CORS_HEADERS).forEach(([key, value]) => {
       response.headers.set(key, value)
     })
+    
     return response
   }
 
+  // Create the final response
   return NextResponse.next()
 }
 

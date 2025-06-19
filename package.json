@@ -19,8 +19,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.3.0",
-    "@auth0/nextjs-auth0": "^4.6.1",
+    "@auth0/nextjs-auth0": "^2.6.3",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@hookform/resolvers": "^3.9.0",

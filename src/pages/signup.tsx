@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '@/contexts/AuthContext';
 import GoogleButton from '@/components/GoogleButton';
 import Logo from '@/components/Logo';
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const SignUpPage = () => {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Redirect if already authenticated
   React.useEffect(() => {

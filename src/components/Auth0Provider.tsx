@@ -1,10 +1,15 @@
-import { UserProvider } from '@auth0/nextjs-auth0';
+// This component is no longer used with the Auth0 v2 SDK
+// The Auth0 provider is now set up directly in the API routes
+
 import { ReactNode } from 'react';
 
 interface Auth0ProviderProps {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
-export function Auth0Provider({ children }: Auth0ProviderProps) {
-  return <UserProvider>{children}</UserProvider>;
+// Empty component - Auth0 is now managed via API routes
+function Auth0Provider({ children }: Auth0ProviderProps) {
+  return <>{children}</>;
 }
+
+export default Auth0Provider;

@@ -9,6 +9,27 @@ A Next.js-based grammar and spell-checking application with comprehensive CORS s
 - **Floating Suggestions** - Interactive hover-based corrections
 - **Multi-Origin Support** - Works across different domains and subdomains
 - **Responsive Design** - Works on desktop and mobile devices
+- **Google Authentication** - Secure login with Auth0 and Google OAuth
+
+## Authentication Setup
+
+This application uses Auth0 with Google OAuth for authentication. To set it up:
+
+1. Create an Auth0 account at [auth0.com](https://auth0.com/)
+2. Set up a new application in Auth0 and configure Google as a social connection
+3. Configure your Auth0 application with the following settings:
+   - Allowed Callback URLs: `http://localhost:3000/api/auth/callback` (development) and your production URLs
+   - Allowed Logout URLs: `http://localhost:3000` (development) and your production URLs
+4. Update your `.env.local` file with the following Auth0 environment variables:
+   ```
+   AUTH0_SECRET=your-long-random-string-here
+   AUTH0_BASE_URL=http://localhost:3000
+   AUTH0_ISSUER_BASE_URL=https://your-tenant.region.auth0.com
+   AUTH0_CLIENT_ID=your-client-id
+   AUTH0_CLIENT_SECRET=your-client-secret
+   AUTH0_SCOPE="openid profile email"
+   AUTH0_AUDIENCE=https://your-tenant.region.auth0.com/api/v2/
+   ```
 
 ## Supported Origins
 

@@ -1,5 +1,4 @@
-import React, { createContext, useContext } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -11,7 +10,7 @@ interface AuthContextType {
 
 const defaultContext: AuthContextType = {
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   user: null,
   loginWithGoogle: () => {},
   logout: () => {},
@@ -20,29 +19,35 @@ const defaultContext: AuthContextType = {
 export const AuthContext = createContext<AuthContextType>(defaultContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { 
-    isAuthenticated, 
-    isLoading, 
-    user, 
-    loginWithRedirect, 
-    logout: auth0Logout 
-  } = useAuth0();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/profile');
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUser();
+  }, []);
+  
+  const isAuthenticated = !!user;
 
   const loginWithGoogle = () => {
-    loginWithRedirect({
-      authorizationParams: {
-        connection: 'google-oauth2',
-        scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
-      }
-    });
+    window.location.href = '/api/auth/login?connection=google-oauth2';
   };
 
   const logout = () => {
-    auth0Logout({
-      logoutParams: {
-        returnTo: window.location.origin
-      }
-    });
+    window.location.href = '/api/auth/logout';
   };
 
   const value = {
