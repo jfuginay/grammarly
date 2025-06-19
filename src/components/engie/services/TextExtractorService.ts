@@ -12,6 +12,11 @@ export class TextExtractorService {
    * Extracts text from a specific target element using a CSS selector
    */
   extractTextFromTarget(selector: string): string | null {
+    // Only run on client-side
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return null;
+    }
+
     const selectedEditor = document.querySelector(selector);
     if (!selectedEditor) {
       console.warn(`Engie: Target editor selector "${selector}" not found.`);
@@ -46,6 +51,11 @@ export class TextExtractorService {
    * Extracts text from the full document body, excluding Engie's own UI
    */
   extractFullPageText(): string {
+    // Only run on client-side
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return "";
+    }
+
     let text = "";
     const walk = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {

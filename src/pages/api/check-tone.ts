@@ -30,17 +30,22 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('API: check-tone endpoint called');
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   const { text } = req.body;
+  console.log('API: Received text length for tone analysis:', text?.length || 0);
 
   if (!text) {
+    console.log('API: No text provided for tone analysis');
     return res.status(400).json({ message: 'Text is required' });
   }
 
   try {
+    console.log('API: Making OpenAI call for tone analysis');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo',
       messages: [
@@ -50,11 +55,15 @@ export default async function handler(
       response_format: { type: 'json_object' },
     });
 
-    const analysis = JSON.parse(completion.choices[0].message.content || '{}');
+    const responseContent = completion.choices[0].message.content;
+    console.log('API: OpenAI tone response received, content length:', responseContent?.length || 0);
+    
+    const analysis = JSON.parse(responseContent || '{}');
+    console.log('API: Parsed tone analysis:', analysis.overallTone);
 
     res.status(200).json(analysis);
   } catch (error) {
-    console.error('Error analyzing tone:', error);
+    console.error('API: Error analyzing tone:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 } 

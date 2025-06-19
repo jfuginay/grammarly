@@ -32,38 +32,52 @@ export class EngieApiService {
 
   async fetchTypoSuggestions(text: string): Promise<Suggestion[]> {
     try {
+      console.log('Engie: Fetching suggestions for text length:', text.length);
       const response = await fetch('/api/correct-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
+      
+      console.log('Engie: Suggestions API response status:', response.status);
+      
       if (!response.ok) {
-        console.error('Failed to fetch suggestions from API');
+        const errorText = await response.text();
+        console.error('Engie: Failed to fetch suggestions from API. Status:', response.status, 'Error:', errorText);
         return [];
       }
+      
       const data = await response.json();
+      console.log('Engie: Received suggestions:', data.suggestions?.length || 0);
       return data.suggestions || [];
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      console.error('Engie: Error fetching suggestions:', error);
       return [];
     }
   }
 
   async fetchToneAnalysis(text: string): Promise<ToneAnalysis | null> {
     try {
+      console.log('Engie: Fetching tone analysis for text length:', text.length);
       const response = await fetch('/api/check-tone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
+      
+      console.log('Engie: Tone API response status:', response.status);
+      
       if (!response.ok) {
-        console.error('Failed to fetch tone analysis from API');
+        const errorText = await response.text();
+        console.error('Engie: Failed to fetch tone analysis from API. Status:', response.status, 'Error:', errorText);
         return null;
       }
+      
       const data = await response.json();
+      console.log('Engie: Received tone analysis:', data);
       return data || null;
     } catch (error) {
-      console.error('Error fetching tone analysis:', error);
+      console.error('Engie: Error fetching tone analysis:', error);
       return null;
     }
   }

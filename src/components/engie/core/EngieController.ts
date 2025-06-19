@@ -117,33 +117,51 @@ export class EngieController {
   }
 
   async scanForSuggestions(): Promise<void> {
-    if (!this.props.targetEditorSelector) return;
+    console.log('Engie: Starting scan for suggestions');
+    console.log('Engie: Target editor selector:', this.props.targetEditorSelector);
+    
+    if (!this.props.targetEditorSelector) {
+      console.log('Engie: No target editor selector provided');
+      return;
+    }
 
     const text = this.textExtractor.extractTextFromTarget(this.props.targetEditorSelector);
-    if (!text || text === this.prevScannedTextRef || text.length < 10) return;
+    console.log('Engie: Extracted text length:', text?.length || 0);
+    console.log('Engie: Previous scanned text length:', this.prevScannedTextRef?.length || 0);
+    
+    if (!text || text === this.prevScannedTextRef || text.length < 10) {
+      console.log('Engie: Skipping scan - no text, same text, or too short');
+      return;
+    }
 
     this.prevScannedTextRef = text;
     this.stateManager.setScanning(true);
     this.stateManager.setStatusMessage("Scanning for suggestions...");
 
     try {
+      console.log('Engie: Making API calls for suggestions and tone analysis');
       const [suggestions, toneAnalysis] = await Promise.all([
         this.apiService.fetchTypoSuggestions(text),
         this.apiService.fetchToneAnalysis(text)
       ]);
+
+      console.log('Engie: API calls completed. Suggestions:', suggestions.length, 'Tone analysis:', !!toneAnalysis);
 
       this.stateManager.setInternalSuggestions(suggestions);
       this.stateManager.setToneAnalysisResult(toneAnalysis);
       this.stateManager.setCurrentSuggestionIndex(0);
 
       if (suggestions.length > 0) {
+        console.log('Engie: Found suggestions, opening chat and moving to first suggestion');
         // Move Engie to the first suggestion
         this.stateManager.moveEngieToSuggestion(suggestions[0]);
         this.stateManager.setChatOpen(true);
         this.stateManager.setActiveTab('suggestions');
+      } else {
+        console.log('Engie: No suggestions found');
       }
     } catch (error) {
-      console.error('Error during scanning:', error);
+      console.error('Engie: Error during scanning:', error);
     } finally {
       this.stateManager.setScanning(false);
       this.stateManager.setStatusMessage("");

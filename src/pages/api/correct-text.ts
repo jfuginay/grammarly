@@ -22,6 +22,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse | { message: string }>
 ) {
+  console.log('API: correct-text endpoint called');
   setCorsHeaders(res, req.headers.origin);
 
   if (req.method === 'OPTIONS') {
@@ -34,16 +35,20 @@ export default async function handler(
 
   try {
     const { text } = req.body;
+    console.log('API: Received text length:', text?.length || 0);
 
     if (typeof text !== 'string') {
+      console.log('API: Invalid text type:', typeof text);
       return res.status(400).json({ message: 'Text must be a string.' });
     }
 
     // Don't run on empty or very short text
     if (text.trim().length < 5) {
+      console.log('API: Text too short, returning empty suggestions');
       return res.status(200).json({ suggestions: [] });
     }
 
+    console.log('API: Making OpenAI call for suggestions');
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
@@ -93,18 +98,21 @@ You MUST return a JSON object with this exact structure:
     });
 
     const responseContent = completion.choices[0].message.content;
+    console.log('API: OpenAI response received, content length:', responseContent?.length || 0);
 
     if (!responseContent) {
+      console.log('API: No response content from OpenAI');
       return res.status(500).json({ message: 'Failed to get a valid response from the assistant.' });
     }
 
     // The response is already expected to be a JSON object with the correct structure.
     const result = JSON.parse(responseContent);
+    console.log('API: Parsed result, suggestions count:', result.suggestions?.length || 0);
 
     return res.status(200).json(result);
 
   } catch (error) {
-    console.error('Error in text correction API:', error);
+    console.error('API: Error in text correction API:', error);
     // Be careful not to expose internal error details to the client
     if (error instanceof OpenAI.APIError) {
         return res.status(error.status || 500).json({ message: 'An error occurred with the AI service.' });
