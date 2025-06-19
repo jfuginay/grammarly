@@ -684,7 +684,7 @@ const DashboardPage = () => {
                     className="analysis-view h-full text-base sm:text-lg border-0 p-2 rounded-xl focus-visible:ring-0 bg-slate-50 dark:bg-slate-900"
                     placeholder="Your analyzed text will appear here..." 
                     readOnly={true}
-                    showFragments={true}
+                    showFragments={true} // Always show fragments in analysis view
                   />
                 </div>
               </Card>
@@ -723,7 +723,7 @@ const DashboardPage = () => {
                     autoAnalyze={false} // We'll manually sync with the analysis view
                     className="main-editor-textarea h-full text-base sm:text-lg border-0 p-4 sm:p-6 rounded-xl focus-visible:ring-0 bg-background" 
                     placeholder="Start writing your masterpiece..." 
-                    showFragments={false}
+                    showFragments={false} // Never show fragments in the input box
                   />
                 </div>
               </Card>
