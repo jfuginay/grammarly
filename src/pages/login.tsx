@@ -25,6 +25,13 @@ const LoginPage = () => {
         title: "Session Expired",
         description: "Please log in again to continue.",
       });
+    } else if (errorParam === 'config_error') {
+      setError('A server configuration error occurred. Please contact support.');
+       toast({
+        variant: "destructive",
+        title: "Configuration Error",
+        description: "The server is missing its authentication secret.",
+      });
     } else if (errorParam) {
       setError('An authentication error occurred.');
     }
