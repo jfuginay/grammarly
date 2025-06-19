@@ -20,6 +20,24 @@ The `vercel.json` includes:
 - Network timeout settings
 - Registry configuration
 
+## Dependency Conflicts
+
+### Peer Dependency Issues
+If you encounter `ERESOLVE` errors, the configuration includes:
+- `--legacy-peer-deps` flag to handle peer dependency conflicts
+- Compatible versions of conflicting packages
+
+### Common Conflicts
+- **date-fns**: Downgraded to v3.6.0 for react-day-picker compatibility
+- **React versions**: Ensure consistent React 18.x usage
+- **TypeScript**: Use compatible versions across all packages
+
+### Resolving Conflicts
+1. **Check package versions**: Ensure all packages use compatible versions
+2. **Use legacy peer deps**: The current config includes `--legacy-peer-deps`
+3. **Update conflicting packages**: Consider updating to newer versions
+4. **Lock file**: Delete package-lock.json and reinstall if needed
+
 ### 4. Alternative Solutions
 
 #### Option A: Use a different registry
@@ -50,7 +68,7 @@ If automatic deployment fails:
    ```bash
    npm cache clean --force
    rm -rf node_modules package-lock.json
-   npm install
+   npm install --legacy-peer-deps
    ```
 
 2. **Use the deployment script:**
@@ -78,6 +96,7 @@ Monitor deployment logs for specific error messages:
 - Function timeout issues
 - Environment variable problems
 - Build errors
+- Dependency conflicts
 
 ### 8. Contact Support
 

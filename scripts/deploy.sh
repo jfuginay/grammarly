@@ -11,7 +11,7 @@ npm config set fetch-retry-mintimeout 20000
 npm config set fetch-retry-maxtimeout 120000
 npm config set network-timeout 100000
 
-echo "Installing dependencies with pnpm..."
+echo "Installing dependencies with npm..."
 
 # Install dependencies with retry logic
 MAX_RETRIES=3
@@ -20,7 +20,7 @@ RETRY_COUNT=0
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES"
     
-    if pnpm install --no-frozen-lockfile --network-timeout 100000 --prefer-offline; then
+    if npm install --no-audit --no-fund --prefer-offline --legacy-peer-deps; then
         echo "Dependencies installed successfully!"
         break
     else
