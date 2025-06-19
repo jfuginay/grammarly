@@ -27,6 +27,9 @@ export class EngieController {
   }
 
   private detectTouchDevice(): void {
+    // Only run on client-side
+    if (typeof window === 'undefined') return;
+    
     const detectTouch = () => {
       this.stateManager.setTouchDevice(
         'ontouchstart' in window ||

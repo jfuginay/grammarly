@@ -28,6 +28,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // Track mouse position globally
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handler = (e: MouseEvent) => {
       (window as any).__engieMousePos = { x: e.clientX, y: e.clientY };
     };
@@ -37,6 +39,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // On every keydown, step Engie toward mouse
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const step = () => controller.stepTowardMouse();
     window.addEventListener('keydown', step);
     return () => window.removeEventListener('keydown', step);
@@ -44,6 +48,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // Initialize proper position on client-side mount
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     console.log('EngieBot component mounted');
     // Recalculate position after component mounts to get real window dimensions
     const stateManager = controller.getStateManager();
@@ -62,6 +68,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // Handle window resize to keep Engie within bounds
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleResize = () => {
       const { x, y } = state.engiePos;
       const maxX = window.innerWidth - 64;
