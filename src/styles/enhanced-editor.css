@@ -32,14 +32,24 @@
   pointer-events: none;
   z-index: 1;
   background: transparent;
-  /* Critical change: Keep color visible instead of transparent */
-  color: inherit;
+  /* Keep this transparent by default */
+  color: inherit; /* Changed to inherit so text is visible in analysis mode */
   caret-color: transparent;
   /* Better text rendering to match textarea exactly */
-  -webkit-text-fill-color: currentColor;
+  -webkit-text-fill-color: currentColor; /* Allow text to be visible */
   -webkit-text-stroke: 0;
   /* Ensure correct alignment */
   box-sizing: border-box;
+}
+
+/* Special styling for read-only analysis view */
+.enhanced-editor .editor-highlights {
+  color: inherit; /* Make text visible in analysis mode */
+}
+
+/* Input mode - ensure transparency in highlights for clean input experience */
+.enhanced-editor:not(.show-fragments) .editor-highlights {
+  opacity: 0; /* Hide highlights completely in input mode unless showing fragments */
 }
 
 .editor-textarea {
@@ -48,21 +58,34 @@
   color: inherit;
   resize: none;
   caret-color: currentColor;
-  /* Ensure text is visible and clickable */
-  opacity: 0.25; /* Make textarea semi-transparent so highlight text shows through */
+  /* Ensure text is visible and clickable, but no ghost text in input box */
+  opacity: 1; 
   /* Improve text visibility within highlighted boxes */
   -webkit-text-fill-color: currentColor;
   /* Ensure the text is visible on all backgrounds */
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.2);
+  text-shadow: none;
   /* Make sure the textarea is on top and receives input */
   position: absolute;
   top: 0;
   left: 0;
 }
 
+/* Hide the textarea completely in read-only mode */
+.editor-textarea.read-only {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Ensure input mode is clean */
+.editor-textarea.input-mode {
+  opacity: 1 !important;
+  z-index: 10; /* Ensure it's on top */
+}
+
 /* Critical fix: Make sure span content is visible */
 .editor-highlights span {
   color: inherit !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 /* Ensure proper text display in highlight boxes */
@@ -70,7 +93,10 @@
   display: inline-block;
   position: relative;
   color: inherit !important;
-  background-clip: text;
+  background-clip: padding-box; /* Changed from text to padding-box to show background */
+  min-width: 0.5em; /* Ensure even zero-width characters have a visible box */
+  margin: 0 1px;
+  white-space: pre-wrap;
 }
 
 /* Focus state styling for improved text visibility */
@@ -795,6 +821,7 @@
   background-color: rgba(30, 41, 59, 0.5) !important;
 }
 
+/* Override for analysis view highlights */
 .analysis-view .editor-highlights {
   opacity: 1 !important;
   color: inherit !important;
@@ -803,15 +830,23 @@
   max-height: 100%;
   font-size: inherit;
   line-height: 1.6;
+  -webkit-text-fill-color: currentColor !important;
 }
 
+/* Make sure text is visible inside all spans in analysis view */
 .analysis-view .editor-highlights span {
   color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  background-clip: padding-box;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
+/* Hide the textarea in analysis view */
 .analysis-view .editor-textarea {
   opacity: 0 !important;
   pointer-events: none; /* Prevent interaction with analysis view textarea */
+  display: none;
 }
 
 /* Make fragments always visible in analysis view */
@@ -879,4 +914,92 @@
 
 .dark .analysis-view::after {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='16' fill='none'%3E%3Cpath d='M15 16L30 0H0L15 16Z' fill='%23334155'/%3E%3C/svg%3E") no-repeat center center;
+}
+
+/* Ensure every word in analysis view has a rectangle */
+.analysis-view .editor-highlights span {
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 0 1px;
+  border-radius: 3px;
+  position: relative;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* Default rectangle styling for words without specific highlighting */
+.analysis-view .editor-highlights span:not([class*="priority-"]):not([class*="fragment-"]):not([class*="tone-"]):not([class*="suggestion-"]) {
+  background-color: rgba(203, 213, 225, 0.3);
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  border-radius: 3px;
+}
+
+.dark .analysis-view .editor-highlights span:not([class*="priority-"]):not([class*="fragment-"]):not([class*="tone-"]):not([class*="suggestion-"]) {
+  background-color: rgba(71, 85, 105, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.6);
+}
+
+/* Make sure analysis view has proper spacing and layout */
+.analysis-view .editor-highlights {
+  padding: 12px !important;
+  line-height: 1.8;
+}
+
+/* Enhance visibility of the priority classes in analysis view */
+.analysis-view .priority-1 {
+  background-color: rgba(254, 202, 202, 0.7) !important;
+  border: 2px solid rgba(239, 68, 68, 0.7) !important;
+  z-index: 15;
+}
+
+.analysis-view .priority-2 {
+  background-color: rgba(254, 240, 138, 0.7) !important;
+  border: 1px solid rgba(250, 204, 21, 0.7) !important;
+  z-index: 10;
+}
+
+.analysis-view .priority-3 {
+  background-color: rgba(191, 219, 254, 0.7) !important;
+  border: 1px solid rgba(59, 130, 246, 0.7) !important;
+}
+
+.dark .fragment-paragraph {
+  background-color: rgba(30, 41, 59, 0.1);
+}
+
+/* Default fragment style for any plain text in analysis view */
+.default-fragment {
+  background-color: rgba(100, 116, 139, 0.08); /* bg-slate-100 */
+  border: 1px solid rgba(100, 116, 139, 0.2); /* border-slate-300 */
+  border-radius: 3px;
+  margin: 0 1px;
+  padding: 0 2px;
+  transition: all 0.2s ease;
+  position: relative;
+  display: inline-block;
+  white-space: normal;
+  word-break: normal;
+  z-index: 1;
+  /* Make text visible inside the box */
+  color: inherit !important;
+  background-clip: padding-box;
+}
+
+.dark .default-fragment {
+  background-color: rgba(71, 85, 105, 0.1); /* dark:bg-slate-200 */
+  border: 1px solid rgba(71, 85, 105, 0.2); /* dark:border-slate-700 */
+}
+
+/* Analysis view specific styles - force all fragments to be visible */
+.analysis-view.enhanced-editor .editor-highlights {
+  opacity: 1 !important;
+  color: inherit !important;
+}
+
+.analysis-view.enhanced-editor .editor-highlights span {
+  color: inherit !important;
+  opacity: 1 !important;
 }
