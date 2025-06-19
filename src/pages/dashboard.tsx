@@ -279,88 +279,6 @@ const DashboardPage = () => {
     }
   }, [text, activeDocument, debouncedCheckText]);
 
-
-  const applySuggestion = (suggestionToApply: Suggestion) => {
-    applySuggestionLogic(text, suggestionToApply, setText, setSuggestions, activeDocument, debouncedUpdateDocument);
-
-  };
-
-  const handleTitleSave = () => {
-    if (activeDocument && newTitle.trim()) {
-      debouncedUpdateDocument(activeDocument.id, { title: newTitle.trim() });
-      setIsEditingTitle(false);
-    }
-  };
-
-  const handleCreateDocument = async () => {
-    setCreatingDoc(true);
-    try {
-      const response = await fetch('/api/documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newDocTitle || 'Untitled Document', content: '' }),
-      });
-      if (!response.ok) throw new Error('Failed to create document');
-      const newDoc = await response.json();
-      await fetchDocuments();
-      setActiveDocument(newDoc);
-      setText(newDoc.content);
-      setShowNewDocModal(false);
-      setNewDocTitle('');
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "Could not create a new document.", variant: "destructive" });
-    } finally {
-      setCreatingDoc(false);
-    }
-  };
-
-  const handleSelectDocument = (doc: Document) => {
-    setActiveDocument(doc);
-    setText(doc.content);
-    setSuggestions([]);
-    lastAnalyzedTextRef.current = doc.content;
-  };
-
-  // Engie Suggestions Logic
-  const debouncedCheckText = useDebouncedCallback(async (currentText: string) => {
-    if (lastAnalyzedTextRef.current === currentText || !currentText.trim()) return;
-    lastAnalyzedTextRef.current = currentText;
-    try {
-      const response = await fetch('/api/correct-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: currentText }),
-      });
-      if (!response.ok) throw new Error('Failed to fetch suggestions');
-      const data = await response.json();
-      setSuggestions(data.suggestions || []);
-    } catch (error) {
-      console.error('Failed to get suggestions', error);
-    }
-  }, 1500);
-
-  useEffect(() => {
-    if (activeDocument) {
-      debouncedCheckText(text);
-    }
-  }, [text, activeDocument, debouncedCheckText]);
-
-  const applySuggestion = (suggestionToApply: Suggestion) => {
-    applySuggestionLogic(text, suggestionToApply, setText, setSuggestions, activeDocument, debouncedUpdateDocument);
-  };
-
-  const dismissSuggestion = (suggestionId: string) => {
-
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [activeDocument, setActiveDocument] = useState<Document | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  // const [text, setText] = useState<string>(''); // This will be defined in the primary DashboardPage component
-  // const [suggestions, setSuggestions] = useState<Suggestion[]>([]); // This will be defined in the primary DashboardPage component
-  // Note: The second DashboardPage component definition and its contents are removed by this diff.
-  // The primary DashboardPage component, defined earlier in the file, is retained.
-  // The applySuggestion, dismissSuggestion, and useEffect for debug logging
-  // are part of the primary DashboardPage component.
   useEffect(() => {
     console.log('Dashboard state update:', {
       hasActiveDocument: !!activeDocument,
@@ -368,6 +286,15 @@ const DashboardPage = () => {
       documentsCount: documents.length
     });
   }, [activeDocument, suggestions, documents]);
+
+  const applySuggestion = (suggestionToApply: Suggestion) => {
+    applySuggestionLogic(text, suggestionToApply, setText, setSuggestions, activeDocument, debouncedUpdateDocument);
+
+  };
+
+  const dismissSuggestion = (suggestionId: string) => {
+    setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionId));
+  };
   
   if (!user) return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
 
