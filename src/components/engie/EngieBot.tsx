@@ -50,7 +50,9 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    console.log('EngieBot component mounted');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('EngieBot component mounted');
+    }
     // Recalculate position after component mounts to get real window dimensions
     const stateManager = controller.getStateManager();
     const currentPos = stateManager.getState().engiePos;
@@ -113,8 +115,10 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // Debug logging
   useEffect(() => {
-    console.log('Engie position:', state.engiePos);
-    console.log('Grok Active:', state.isGrokActive); // Log Grok state
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Engie position:', state.engiePos);
+      console.log('Grok Active:', state.isGrokActive); // Log Grok state
+    }
   }, [state.engiePos, state.isGrokActive]);
 
   return (

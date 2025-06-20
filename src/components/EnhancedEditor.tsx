@@ -2,16 +2,12 @@ import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, us
 import { Suggestion } from './engie/types';
 import { useDebouncedCallback } from 'use-debounce';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
-
-interface TextFragment {
-  text: string;
-  startIndex: number;
-  endIndex: number;
-  type: 'word' | 'phrase' | 'punctuation' | 'space' | 'paragraph';
-  partOfSpeech?: string;
-  priority?: 1 | 2 | 3; // Priority level as per co-developer brief
-  confidence?: number; // Confidence score for the suggestion
-}
+import {
+  TextFragment,
+  assignPriorities,
+  identifyPhrases, // identifyPhrases is used by performLocalAnalysis, so not directly called in EnhancedEditor usually
+  performLocalAnalysis
+} from '../lib/localTextAnalyzer';
 
 interface EnhancedEditorProps {
   value: string;
@@ -70,6 +66,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const [shouldShowFragments, setShouldShowFragments] = useState(showFragments);
   const lastAnalyzedTextRef = useRef<string>('');
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeTextAnalysisControllerRef = useRef<AbortController | null>(null); // Added Ref
   
   // Text analysis function with smart batching as per co-developer brief
   // Now returns a Promise that resolves when analysis completes
@@ -80,29 +77,31 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       return Promise.resolve(); // Return a resolved promise for empty text
     }
     
-    // If we already have fragments and the text hasn't changed significantly, 
-    // just toggle visibility instead of re-analyzing
     if (textFragments.length > 0 && lastAnalyzedTextRef.current === value) {
       setShouldShowFragments(true);
       return Promise.resolve(); // Return a resolved promise for cached analysis
     }
     
     setIsAnalyzingText(true);
-    
-    // Store current request reference for cancellation
-    const controller = new AbortController();
-    const signal = controller.signal;
-    
-    // Cancel any previous in-flight requests as mentioned in the co-developer brief
-    if (window.activeTextAnalysisRequest) {
-      window.activeTextAnalysisRequest.abort();
+
+    // Cancel any existing request
+    if (activeTextAnalysisControllerRef.current) {
+      activeTextAnalysisControllerRef.current.abort();
     }
-    window.activeTextAnalysisRequest = controller;
+
+    const controller = new AbortController();
+    activeTextAnalysisControllerRef.current = controller; // Store the new controller
+    const signal = controller.signal; // Use its signal
     
-    // Return a promise for synchronization
-    return new Promise<void>((resolve, reject) => {
+    const callPerformLocalAnalysis = () => {
+      const { fragments: localFragments, shouldShowFragments: localShouldShow } = performLocalAnalysis(value);
+      setTextFragments(localFragments);
+      setShouldShowFragments(localShouldShow);
+      lastAnalyzedTextRef.current = value; // Update lastAnalyzedTextRef after local analysis too
+    };
+
+    return new Promise<void>((resolve) => {
       try {
-        // Smart batching - send the entire document (as per co-developer brief)
         fetch('/api/correct-text', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -110,384 +109,59 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
           signal: signal
         })
           .then(response => {
-            if (!response.ok) {
-              throw new Error(`API Error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
             return response.json();
           })
           .then(data => {
-            // Ensure we're not working with an aborted request
-            if (signal.aborted) {
-              return resolve(); // Resolve immediately if aborted
-            }
+            if (signal.aborted) return resolve();
             
             if (data && data.textAnalysis && Array.isArray(data.textAnalysis.fragments)) {
-              // Process fragments based on the priority system defined in the co-developer brief
-              const prioritizedFragments = assignPriorities(data.textAnalysis.fragments);
-              
-              // Sort by priority for rendering (higher priority on top)
-              prioritizedFragments.sort((a: TextFragment, b: TextFragment) => {
-                // Sort by priority first (lower number = higher priority)
+              const prioritizedFragments = assignPriorities(data.textAnalysis.fragments, value); // Pass value
+              prioritizedFragments.sort((a, b) => {
                 const priorityDiff = (a.priority || 3) - (b.priority || 3);
                 if (priorityDiff !== 0) return priorityDiff;
-                
-                // Then sort by confidence if available
-                if (a.confidence && b.confidence) {
-                  return b.confidence - a.confidence;
-                }
-                
-                // Default sort by position
+                if (a.confidence && b.confidence) return b.confidence - a.confidence;
                 return a.startIndex - b.startIndex;
               });
-              
               setTextFragments(prioritizedFragments);
               setShouldShowFragments(true);
               lastAnalyzedTextRef.current = value;
-              resolve(); // Resolve when analysis is complete
             } else {
-              console.log('API response missing fragments, falling back to local analysis');
-              // Fallback to local analysis if API doesn't return fragments
-              performLocalAnalysis();
-              resolve(); // Resolve even with local analysis
+              if (process.env.NODE_ENV === 'development') {
+                console.log('API response missing fragments, falling back to local analysis');
+              }
+              callPerformLocalAnalysis();
             }
+            resolve();
           })
           .catch(error => {
-            if (signal.aborted) {
-              return resolve(); // Resolve immediately if aborted
-            }
-            
+            if (signal.aborted) return resolve();
             if (error.name !== 'AbortError') {
               console.error('Error fetching text analysis:', error);
-              performLocalAnalysis();
-              resolve(); // Resolve even with error (after local analysis)
-            } else {
-              resolve(); // Resolve on abort - this is expected behavior
+              callPerformLocalAnalysis();
             }
+            resolve();
           })
           .finally(() => {
-            if (signal.aborted) return;
+            if (signal.aborted) return; // If aborted by a new request, the new request's controller is already in the ref.
             setIsAnalyzingText(false);
-            if (window.activeTextAnalysisRequest === controller) {
-              window.activeTextAnalysisRequest = null;
+            // Clear the ref only if this controller is still the active one
+            // (i.e., it wasn't aborted by a newer request starting)
+            if (activeTextAnalysisControllerRef.current === controller) {
+              activeTextAnalysisControllerRef.current = null;
             }
           });
       } catch (error) {
         console.error('Error in analyzeText:', error);
         setIsAnalyzingText(false);
-        performLocalAnalysis();
-        resolve(); // Always resolve with fallback analysis
+        callPerformLocalAnalysis();
+        resolve();
       }
     });
-  }, [value, textFragments, assignPriorities, performLocalAnalysis]);
+  }, [value, textFragments]); // Removed assignPriorities and performLocalAnalysis from deps, they are imported now
   
-  // Assign priorities to fragments based on the type and content
-  const assignPriorities = useCallback((fragments: TextFragment[]): TextFragment[] => {
-    return fragments.map(fragment => {
-      let priority: 1 | 2 | 3 | undefined = undefined;
-      let confidence = 0;
-      
-      // Assign priorities based on the type of fragment
-      if (fragment.type === 'word') {
-        // Check for spelling and grammar issues (highest priority)
-        if (/[A-Z]/.test(fragment.text[0]) && fragment.startIndex > 0 && 
-            !/[.!?]$/.test(value.charAt(fragment.startIndex - 2))) {
-          // Capitalization issues in the middle of a sentence
-          priority = 1;
-          confidence = 0.9;
-        } else if (/[^a-zA-Z0-9']/.test(fragment.text)) {
-          // Possible spelling errors with non-standard characters
-          priority = 1;
-          confidence = 0.8;
-        } else if (fragment.partOfSpeech === 'verb' || fragment.partOfSpeech === 'noun') {
-          // Style issues with verbs and nouns (medium priority)
-          priority = 2;
-          confidence = 0.7;
-        } else {
-          // Minor word choice issues (low priority)
-          priority = 3;
-          confidence = 0.5;
-        }
-      } else if (fragment.type === 'phrase') {
-        // Clarity issues with phrases (medium priority)
-        priority = 2;
-        confidence = 0.6;
-      } else if (fragment.type === 'punctuation') {
-        // Punctuation issues (high priority)
-        priority = 1;
-        confidence = 0.85;
-      }
-      
-      return {
-        ...fragment,
-        priority,
-        confidence
-      };
-    });
-  }, [value]);
-
-  // Enhanced phrase detection function with priority assignments
-  const identifyPhrases = useCallback((fragments: TextFragment[]) => {
-    // Common problematic phrases that should get higher priority
-    const wordyPhrases = [
-      'in order to', 'due to the fact that', 'at this point in time', 
-      'for the purpose of', 'in the event that', 'in spite of the fact that',
-      'with regard to', 'in the process of'
-    ];
-    
-    // Try to identify prepositional phrases (preposition + article/adjective? + noun)
-    for (let i = 0; i < fragments.length - 2; i++) {
-      if (
-        fragments[i].partOfSpeech === 'preposition' &&
-        (fragments[i+1].partOfSpeech === 'article' || fragments[i+1].partOfSpeech === 'adjective') &&
-        fragments[i+2].partOfSpeech === 'noun'
-      ) {
-        // Mark this sequence as a phrase
-        const startIndex = fragments[i].startIndex;
-        const endIndex = fragments[i+2].endIndex;
-        const phraseText = value.substring(startIndex, endIndex);
-        
-        // Check if this is a common wordy phrase (Priority 2)
-        let priority: 1 | 2 | 3 = 3;
-        let confidence = 0.6;
-        
-        if (wordyPhrases.some(wordyPhrase => 
-            phraseText.toLowerCase().includes(wordyPhrase))) {
-          priority = 2;
-          confidence = 0.8;
-        }
-        
-        // Create a new phrase fragment
-        fragments.push({
-          text: phraseText,
-          startIndex,
-          endIndex,
-          type: 'phrase',
-          partOfSpeech: 'prepositional phrase',
-          priority,
-          confidence
-        });
-      }
-    }
-    
-    // Try to identify noun phrases (article/adjective + noun)
-    for (let i = 0; i < fragments.length - 1; i++) {
-      if (
-        (fragments[i].partOfSpeech === 'article' || fragments[i].partOfSpeech === 'adjective') &&
-        fragments[i+1].partOfSpeech === 'noun'
-      ) {
-        // Mark this sequence as a phrase
-        const startIndex = fragments[i].startIndex;
-        const endIndex = fragments[i+1].endIndex;
-        
-        // Create a new phrase fragment with priority 3 (minor - word choice)
-        fragments.push({
-          text: value.substring(startIndex, endIndex),
-          startIndex,
-          endIndex,
-          type: 'phrase',
-          partOfSpeech: 'noun phrase',
-          priority: 3,
-          confidence: 0.5
-        });
-      }
-    }
-    
-    // Try to identify verb phrases (verb + adverb?)
-    for (let i = 0; i < fragments.length - 1; i++) {
-      if (
-        fragments[i].partOfSpeech === 'verb' &&
-        fragments[i+1].partOfSpeech === 'adverb'
-      ) {
-        // Mark this sequence as a phrase
-        const startIndex = fragments[i].startIndex;
-        const endIndex = fragments[i+1].endIndex;
-        const phraseText = value.substring(startIndex, endIndex);
-        
-        // Check for passive voice (priority 2)
-        let priority: 1 | 2 | 3 = 3;
-        let confidence = 0.6;
-        
-        if (/\b(is|are|was|were|be|been|being)\s+\w+ed\b/i.test(phraseText)) {
-          priority = 2; // Important (Priority 2): Style improvements
-          confidence = 0.75;
-        }
-        
-        // Create a new phrase fragment
-        fragments.push({
-          text: phraseText,
-          startIndex,
-          endIndex,
-          type: 'phrase',
-          partOfSpeech: 'verb phrase',
-          priority,
-          confidence
-        });
-      }
-    }
-    
-    // Look for passive voice constructions across longer spans
-    const passiveRegex = /\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi;
-    let passiveMatch;
-    while ((passiveMatch = passiveRegex.exec(value)) !== null) {
-      fragments.push({
-        text: passiveMatch[0],
-        startIndex: passiveMatch.index,
-        endIndex: passiveMatch.index + passiveMatch[0].length,
-        type: 'phrase',
-        partOfSpeech: 'passive voice',
-        priority: 2,
-        confidence: 0.8
-      });
-    }
-  }, [value]);
-
-  // Local text analysis as fallback with priority assignments
-  const performLocalAnalysis = useCallback(() => {
-    try {
-      // Simple tokenization of the text into words, punctuation, etc.
-      const fragments: TextFragment[] = [];
-      
-      // Skip analysis if text is empty
-      if (!value || value.trim() === '') {
-        setTextFragments([]);
-        setShouldShowFragments(false);
-        return;
-      }
-      
-      // Regular expression to match words, punctuation, spaces, and newlines
-      // Enhanced to better separate words and ensure every word gets a fragment
-      const tokenRegex = /(\b\w+\b|\s+|[^\w\s]+)/g;
-      let match;
-      
-      while ((match = tokenRegex.exec(value)) !== null) {
-        const text = match[0];
-        const startIndex = match.index;
-        const endIndex = startIndex + text.length;
-        
-        // Determine the type of fragment
-        let type: TextFragment['type'] = 'word';
-        let partOfSpeech: string | undefined = undefined;
-        let priority: 1 | 2 | 3 | undefined = undefined;
-        let confidence: number | undefined = undefined;
-        
-        if (/^\s+$/.test(text)) {
-          type = text.includes('\n') ? 'paragraph' : 'space';
-        } else if (/^\w+$/.test(text)) {
-          type = 'word';
-          
-          // Improved part-of-speech guessing
-          const lower = text.toLowerCase();
-          if (["the", "a", "an"].includes(lower)) {
-            partOfSpeech = "article";
-          } else if (["is", "am", "are", "was", "were", "be", "been", "do", "does", "did", "have", "has", "had", "can", "could", "will", "would", "shall", "should", "may", "might", "must"].includes(lower)) {
-            partOfSpeech = "verb";
-          } else if (["in", "on", "at", "by", "for", "with", "about", "against", "between", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "into", "onto"].includes(lower)) {
-            partOfSpeech = "preposition";
-          } else if (["and", "but", "or", "nor", "for", "yet", "so"].includes(lower)) {
-            partOfSpeech = "conjunction";
-          } else if (["this", "that", "these", "those", "my", "your", "his", "her", "its", "our", "their"].includes(lower)) {
-            partOfSpeech = "determiner";
-          } else if (["i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them"].includes(lower)) {
-            partOfSpeech = "pronoun";
-          } else if (lower.endsWith("ly")) {
-            partOfSpeech = "adverb";
-          } else if (
-            lower.endsWith("ed") ||
-            lower.endsWith("en") ||
-            lower.endsWith("ing") ||
-            lower.endsWith("ify") ||
-            lower.endsWith("ise") ||
-            lower.endsWith("ize")
-          ) {
-            partOfSpeech = "verb";
-          } else if (
-            lower.endsWith("ous") || lower.endsWith("ful") || lower.endsWith("able") || lower.endsWith("ible") || lower.endsWith("al") || lower.endsWith("ive") || lower.endsWith("ic") || lower.endsWith("ary") || lower.endsWith("less") || lower.endsWith("est")
-          ) {
-            partOfSpeech = "adjective";
-          } else if (
-            lower.endsWith("ment") || lower.endsWith("ness") || lower.endsWith("tion") || lower.endsWith("sion") || lower.endsWith("ity") || lower.endsWith("hood") || lower.endsWith("ship") || lower.endsWith("ence") || lower.endsWith("ance")
-          ) {
-            partOfSpeech = "noun";
-          } else if (text.length > 0) {
-            partOfSpeech = "noun"; // Default
-          }
-          
-          // Priority and confidence assignment based on the co-developer brief
-          // Critical (Priority 1): Grammar errors, spelling mistakes
-          if (/[A-Z]/.test(text[0]) && startIndex > 0 && 
-              !/[.!?]$/.test(value.charAt(startIndex - 2))) {
-            // Capitalization issues in the middle of a sentence
-            priority = 1;
-            confidence = 0.9;
-          } else if (text.length > 3 && !/^[a-zA-Z]+$/.test(text)) {
-            // Possible spelling errors
-            priority = 1;
-            confidence = 0.8;
-          }
-          // Important (Priority 2): Style improvements, clarity issues  
-          else if (['very', 'really', 'basically', 'actually'].includes(text.toLowerCase())) {
-            // Style improvements for common filler words
-            priority = 2;
-            confidence = 0.7;
-          }
-          // Minor (Priority 3): Word choice, tone suggestions
-          else {
-            priority = 3;
-            confidence = 0.5;
-          }
-        } else if (/^[^\w\s]+$/.test(text)) {
-          type = 'punctuation';
-          
-          // Check for missing spaces after punctuation
-          if ([',', '.', '!', '?', ';', ':'].includes(text) && 
-              startIndex + 1 < value.length && 
-              /\S/.test(value[startIndex + 1])) {
-            priority = 1;
-            confidence = 0.95;
-          }
-        }
-        
-        fragments.push({
-          text,
-          startIndex,
-          endIndex,
-          type,
-          partOfSpeech,
-          priority,
-          confidence
-        });
-      }
-      
-      // Try to identify phrases by looking for common patterns
-      // This is a very basic approach - a real NLP library would do better
-      identifyPhrases(fragments);
-      
-      // Sort by priority (higher priority should be rendered on top)
-      fragments.sort((a, b) => {
-        // Sort by priority first (lower number = higher priority)
-        const priorityDiff = (a.priority || 3) - (b.priority || 3);
-        if (priorityDiff !== 0) return priorityDiff;
-        
-        // Then by confidence if available
-        if (a.confidence && b.confidence) {
-          return b.confidence - a.confidence;
-        }
-        
-        // Default sort by position
-        return a.startIndex - b.startIndex;
-      });
-      
-      lastAnalyzedTextRef.current = value;
-      setTextFragments(fragments);
-      setShouldShowFragments(true);
-    } catch (error) {
-      console.error('Error in local text analysis:', error);
-      // Ensure we don't leave the UI in a loading state
-      setIsAnalyzingText(false);
-    }
-  }, [value, identifyPhrases]);
-  
-  // Toggle fragments visibility function has been moved near its other usages
+  // assignPriorities, identifyPhrases, and performLocalAnalysis are now imported from ../lib/localTextAnalyzer.ts
+  // Their definitions are removed from this file.
   
   // Debounced analyze function to trigger after the user stops typing (2 seconds as per co-developer brief)
   const debouncedAnalyzeText = useDebouncedCallback(analyzeText, 2000, {
@@ -596,9 +270,13 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     
     // For read-only mode (analysis view), perform analysis if we don't have fragments
     if (readOnly && showFragments && textFragments.length === 0 && value.trim() !== '') {
-      performLocalAnalysis();
+      // Call the imported performLocalAnalysis and update state
+      const { fragments: localFragments, shouldShowFragments: localShouldShow } = performLocalAnalysis(value);
+      setTextFragments(localFragments);
+      setShouldShowFragments(localShouldShow); // This will usually be true from performLocalAnalysis
+      if (localFragments.length > 0) lastAnalyzedTextRef.current = value;
     }
-  }, [showFragments, readOnly, value, textFragments.length, performLocalAnalysis]);
+  }, [showFragments, readOnly, value, textFragments.length]); // performLocalAnalysis removed from deps
   
   // Update editor content and highlights
   useEffect(() => {
@@ -1037,9 +715,4 @@ EnhancedEditor.displayName = 'EnhancedEditor';
 
 export default EnhancedEditor;
 
-// Extend Window interface to include our custom properties
-declare global {
-  interface Window {
-    activeTextAnalysisRequest: AbortController | null;
-  }
-}
+// Removed global window interface extension

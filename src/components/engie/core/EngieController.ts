@@ -61,7 +61,9 @@ export class EngieController {
 
       if (shouldSetTimer) {
         this.inactivityTimerRef = setTimeout(() => {
-          console.log("Inactivity detected, triggering ideation.");
+          if (process.env.NODE_ENV === 'development') {
+            console.log("Inactivity detected, triggering ideation.");
+          }
           this.triggerIdeation();
         }, 30000); // 30 seconds
       }
@@ -85,7 +87,9 @@ export class EngieController {
       const pageText = this.textExtractor.extractFullPageText();
 
       if (!pageText || pageText.length < 50) {
-        console.log("Not enough content for ideation.");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Not enough content for ideation.");
+        }
         this.stateManager.setIdeating(false);
         this.stateManager.setStatusMessage("");
         return;
@@ -98,20 +102,16 @@ export class EngieController {
         const comment = await this.grokApiService.getOpinionatedComment(commentPrompt);
         if (comment) {
           this.stateManager.addGrokChatMessage({ role: 'assistant', content: comment });
-          console.log("Grok Comment:", comment);
+          if (process.env.NODE_ENV === 'development') {
+            console.log("Grok Comment:", comment);
+          }
           this.stateManager.setBotEmotion('excited', 'Grok has a thought!');
-          // Display in chat or as a notification - for now, it's in Grok history
         } else {
           this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't come up with a Grok comment right now." });
           this.stateManager.setBotEmotion('concerned', 'Grok comment failed');
         }
-        // Decide if we should still proceed with normal ideation or return
-        // For now, let's allow normal ideation to also run if Grok is active.
-        // If you want to bypass normal ideation when Grok provides a comment, uncomment the next line:
-        // this.stateManager.setIdeating(false); this.stateManager.setStatusMessage(""); return;
       }
 
-      // Proceed with normal ideation if Grok didn't provide a comment or if we want both
       const prompt = isManualTrigger
         ? `Based on this content, give me creative ideas or suggestions to improve it: ${pageText.slice(0, 2000)}`
         : `Looking at this content, what creative ideas could enhance it? Be brief and actionable: ${pageText.slice(0, 2000)}`;
@@ -120,15 +120,13 @@ export class EngieController {
 
       if (ideaResponse) {
         const ideaMessage: ChatMessage = { role: 'assistant', content: ideaResponse };
-
         if (isManualTrigger) {
           this.stateManager.setIdeationMessage(ideaMessage);
-          this.stateManager.setChatOpen(true); // Open chat for manual ideation
+          this.stateManager.setChatOpen(true);
         } else {
           this.stateManager.addIdeaNotification(ideaResponse);
           this.stateManager.setShowSparkle(true);
           setTimeout(() => this.stateManager.setShowSparkle(false), 2000);
-
           if (this.props.onIdea) {
             this.props.onIdea(ideaResponse);
           }
@@ -143,20 +141,28 @@ export class EngieController {
   }
 
   async scanForSuggestions(): Promise<void> {
-    console.log('Engie: Starting scan for suggestions');
-    console.log('Engie: Target editor selector:', this.props.targetEditorSelector);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Engie: Starting scan for suggestions');
+      console.log('Engie: Target editor selector:', this.props.targetEditorSelector);
+    }
     
     if (!this.props.targetEditorSelector) {
-      console.log('Engie: No target editor selector provided');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Engie: No target editor selector provided');
+      }
       return;
     }
 
     const text = this.textExtractor.extractTextFromTarget(this.props.targetEditorSelector);
-    console.log('Engie: Extracted text length:', text?.length || 0);
-    console.log('Engie: Previous scanned text length:', this.prevScannedTextRef?.length || 0);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Engie: Extracted text length:', text?.length || 0);
+      console.log('Engie: Previous scanned text length:', this.prevScannedTextRef?.length || 0);
+    }
     
     if (!text || text === this.prevScannedTextRef || text.length < 10) {
-      console.log('Engie: Skipping scan - no text, same text, or too short');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Engie: Skipping scan - no text, same text, or too short');
+      }
       return;
     }
 
@@ -166,37 +172,41 @@ export class EngieController {
     this.stateManager.setBotEmotion('thoughtful', 'Analyzing your writing');
 
     try {
-      console.log('Engie: Making API calls for suggestions and tone analysis');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Engie: Making API calls for suggestions and tone analysis');
+      }
       const [suggestions, toneAnalysis] = await Promise.all([
         this.apiService.fetchTypoSuggestions(text),
         this.apiService.fetchToneAnalysis(text)
       ]);
 
-      console.log('Engie: API calls completed. Suggestions:', suggestions.length, 'Tone analysis:', !!toneAnalysis);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Engie: API calls completed. Suggestions:', suggestions.length, 'Tone analysis:', !!toneAnalysis);
+      }
 
       this.stateManager.setInternalSuggestions(suggestions);
       this.stateManager.setToneAnalysisResult(toneAnalysis);
       this.stateManager.setCurrentSuggestionIndex(0);
       
-      // Set emotion based on quality of writing
       this.stateManager.setEmotionBasedOnQuality(suggestions.length, text.length);
 
       if (suggestions.length > 0) {
-        console.log('Engie: Found suggestions, opening chat and moving to first suggestion');
-        // Move Engie to the first suggestion
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Engie: Found suggestions, opening chat and moving to first suggestion');
+        }
         this.stateManager.moveEngieToSuggestion(suggestions[0]);
         this.stateManager.setChatOpen(true);
         this.stateManager.setActiveTab('suggestions');
         
-        // If many errors, show concerned emotion
         if (suggestions.length > 5) {
           this.stateManager.setBotEmotion('concerned', 'Found several issues to fix');
         } else if (suggestions.length > 0) {
           this.stateManager.setBotEmotion('thoughtful', 'Found a few suggestions');
         }
       } else {
-        console.log('Engie: No suggestions found');
-        // Show happy emotion if no errors found
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Engie: No suggestions found');
+        }
         this.stateManager.setBotEmotion('happy', 'Great writing! No issues found.');
       }
     } catch (error) {
@@ -248,7 +258,6 @@ export class EngieController {
     this.debounceTimeoutRef = setTimeout(() => this.scanForSuggestions(), 2000);
   }
 
-  // Event handlers
   handleEngieClick(): void {
     const state = this.stateManager.getState();
     const unreadCount = this.stateManager.getUnreadCount();
@@ -264,7 +273,6 @@ export class EngieController {
     if (!state.isChatOpen) {
       this.debouncedScan();
       this.analyzePageTone();
-      // Set excited emotion when chat is opened
       this.stateManager.setEmotionBasedOnInteraction('chat-opened');
     }
     this.stateManager.setChatOpen(!state.isChatOpen);
@@ -272,47 +280,34 @@ export class EngieController {
 
   handleEngieClose(): void {
     this.stateManager.setChatOpen(false);
-    // Reset position when closing if no active suggestions
     const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
     if (activeSuggestions.length === 0) {
       this.stateManager.resetEngiePosition();
     }
-    // Return to neutral emotion when closed
     this.stateManager.setBotEmotion('neutral', '');
   }
 
   handleApply(): void {
-    const state = this.stateManager.getState();
     const currentSuggestion = this.stateManager.getCurrentSuggestion(this.props.suggestions);
-    
     if (currentSuggestion) {
       this.props.onApply(currentSuggestion);
-      
-      // Show happy emotion when suggestion is applied
       this.stateManager.setEmotionBasedOnInteraction('suggestion-applied');
-      
-      // Check progress and update emotion based on it
       const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
-      const totalSuggestions = activeSuggestions.length + 1; // +1 for the one just applied
-      const completedSuggestions = 1; // The one just applied
-      
+      const totalSuggestions = activeSuggestions.length + 1;
+      const completedSuggestions = 1;
       this.stateManager.setEmotionBasedOnProgress(completedSuggestions, totalSuggestions);
-      
       this.handleNext();
     }
   }
 
   handleDismiss(): void {
     const currentSuggestion = this.stateManager.getCurrentSuggestion(this.props.suggestions);
-    
     if (currentSuggestion) {
       this.props.onDismiss(currentSuggestion.id);
-      
       const state = this.stateManager.getState();
       if (state.internalSuggestions.length > 0) {
         const updatedSuggestions = state.internalSuggestions.filter(s => s.id !== currentSuggestion.id);
         this.stateManager.setInternalSuggestions(updatedSuggestions);
-        
         if (updatedSuggestions.length === 0) {
           this.stateManager.setCurrentSuggestionIndex(0);
         } else if (state.currentSuggestionIndex >= updatedSuggestions.length) {
@@ -327,18 +322,15 @@ export class EngieController {
   handleNext(): void {
     const state = this.stateManager.getState();
     const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
-    
     if (state.currentSuggestionIndex < activeSuggestions.length - 1) {
       const nextIndex = state.currentSuggestionIndex + 1;
       this.stateManager.setCurrentSuggestionIndex(nextIndex);
-      // Move Engie to the next suggestion
       if (activeSuggestions[nextIndex]) {
         this.stateManager.moveEngieToSuggestion(activeSuggestions[nextIndex]);
       }
     } else {
       this.stateManager.setCurrentSuggestionIndex(0);
       this.stateManager.resetSuggestions();
-      // Reset Engie position when no more suggestions
       this.stateManager.resetEngiePosition();
     }
   }
@@ -355,15 +347,12 @@ export class EngieController {
     this.stateManager.removeIdeaNotification(index);
   }
 
-  // Bot animation handlers
   handleDrag(e: any, data: any): void {
     const deltaX = data.x - this.lastX;
-    
     if (Math.abs(deltaX) > 5) {
       this.stateManager.setBotDirection(deltaX > 0 ? 'right' : 'left');
       this.stateManager.setBotSpeed(Math.abs(deltaX) > 20 ? 'fast' : 'normal');
     }
-    
     this.lastX = data.x;
     this.stateManager.setEngiePos({ x: data.x, y: data.y });
   }
@@ -376,27 +365,17 @@ export class EngieController {
     this.stateManager.setBotAnimation('idle');
   }
 
-  // Utility methods
   formatScore(score: number | undefined | null): string {
     if (typeof score !== 'number' || isNaN(score)) return 'N/A';
     return (score * 100).toFixed(0) + '%';
   }
 
   cleanup(): void {
-    if (this.debounceTimeoutRef) {
-      clearTimeout(this.debounceTimeoutRef);
-    }
-    if (this.inactivityTimerRef) {
-      clearTimeout(this.inactivityTimerRef);
-    }
-    if (this.grokDeactivationTimer) { // Clear Grok timer on cleanup
-      clearTimeout(this.grokDeactivationTimer);
-    }
+    if (this.debounceTimeoutRef) clearTimeout(this.debounceTimeoutRef);
+    if (this.inactivityTimerRef) clearTimeout(this.inactivityTimerRef);
+    if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer);
   }
 
-  /**
-   * Move Engie one step toward the mouse position
-   */
   public stepTowardMouse(): void {
     if (typeof window === 'undefined') return;
     const mouse = (window as any).__engieMousePos;
@@ -405,8 +384,8 @@ export class EngieController {
     const dx = mouse.x - botX;
     const dy = mouse.y - botY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 5) return; // Already close
-    const step = 24; // pixels per step
+    if (dist < 5) return;
+    const step = 24;
     const ratio = step / dist;
     const newX = botX + dx * ratio;
     const newY = botY + dy * ratio;
@@ -416,7 +395,6 @@ export class EngieController {
     setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
 
-  // Grok Mode Methods
   public async toggleGrokMode(): Promise<void> {
     const currentState = this.stateManager.getState();
     if (!currentState.isGrokActive) {
@@ -426,18 +404,16 @@ export class EngieController {
         return;
       }
       this.stateManager.setIsGrokActive(true);
-      const endTime = Date.now() + 10 * 60 * 1000; // 10 minutes
+      const endTime = Date.now() + 10 * 60 * 1000;
       this.stateManager.setGrokEndTime(endTime);
-      console.log("Grok mode activated");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Grok mode activated");
+      }
       this.stateManager.setBotEmotion('excited', 'Engie is feeling opinionated with Grok!');
       this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Grok mode activated! I'm ready for some opinionated comments and research." });
 
-      if (this.grokDeactivationTimer) {
-        clearTimeout(this.grokDeactivationTimer);
-      }
-      this.grokDeactivationTimer = setTimeout(() => {
-        this.deactivateGrokMode();
-      }, 10 * 60 * 1000);
+      if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer);
+      this.grokDeactivationTimer = setTimeout(() => this.deactivateGrokMode(), 10 * 60 * 1000);
     } else {
       this.deactivateGrokMode();
     }
@@ -446,15 +422,15 @@ export class EngieController {
   public deactivateGrokMode(): void {
     this.stateManager.setIsGrokActive(false);
     this.stateManager.setGrokEndTime(null);
-    console.log("Grok mode deactivated");
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Grok mode deactivated");
+    }
     if (this.grokDeactivationTimer) {
       clearTimeout(this.grokDeactivationTimer);
       this.grokDeactivationTimer = null;
     }
     this.stateManager.setBotEmotion('neutral', 'Grok mode off.');
     this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Grok mode deactivated." });
-    // Clear history or keep it? For now, let's keep it for context if re-enabled soon.
-    // If you want to clear it: this.stateManager.clearGrokChatHistory();
   }
 
   public async researchWithGrok(topic: string): Promise<void> {
@@ -464,23 +440,22 @@ export class EngieController {
       return;
     }
 
-    this.stateManager.setIdeating(true); // Using existing ideating state for busy indicator
+    this.stateManager.setIdeating(true);
     this.stateManager.setStatusMessage(`Engie is researching "${topic}" with Grok...`);
     this.stateManager.addGrokChatMessage({ role: 'user', content: `Research: ${topic}` });
 
     try {
       const response = await this.grokApiService.researchTopic(topic);
-
       if (response) {
         this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
-        console.log("Grok Research Result:", response);
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Grok Research Result:", response);
+        }
         this.stateManager.setBotEmotion('thoughtful', `Found some research on ${topic.substring(0,20)}...`);
-        // We might want a way to display this directly in the chat or a specific UI element.
-        // For now, it's in the Grok chat history.
       } else {
         const errorMessage = "Sorry, I couldn't find information on that topic using Grok.";
         this.stateManager.addGrokChatMessage({ role: 'assistant', content: errorMessage });
-        console.error(errorMessage);
+        console.error(errorMessage); // This is an error from Grok service
         this.stateManager.setBotEmotion('concerned', 'Grok research failed');
       }
     } catch (error) {
