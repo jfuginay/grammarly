@@ -107,10 +107,15 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const onStopDrag = () => controller.onStopDrag();
   const formatScore = (score: number | undefined | null) => controller.formatScore(score);
 
+  // Grok specific handlers
+  const handleToggleGrokMode = () => controller.toggleGrokMode();
+  const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
+
   // Debug logging
   useEffect(() => {
     console.log('Engie position:', state.engiePos);
-  }, [state.engiePos]);
+    console.log('Grok Active:', state.isGrokActive); // Log Grok state
+  }, [state.engiePos, state.isGrokActive]);
 
   return (
     <div id="engie-container" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }}>
@@ -205,6 +210,10 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
                     onManualIdeate={handleManualIdeate}
                     onTabChange={handleTabChange}
                     formatScore={formatScore}
+                    // Pass Grok related props
+                    grokChatHistory={state.grokChatHistory}
+                    handleToggleGrokMode={handleToggleGrokMode}
+                    handleResearchWithGrok={handleResearchWithGrok}
                   />
                 )}
               </AnimatePresence>

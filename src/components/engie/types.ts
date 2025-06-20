@@ -60,6 +60,9 @@ export interface EngieState {
   botEmotion: BotEmotion; // Added emotion state
   emotionReason: string; // Added reason for current emotion
   isTouchDevice: boolean;
+  isGrokActive: boolean;
+  grokEndTime: number | null;
+  grokChatHistory: ChatMessage[];
 }
 
 export type BotAnimationState = 'idle' | 'walking';

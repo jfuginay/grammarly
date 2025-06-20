@@ -5,12 +5,17 @@ import { Sparkles, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SuggestionsTab } from './tabs/SuggestionsTab';
 import { ToneTab } from './tabs/ToneTab';
+import { GrokTab } from './tabs/GrokTab'; // Import GrokTab
 import { IdeationCard } from './cards/IdeationCard';
 import { EncouragementCard } from './cards/EncouragementCard';
 import { ChatMessage, ToneAnalysis, Suggestion, EngieState } from '../types';
+import { Switch } from '@/components/ui/switch'; // Import Switch
+import { Input } from '@/components/ui/input'; // Import Input
+import { Label } from '@/components/ui/label'; // Import Label
 
 interface EngieChatWindowProps {
   state: EngieState;
+  grokChatHistory: ChatMessage[]; // New prop
   activeSuggestions: Suggestion[];
   currentSuggestion: Suggestion | null;
   documents: Array<{ id: string; title: string }>;
@@ -22,10 +27,13 @@ interface EngieChatWindowProps {
   onManualIdeate: () => void;
   onTabChange: (tab: string) => void;
   formatScore: (score: number | undefined | null) => string;
+  handleToggleGrokMode: () => void; // New prop
+  handleResearchWithGrok: (topic: string) => void; // New prop
 }
 
 export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
   state,
+  grokChatHistory, // Destructure new prop
   activeSuggestions,
   currentSuggestion,
   documents,
@@ -37,7 +45,30 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
   onManualIdeate,
   onTabChange,
   formatScore,
+  handleToggleGrokMode, // Destructure new prop
+  handleResearchWithGrok, // Destructure new prop
 }) => {
+  const [researchTopic, setResearchTopic] = React.useState('');
+
+  const combinedChatHistory = React.useMemo(() => {
+    let combined: ChatMessage[] = [];
+    if (state.isGrokActive && grokChatHistory.length > 0) {
+      // If Grok is active, prefer its history, potentially mixed with main for context
+      // For now, let's just show Grok history when it's active and has messages.
+      // Or, show a mix depending on your logic.
+      // This example prioritizes Grok history if active, otherwise main chat.
+      combined = [...grokChatHistory];
+    } else if (state.chatHistory.length > 0) {
+      combined = [...state.chatHistory];
+    }
+    // You might want to merge and sort by a timestamp if messages had them.
+    // For now, if Grok is active, its history is shown.
+    // If Grok is not active, the normal chat history is shown.
+    // If Grok is active but its history is empty, nothing from Grok is shown yet.
+    return combined;
+  }, [state.isGrokActive, grokChatHistory, state.chatHistory]);
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -72,7 +103,36 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
         )}
 
         {/* Ideation Message Display */}
-        {state.ideationMessage && !activeSuggestions.length && !state.encouragementMessageApi && (
+        {/* Display Grok Chat History if active */}
+        {state.isGrokActive && grokChatHistory.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {grokChatHistory.map((msg, index) => (
+              <div key={`grok-msg-${index}`} className={`p-2 rounded-md text-sm ${
+                msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900 ml-auto' : 'bg-purple-100 dark:bg-purple-900'
+              } max-w-[85%]`}>
+                <span className="font-bold capitalize">{msg.role === 'assistant' ? 'Grok' : msg.role}: </span>
+                {msg.content}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Display normal chat history if Grok is not active or its history is empty */}
+        {!state.isGrokActive && state.chatHistory.length > 0 && (
+           <div className="mb-4 space-y-2">
+            {state.chatHistory.map((msg, index) => (
+              <div key={`chat-msg-${index}`} className={`p-2 rounded-md text-sm ${
+                msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900 ml-auto' : 'bg-gray-100 dark:bg-gray-700'
+              } max-w-[85%]`}>
+                <span className="font-bold capitalize">{msg.role}: </span>
+                {msg.content}
+              </div>
+            ))}
+          </div>
+        )}
+
+
+        {state.ideationMessage && !activeSuggestions.length && !state.encouragementMessageApi && !state.isGrokActive && (
           <IdeationCard 
             message={state.ideationMessage}
             onDismiss={onDismissIdeation}
@@ -80,15 +140,16 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
         )}
 
         {/* Encouragement Message Display */}
-        {state.encouragementMessageApi && !activeSuggestions.length && !state.toneAnalysisResult && !state.ideationMessage && (
+        {state.encouragementMessageApi && !activeSuggestions.length && !state.toneAnalysisResult && !state.ideationMessage && !state.isGrokActive && (
           <EncouragementCard message={state.encouragementMessageApi} />
         )}
 
         {!state.ideationMessage && !state.encouragementMessageApi && (
           <Tabs value={state.activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3"> {/* Updated to grid-cols-3 */}
               <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
               <TabsTrigger value="tone">Tone</TabsTrigger>
+              <TabsTrigger value="grok">Grok</TabsTrigger> {/* New Grok Tab Trigger */}
             </TabsList>
             
             <TabsContent value="suggestions">
@@ -109,12 +170,24 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
                 formatScore={formatScore}
               />
             </TabsContent>
+
+            {/* Grok Tab Content */}
+            <TabsContent value="grok">
+              <GrokTab
+                isGrokActive={state.isGrokActive}
+                grokEndTime={state.grokEndTime}
+                researchTopic={researchTopic}
+                onResearchTopicChange={setResearchTopic}
+                onToggleGrokMode={handleToggleGrokMode}
+                onResearchWithGrok={handleResearchWithGrok}
+              />
+            </TabsContent>
           </Tabs>
         )}
 
-        {/* Fallback "Looking good" or "Brainstorm" button */}
+        {/* Fallback "Looking good" or "Brainstorm" button - Conditionally render if Grok not active */}
         {!currentSuggestion && !state.toneAnalysisResult && !state.overallPageToneAnalysis && 
-         !state.ideationMessage && !state.encouragementMessageApi && !state.isIdeating && (
+         !state.ideationMessage && !state.encouragementMessageApi && !state.isIdeating && !state.isGrokActive && (
           <div className="text-center py-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No immediate suggestions or analysis.</p>
             <Button variant="link" size="sm" className="mt-2" onClick={onManualIdeate}>
@@ -125,4 +198,4 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
       </div>
     </motion.div>
   );
-}; 
+};
