@@ -171,8 +171,17 @@ const DashboardPage = () => {
   const [creatingDoc, setCreatingDoc] = useState(false);
   const [showDocumentHistory, setShowDocumentHistory] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(true);
-  const [showParts, setShowParts] = useState(false);
+  const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(() => {
+    // Load preference from localStorage or default to true
+    const savedPreference = localStorage.getItem('autoFragmentAnalysis');
+    return savedPreference !== null ? savedPreference === 'true' : true;
+  });
+  const [showParts, setShowParts] = useState(() => {
+    // Load preference from localStorage or default to false
+    const savedPreference = localStorage.getItem('showParts');
+    return savedPreference !== null ? savedPreference === 'true' : false;
+  });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDocumentSelected = activeDocument !== null;
@@ -349,12 +358,39 @@ const DashboardPage = () => {
 
   // Manual text analysis
   const handleAnalyzeText = () => {
+    // Prevent multiple simultaneous analysis requests
+    if (isAnalyzing) return;
+    
+    // Show loading indicator
+    setIsAnalyzing(true);
+    
     // Analyze in both editors to ensure they stay in sync
+    const analysisPromises: Promise<void>[] = [];
+    
     if (editorRef.current) {
-      editorRef.current.analyzeText();
+      // Use the analyzeText method that now returns a Promise
+      const promise = editorRef.current.analyzeText();
+      analysisPromises.push(promise);
     }
+    
     if (analysisEditorRef.current) {
-      analysisEditorRef.current.analyzeText();
+      // Use the analyzeText method that now returns a Promise
+      const promise = analysisEditorRef.current.analyzeText();
+      analysisPromises.push(promise);
+    }
+    
+    // Wait for both analyses to complete
+    if (analysisPromises.length > 0) {
+      Promise.all(analysisPromises)
+        .catch(e => console.error('Analysis error:', e))
+        .finally(() => {
+          setIsAnalyzing(false);
+        });
+    } else {
+      // Fallback if no promises returned
+      setTimeout(() => {
+        setIsAnalyzing(false);
+      }, 1500);
     }
   };
 
@@ -365,21 +401,54 @@ const DashboardPage = () => {
 
   // Toggle auto fragment analysis
   const toggleAutoFragmentAnalysis = () => {
-    setAutoFragmentAnalysis(!autoFragmentAnalysis);
+    const newValue = !autoFragmentAnalysis;
+    setAutoFragmentAnalysis(newValue);
+    
+    // Save preference to localStorage
+    localStorage.setItem('autoFragmentAnalysis', newValue.toString());
     
     // If turning on auto-analysis, trigger an immediate analysis
-    if (!autoFragmentAnalysis) {
-      if (analysisEditorRef.current && editorRef.current) {
-        // Analyze text in both editors to sync them
-        editorRef.current.analyzeText();
-        analysisEditorRef.current.analyzeText();
+    if (newValue) {
+      // Show loading indicator
+      setIsAnalyzing(true);
+      
+      const analysisPromises: Promise<void>[] = [];
+      
+      // Run analysis on both editors and collect promises
+      if (analysisEditorRef.current) {
+        const promise = analysisEditorRef.current.analyzeText();
+        analysisPromises.push(promise);
+      }
+      
+      if (editorRef.current) {
+        const promise = editorRef.current.analyzeText();
+        analysisPromises.push(promise);
+      }
+      
+      // Wait for all analyses to complete
+      if (analysisPromises.length > 0) {
+        Promise.all(analysisPromises)
+          .catch(e => console.error('Analysis error:', e))
+          .finally(() => {
+            setIsAnalyzing(false);
+          });
+      } else {
+        // Hide loading indicator after a reasonable timeout if no promises
+        setTimeout(() => {
+          setIsAnalyzing(false);
+        }, 1500);
       }
     }
   };
 
   // Toggle showing parts of speech
   const toggleShowParts = () => {
-    setShowParts(!showParts);
+    const newValue = !showParts;
+    setShowParts(newValue);
+    
+    // Save preference to localStorage
+    localStorage.setItem('showParts', newValue.toString());
+    
     // If we have an editor ref, toggle fragments visibility
     if (editorRef.current) {
       editorRef.current.toggleFragmentsVisibility();
@@ -479,13 +548,21 @@ const DashboardPage = () => {
                 <CardHeader className="py-2 px-4">
                   <div className="flex flex-wrap justify-between items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Switch
-                        id="auto-analysis"
-                        checked={autoFragmentAnalysis}
-                        onCheckedChange={toggleAutoFragmentAnalysis}
-                      />
-                      <label htmlFor="auto-analysis" className="text-sm font-medium">
-                        Auto Analysis
+                      <div className="relative">
+                        <Switch
+                          id="auto-analysis"
+                          checked={autoFragmentAnalysis}
+                          onCheckedChange={toggleAutoFragmentAnalysis}
+                          disabled={isAnalyzing}
+                        />
+                        {isAnalyzing && autoFragmentAnalysis && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="animate-ping h-2 w-2 rounded-full bg-primary opacity-75"></span>
+                          </div>
+                        )}
+                      </div>
+                      <label htmlFor="auto-analysis" className="text-sm font-medium flex items-center">
+                        Auto Analysis {isAnalyzing && autoFragmentAnalysis && <span className="ml-1 text-xs text-muted-foreground">(analyzing...)</span>}
                       </label>
                     </div>
                     
@@ -511,9 +588,18 @@ const DashboardPage = () => {
                     </div>
                     
                     <div className="flex justify-end">
-                      <Button size="sm" onClick={handleAnalyzeText}>
-                        <BarChart2 className="h-4 w-4 mr-1" />
-                        Analyze Now
+                      <Button size="sm" onClick={handleAnalyzeText} disabled={isAnalyzing}>
+                        {isAnalyzing ? (
+                          <>
+                            <span className="animate-spin h-4 w-4 mr-1">&#8635;</span>
+                            Analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <BarChart2 className="h-4 w-4 mr-1" />
+                            Analyze Now
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>

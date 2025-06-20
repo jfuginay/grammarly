@@ -36,9 +36,9 @@ export interface EnhancedEditorRef {
   focus: () => void;
   applySuggestion: (suggestion: Suggestion) => void;
   getElement: () => HTMLTextAreaElement | null;
-  analyzeText: () => void;
+  analyzeText: () => Promise<void>; // Updated to return Promise<void>
   toggleFragmentsVisibility: () => void;
-  clearAnalysis: () => void; // New method to clear analysis
+  clearAnalysis: () => void; // Method to clear analysis
 }
 
 const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
@@ -72,18 +72,19 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Text analysis function with smart batching as per co-developer brief
+  // Now returns a Promise that resolves when analysis completes
   const analyzeText = useCallback(() => {
     if (!value || value.trim() === '') {
       setTextFragments([]);
       setShouldShowFragments(false);
-      return;
+      return Promise.resolve(); // Return a resolved promise for empty text
     }
     
     // If we already have fragments and the text hasn't changed significantly, 
     // just toggle visibility instead of re-analyzing
     if (textFragments.length > 0 && lastAnalyzedTextRef.current === value) {
       setShouldShowFragments(true);
-      return;
+      return Promise.resolve(); // Return a resolved promise for cached analysis
     }
     
     setIsAnalyzingText(true);
@@ -98,70 +99,75 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     }
     window.activeTextAnalysisRequest = controller;
     
-    try {
-      // Smart batching - send the entire document (as per co-developer brief)
-      fetch('/api/correct-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: value }),
-        signal: signal
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
-          }
-          return response.json();
+    // Return a promise for synchronization
+    return new Promise<void>((resolve, reject) => {
+      try {
+        // Smart batching - send the entire document (as per co-developer brief)
+        fetch('/api/correct-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: value }),
+          signal: signal
         })
-        .then(data => {
-          if (data.textAnalysis && data.textAnalysis.fragments) {
-            // Process fragments based on the priority system defined in the co-developer brief
-            const prioritizedFragments = assignPriorities(data.textAnalysis.fragments);
-            
-            // Sort by priority for rendering (higher priority on top)
-            prioritizedFragments.sort((a, b) => {
-              // Sort by priority first (lower number = higher priority)
-              const priorityDiff = (a.priority || 3) - (b.priority || 3);
-              if (priorityDiff !== 0) return priorityDiff;
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`API Error: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.textAnalysis && data.textAnalysis.fragments) {
+              // Process fragments based on the priority system defined in the co-developer brief
+              const prioritizedFragments = assignPriorities(data.textAnalysis.fragments);
               
-              // Then sort by confidence if available
-              if (a.confidence && b.confidence) {
-                return b.confidence - a.confidence;
-              }
+              // Sort by priority for rendering (higher priority on top)
+              prioritizedFragments.sort((a, b) => {
+                // Sort by priority first (lower number = higher priority)
+                const priorityDiff = (a.priority || 3) - (b.priority || 3);
+                if (priorityDiff !== 0) return priorityDiff;
+                
+                // Then sort by confidence if available
+                if (a.confidence && b.confidence) {
+                  return b.confidence - a.confidence;
+                }
+                
+                // Default sort by position
+                return a.startIndex - b.startIndex;
+              });
               
-              // Default sort by position
-              return a.startIndex - b.startIndex;
-            });
-            
-            setTextFragments(prioritizedFragments);
-            setShouldShowFragments(true);
-            lastAnalyzedTextRef.current = value;
-          } else {
-            // Fallback to local analysis if API doesn't return fragments
-            performLocalAnalysis();
-          }
-        })
-        .catch(error => {
-          if (error.name !== 'AbortError') {
-            console.error('Error fetching text analysis:', error);
-            performLocalAnalysis();
-          }
-        })
-        .finally(() => {
-          if (signal.aborted) return;
-          setIsAnalyzingText(false);
-          if (window.activeTextAnalysisRequest === controller) {
-            window.activeTextAnalysisRequest = null;
-          }
-        });
-    } catch (error) {
-      console.error('Error analyzing text:', error);
-      setIsAnalyzingText(false);
-    }
-    
-    return () => {
-      controller.abort();
-    };
-  }, [value, textFragments]);
+              setTextFragments(prioritizedFragments);
+              setShouldShowFragments(true);
+              lastAnalyzedTextRef.current = value;
+              resolve(); // Resolve when analysis is complete
+            } else {
+              // Fallback to local analysis if API doesn't return fragments
+              performLocalAnalysis();
+              resolve(); // Resolve even with local analysis
+            }
+          })
+          .catch(error => {
+            if (error.name !== 'AbortError') {
+              console.error('Error fetching text analysis:', error);
+              performLocalAnalysis();
+              resolve(); // Resolve even with error (after local analysis)
+            } else {
+              resolve(); // Resolve on abort - this is expected behavior
+            }
+          })
+          .finally(() => {
+            if (signal.aborted) return;
+            setIsAnalyzingText(false);
+            if (window.activeTextAnalysisRequest === controller) {
+              window.activeTextAnalysisRequest = null;
+            }
+          });
+      } catch (error) {
+        console.error('Error analyzing text:', error);
+        setIsAnalyzingText(false);
+        reject(error); // Reject on critical errors
+      }
+    });
+  }, [value, textFragments, assignPriorities, performLocalAnalysis]);
   
   // Assign priorities to fragments based on the type and content
   const assignPriorities = useCallback((fragments: TextFragment[]): TextFragment[] => {
@@ -462,7 +468,15 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   };
   
   // Debounced analyze function to trigger after the user stops typing (2 seconds as per co-developer brief)
-  const debouncedAnalyzeText = useDebouncedCallback(analyzeText, 2000);
+  const debouncedAnalyzeText = useDebouncedCallback(analyzeText, 2000, {
+    // Configure maxWait to ensure the function is called eventually
+    // even if the user keeps typing continuously
+    maxWait: 5000,
+    // Leading edge execution - ensures immediate response on first call
+    leading: false,
+    // Trailing edge execution - ensures execution after debounce period
+    trailing: true
+  });
   
   // Toggle fragments visibility
   const toggleFragmentsVisibility = useCallback(() => {
@@ -537,12 +551,12 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       }
     },
     getElement: () => textareaRef.current,
-    analyzeText,
+    analyzeText, // Already returns Promise<void>
     toggleFragmentsVisibility,
-    clearAnalysis,
     clearAnalysis: () => {
       setTextFragments([]);
       setShouldShowFragments(false);
+      lastAnalyzedTextRef.current = '';
     }
   }));
   
