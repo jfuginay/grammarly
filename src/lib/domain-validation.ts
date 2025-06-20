@@ -93,11 +93,13 @@ export function getAllowedOriginsForEnvironment(): string[] {
   return [...baseOrigins, ...envPatterns, ...customOrigins];
 }
 
-// Export as default for better compatibility
-export default {
+const domainValidationUtils = {
   matchesDomainPattern,
   extractDomain,
   isOriginAllowedByPattern,
   getAllowedOriginsForEnvironment,
   ORIGIN_PATTERNS,
 };
+
+// Export as default for better compatibility
+export default domainValidationUtils;

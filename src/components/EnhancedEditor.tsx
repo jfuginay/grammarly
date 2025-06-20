@@ -152,7 +152,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     return () => {
       controller.abort();
     };
-  }, [value, textFragments]);
+  }, [value, textFragments, assignPriorities, performLocalAnalysis]);
   
   // Assign priorities to fragments based on the type and content
   const assignPriorities = useCallback((fragments: TextFragment[]): TextFragment[] => {
@@ -200,7 +200,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   }, [value]);
 
   // Local text analysis as fallback with priority assignments based on co-developer brief
-  const performLocalAnalysis = () => {
+  const performLocalAnalysis = useCallback(() => {
     try {
       // Simple tokenization of the text into words, punctuation, etc.
       const fragments: TextFragment[] = [];
@@ -334,10 +334,10 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     } catch (error) {
       console.error('Error in local text analysis:', error);
     }
-  };
+  }, [value, identifyPhrases]);
   
   // Enhanced phrase detection function with priority assignments
-  const identifyPhrases = (fragments: TextFragment[]) => {
+  const identifyPhrases = useCallback((fragments: TextFragment[]) => {
     // Common problematic phrases that should get higher priority
     const wordyPhrases = [
       'in order to', 'due to the fact that', 'at this point in time', 
@@ -450,7 +450,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         confidence: 0.8
       });
     }
-  };
+  }, [value]);
   
   // Debounced analyze function to trigger after the user stops typing (2 seconds as per co-developer brief)
   const debouncedAnalyzeText = useDebouncedCallback(analyzeText, 2000);
@@ -803,7 +803,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     }
     
     setHighlightedHtml(html);
-  }, [value, suggestions, toneHighlights, textFragments, shouldShowFragments, placeholder]);
+  }, [value, suggestions, toneHighlights, textFragments, shouldShowFragments, placeholder, readOnly]);
   
   // Sync scroll position between textarea and highlight div
   useEffect(() => {

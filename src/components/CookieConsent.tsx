@@ -35,7 +35,7 @@ const CookieConsent: React.FC = () => {
         >
           <p className="flex items-center text-sm mr-4 mb-2 sm:mb-0">
             <Cookie className="h-5 w-5 mr-2" />
-            We use cookies to enhance your experience. By clicking "Accept", you agree to our use of cookies.
+            We use cookies to enhance your experience. By clicking &quot;Accept&quot;, you agree to our use of cookies.
           </p>
           <div className="flex items-center space-x-2">
             <Button variant="default" size="sm" onClick={handleAccept}>
