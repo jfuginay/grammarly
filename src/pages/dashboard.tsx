@@ -475,25 +475,17 @@ const DashboardPage = () => {
   // Sidebar component
   const sidebarComponent = useMemo(() => (
     <Sidebar 
-      documents={documents.map(doc => ({ id: doc.id, title: doc.title }))} 
-      activeDocumentId={activeDocument?.id}
-      onSelectDocument={id => {
-        const doc = documents.find(d => d.id === id);
-        if (doc) handleSelectDocument(doc);
-      }}
+      documents={documents}
+      activeDocument={activeDocument}
+      onSelectDocument={handleSelectDocument}
       onCreateDocument={() => setShowNewDocModal(true)}
     />
-  ), [documents, activeDocument?.id, handleSelectDocument]);
+  ), [documents, activeDocument, handleSelectDocument]);
 
   // Header component
   const headerComponent = useMemo(() => (
-    <DashboardHeader 
-      user={user} 
-      onNewDocument={() => setShowNewDocModal(true)}
-      sidebarOpen={sidebarOpen}
-      setSidebarOpen={setSidebarOpen}
-    />
-  ), [user, sidebarOpen]);
+    <DashboardHeader userName={user?.name || ''} userEmail={user?.email || ''} />
+  ), [user]);
 
   return (
     <>
