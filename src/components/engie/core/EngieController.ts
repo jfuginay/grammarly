@@ -1,15 +1,18 @@
 import { EngieStateManager } from './EngieStateManager';
 import { EngieApiService } from '../services/EngieApiService';
 import { TextExtractorService } from '../services/TextExtractorService';
+import { GrokApiService } from '../services/GrokApiService'; // Import GrokApiService
 import { ChatMessage, Suggestion, EngieProps } from '../types';
 
 export class EngieController {
   private stateManager: EngieStateManager;
   private apiService: EngieApiService;
   private textExtractor: TextExtractorService;
+  private grokApiService: GrokApiService; // Add GrokApiService instance
   private debounceTimeoutRef: NodeJS.Timeout | null = null;
   private prevScannedTextRef: string = "";
   private inactivityTimerRef: NodeJS.Timeout | null = null;
+  private grokDeactivationTimer: NodeJS.Timeout | null = null; // Timer for Grok deactivation
   private lastX: number = 0;
 
   constructor(
@@ -18,6 +21,7 @@ export class EngieController {
     this.stateManager = new EngieStateManager();
     this.apiService = EngieApiService.getInstance();
     this.textExtractor = TextExtractorService.getInstance();
+    this.grokApiService = GrokApiService.getInstance(); // Instantiate GrokApiService
     this.setupInactivityTimer();
     this.detectTouchDevice();
   }
@@ -70,7 +74,7 @@ export class EngieController {
 
   async triggerIdeation(isManualTrigger = false): Promise<void> {
     const state = this.stateManager.getState();
-    
+
     if (state.isIdeating) return;
 
     this.stateManager.setIdeating(true);
@@ -79,7 +83,7 @@ export class EngieController {
 
     try {
       const pageText = this.textExtractor.extractFullPageText();
-      
+
       if (!pageText || pageText.length < 50) {
         console.log("Not enough content for ideation.");
         this.stateManager.setIdeating(false);
@@ -87,23 +91,44 @@ export class EngieController {
         return;
       }
 
+      // Grok integration for opinionated comment
+      if (state.isGrokActive && this.grokApiService && process.env.GROQ_API_KEY) {
+        const commentPrompt = `Give me an opinionated, funny, or insightful comment about the following text: ${pageText.slice(0, 1000)}`;
+        this.stateManager.addGrokChatMessage({ role: 'user', content: `Engie wants an opinionated comment on: "${pageText.substring(0,60)}..."` });
+        const comment = await this.grokApiService.getOpinionatedComment(commentPrompt);
+        if (comment) {
+          this.stateManager.addGrokChatMessage({ role: 'assistant', content: comment });
+          console.log("Grok Comment:", comment);
+          this.stateManager.setBotEmotion('excited', 'Grok has a thought!');
+          // Display in chat or as a notification - for now, it's in Grok history
+        } else {
+          this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't come up with a Grok comment right now." });
+          this.stateManager.setBotEmotion('concerned', 'Grok comment failed');
+        }
+        // Decide if we should still proceed with normal ideation or return
+        // For now, let's allow normal ideation to also run if Grok is active.
+        // If you want to bypass normal ideation when Grok provides a comment, uncomment the next line:
+        // this.stateManager.setIdeating(false); this.stateManager.setStatusMessage(""); return;
+      }
+
+      // Proceed with normal ideation if Grok didn't provide a comment or if we want both
       const prompt = isManualTrigger
         ? `Based on this content, give me creative ideas or suggestions to improve it: ${pageText.slice(0, 2000)}`
         : `Looking at this content, what creative ideas could enhance it? Be brief and actionable: ${pageText.slice(0, 2000)}`;
 
       const ideaResponse = await this.apiService.callEngieChatAPI(prompt, state.chatHistory);
-      
+
       if (ideaResponse) {
         const ideaMessage: ChatMessage = { role: 'assistant', content: ideaResponse };
-        
+
         if (isManualTrigger) {
           this.stateManager.setIdeationMessage(ideaMessage);
-          this.stateManager.setChatOpen(true);
+          this.stateManager.setChatOpen(true); // Open chat for manual ideation
         } else {
           this.stateManager.addIdeaNotification(ideaResponse);
           this.stateManager.setShowSparkle(true);
           setTimeout(() => this.stateManager.setShowSparkle(false), 2000);
-          
+
           if (this.props.onIdea) {
             this.props.onIdea(ideaResponse);
           }
@@ -364,6 +389,9 @@ export class EngieController {
     if (this.inactivityTimerRef) {
       clearTimeout(this.inactivityTimerRef);
     }
+    if (this.grokDeactivationTimer) { // Clear Grok timer on cleanup
+      clearTimeout(this.grokDeactivationTimer);
+    }
   }
 
   /**
@@ -387,4 +415,82 @@ export class EngieController {
     this.stateManager.setBotAnimation('walking');
     setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
-} 
+
+  // Grok Mode Methods
+  public async toggleGrokMode(): Promise<void> {
+    const currentState = this.stateManager.getState();
+    if (!currentState.isGrokActive) {
+      if (!process.env.GROQ_API_KEY) {
+        console.error("GROQ_API_KEY is not set. Cannot activate Grok mode.");
+        this.stateManager.addGrokChatMessage({ role: 'assistant', content: "I can't activate Grok mode. The API key is missing." });
+        return;
+      }
+      this.stateManager.setIsGrokActive(true);
+      const endTime = Date.now() + 10 * 60 * 1000; // 10 minutes
+      this.stateManager.setGrokEndTime(endTime);
+      console.log("Grok mode activated");
+      this.stateManager.setBotEmotion('excited', 'Engie is feeling opinionated with Grok!');
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Grok mode activated! I'm ready for some opinionated comments and research." });
+
+      if (this.grokDeactivationTimer) {
+        clearTimeout(this.grokDeactivationTimer);
+      }
+      this.grokDeactivationTimer = setTimeout(() => {
+        this.deactivateGrokMode();
+      }, 10 * 60 * 1000);
+    } else {
+      this.deactivateGrokMode();
+    }
+  }
+
+  public deactivateGrokMode(): void {
+    this.stateManager.setIsGrokActive(false);
+    this.stateManager.setGrokEndTime(null);
+    console.log("Grok mode deactivated");
+    if (this.grokDeactivationTimer) {
+      clearTimeout(this.grokDeactivationTimer);
+      this.grokDeactivationTimer = null;
+    }
+    this.stateManager.setBotEmotion('neutral', 'Grok mode off.');
+    this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Grok mode deactivated." });
+    // Clear history or keep it? For now, let's keep it for context if re-enabled soon.
+    // If you want to clear it: this.stateManager.clearGrokChatHistory();
+  }
+
+  public async researchWithGrok(topic: string): Promise<void> {
+    if (!this.grokApiService || !process.env.GROQ_API_KEY) {
+      console.error("GrokApiService not available or API key missing. Cannot research.");
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I can't use Grok for research right now. The service or API key might be missing." });
+      return;
+    }
+
+    this.stateManager.setIdeating(true); // Using existing ideating state for busy indicator
+    this.stateManager.setStatusMessage(`Engie is researching "${topic}" with Grok...`);
+    this.stateManager.addGrokChatMessage({ role: 'user', content: `Research: ${topic}` });
+
+    try {
+      const response = await this.grokApiService.researchTopic(topic);
+
+      if (response) {
+        this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
+        console.log("Grok Research Result:", response);
+        this.stateManager.setBotEmotion('thoughtful', `Found some research on ${topic.substring(0,20)}...`);
+        // We might want a way to display this directly in the chat or a specific UI element.
+        // For now, it's in the Grok chat history.
+      } else {
+        const errorMessage = "Sorry, I couldn't find information on that topic using Grok.";
+        this.stateManager.addGrokChatMessage({ role: 'assistant', content: errorMessage });
+        console.error(errorMessage);
+        this.stateManager.setBotEmotion('concerned', 'Grok research failed');
+      }
+    } catch (error) {
+      const errorMessage = "An error occurred while researching with Grok.";
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: errorMessage });
+      console.error(errorMessage, error);
+      this.stateManager.setBotEmotion('concerned', 'Grok research error');
+    } finally {
+      this.stateManager.setIdeating(false);
+      this.stateManager.setStatusMessage("");
+    }
+  }
+}

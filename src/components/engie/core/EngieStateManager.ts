@@ -36,6 +36,9 @@ export class EngieStateManager {
       botEmotion: 'neutral',
       emotionReason: '',
       isTouchDevice: false,
+      isGrokActive: false,
+      grokEndTime: null,
+      grokChatHistory: [],
     };
   }
 
@@ -334,6 +337,27 @@ export class EngieStateManager {
         this.setBotEmotion('happy', 'Offering encouragement');
         break;
     }
+  }
+
+  // Grok state methods
+  setIsGrokActive(isActive: boolean): void {
+    this.state.isGrokActive = isActive;
+    this.notify();
+  }
+
+  setGrokEndTime(endTime: number | null): void {
+    this.state.grokEndTime = endTime;
+    this.notify();
+  }
+
+  addGrokChatMessage(message: ChatMessage): void {
+    this.state.grokChatHistory = [...this.state.grokChatHistory, message];
+    this.notify();
+  }
+
+  clearGrokChatHistory(): void {
+    this.state.grokChatHistory = [];
+    this.notify();
   }
 
   // Computed properties
