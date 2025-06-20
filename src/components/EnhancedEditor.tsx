@@ -226,23 +226,41 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         } else if (/^\w+$/.test(text)) {
           type = 'word';
           
-          // Basic part-of-speech guessing
-          if (text.endsWith('ly')) {
-            partOfSpeech = 'adverb';
-          } else if (text.endsWith('ed')) {
-            partOfSpeech = 'verb'; // past tense verb
-          } else if (text.endsWith('ing')) {
-            partOfSpeech = 'verb'; // present participle
-          } else if (['the', 'a', 'an'].includes(text.toLowerCase())) {
-            partOfSpeech = 'article';
-          } else if (['is', 'am', 'are', 'was', 'were', 'be', 'been', 'do', 'does', 'did', 'have', 'has', 'had', 'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must'].includes(text.toLowerCase())) {
-            partOfSpeech = 'verb';
-          } else if (['in', 'on', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'into', 'onto'].includes(text.toLowerCase())) {
-            partOfSpeech = 'preposition';
-          } else if (['and', 'but', 'or', 'nor', 'for', 'yet', 'so'].includes(text.toLowerCase())) {
-            partOfSpeech = 'conjunction';
+          // Improved part-of-speech guessing
+          const lower = text.toLowerCase();
+          if (["the", "a", "an"].includes(lower)) {
+            partOfSpeech = "article";
+          } else if (["is", "am", "are", "was", "were", "be", "been", "do", "does", "did", "have", "has", "had", "can", "could", "will", "would", "shall", "should", "may", "might", "must"].includes(lower)) {
+            partOfSpeech = "verb";
+          } else if (["in", "on", "at", "by", "for", "with", "about", "against", "between", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "into", "onto"].includes(lower)) {
+            partOfSpeech = "preposition";
+          } else if (["and", "but", "or", "nor", "for", "yet", "so"].includes(lower)) {
+            partOfSpeech = "conjunction";
+          } else if (["this", "that", "these", "those", "my", "your", "his", "her", "its", "our", "their"].includes(lower)) {
+            partOfSpeech = "determiner";
+          } else if (["i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them"].includes(lower)) {
+            partOfSpeech = "pronoun";
+          } else if (lower.endsWith("ly")) {
+            partOfSpeech = "adverb";
+          } else if (
+            lower.endsWith("ed") ||
+            lower.endsWith("en") ||
+            lower.endsWith("ing") ||
+            lower.endsWith("ify") ||
+            lower.endsWith("ise") ||
+            lower.endsWith("ize")
+          ) {
+            partOfSpeech = "verb";
+          } else if (
+            lower.endsWith("ous") || lower.endsWith("ful") || lower.endsWith("able") || lower.endsWith("ible") || lower.endsWith("al") || lower.endsWith("ive") || lower.endsWith("ic") || lower.endsWith("ary") || lower.endsWith("less") || lower.endsWith("est")
+          ) {
+            partOfSpeech = "adjective";
+          } else if (
+            lower.endsWith("ment") || lower.endsWith("ness") || lower.endsWith("tion") || lower.endsWith("sion") || lower.endsWith("ity") || lower.endsWith("hood") || lower.endsWith("ship") || lower.endsWith("ence") || lower.endsWith("ance")
+          ) {
+            partOfSpeech = "noun";
           } else if (text.length > 0) {
-            partOfSpeech = 'noun'; // Default
+            partOfSpeech = "noun"; // Default
           }
           
           // Priority and confidence assignment based on the co-developer brief
