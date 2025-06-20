@@ -171,16 +171,26 @@ const DashboardPage = () => {
   const [creatingDoc, setCreatingDoc] = useState(false);
   const [showDocumentHistory, setShowDocumentHistory] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(() => {
-    // Load preference from localStorage or default to true
-    const savedPreference = localStorage.getItem('autoFragmentAnalysis');
-    return savedPreference !== null ? savedPreference === 'true' : true;
-  });
-  const [showParts, setShowParts] = useState(() => {
-    // Load preference from localStorage or default to false
-    const savedPreference = localStorage.getItem('showParts');
-    return savedPreference !== null ? savedPreference === 'true' : false;
-  });
+  const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(true); // Default to true
+  const [showParts, setShowParts] = useState(false); // Default to false
+  
+  // Load preferences from localStorage only on client-side
+  useEffect(() => {
+    // Check if we're in the browser environment
+    if (typeof window !== 'undefined') {
+      // Load auto fragment analysis preference
+      const savedAutoAnalysis = localStorage.getItem('autoFragmentAnalysis');
+      if (savedAutoAnalysis !== null) {
+        setAutoFragmentAnalysis(savedAutoAnalysis === 'true');
+      }
+      
+      // Load show parts preference
+      const savedShowParts = localStorage.getItem('showParts');
+      if (savedShowParts !== null) {
+        setShowParts(savedShowParts === 'true');
+      }
+    }
+  }, []);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -404,8 +414,10 @@ const DashboardPage = () => {
     const newValue = !autoFragmentAnalysis;
     setAutoFragmentAnalysis(newValue);
     
-    // Save preference to localStorage
-    localStorage.setItem('autoFragmentAnalysis', newValue.toString());
+    // Save preference to localStorage only on client-side
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('autoFragmentAnalysis', newValue.toString());
+    }
     
     // If turning on auto-analysis, trigger an immediate analysis
     if (newValue) {
@@ -446,8 +458,10 @@ const DashboardPage = () => {
     const newValue = !showParts;
     setShowParts(newValue);
     
-    // Save preference to localStorage
-    localStorage.setItem('showParts', newValue.toString());
+    // Save preference to localStorage only on client-side
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showParts', newValue.toString());
+    }
     
     // If we have an editor ref, toggle fragments visibility
     if (editorRef.current) {
