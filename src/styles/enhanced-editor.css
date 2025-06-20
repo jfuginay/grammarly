@@ -30,8 +30,11 @@
 
 .enhanced-editor {
   position: relative;
-  min-height: 200px;
+  min-height: 150px;
   width: 100%;
+  height: auto; /* Allow container to adjust height */
+  transition: height 0.2s ease-out; /* Smooth transition for height changes */
+  overflow: hidden; /* Prevent overflow during transitions */
 }
 
 /* Top analysis box - special styling */
@@ -78,6 +81,7 @@
   overflow: auto;
   /* Ensure exact alignment between textarea and highlights */
   text-align: left;
+  transition: height 0.2s ease-out; /* Smooth transition for height changes */
 }
 
 .editor-highlights {
