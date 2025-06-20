@@ -73,9 +73,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background justify-center items-center">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 justify-center items-center">
       <div className="flex flex-col gap-5 w-full max-w-sm px-4">
-        <div className="w-full flex justify-center">
+        <div className="w-full flex justify-center mb-8">
           <Link href="/">
             <Logo />
           </Link>
@@ -83,9 +83,9 @@ const LoginPage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">Log In</CardTitle>
+            <CardTitle className="text-center text-2xl font-bold">Log In</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6 sm:p-8">
             <form onSubmit={handleLogin}>
               <div className="grid gap-4">
                 <div className="grid gap-2">
@@ -113,14 +113,14 @@ const LoginPage = () => {
                   />
                 </div>
                 {error && (
-                  <p className="text-sm text-destructive text-center">{error}</p>
+                  <p className="text-sm text-destructive text-center mt-1">{error}</p>
                 )}
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
                   {isLoading ? 'Logging In...' : 'Log In'}
                 </Button>
                 <div className="mt-4 text-center text-sm">
                   Don't have an account?{' '}
-                  <Link href="/signup" className="underline">
+                  <Link href="/signup" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-500 hover:underline">
                     Sign up
                   </Link>
                 </div>
