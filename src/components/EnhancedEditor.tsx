@@ -27,6 +27,8 @@ interface EnhancedEditorProps {
   autoAnalyze?: boolean; // Whether to automatically analyze text after typing pauses
   readOnly?: boolean; // Whether the editor is read-only (for analysis display)
   showFragments?: boolean; // Whether to always show fragments (for analysis display)
+  isAnalysisBox?: boolean; // Whether this is the top analysis box
+  reflectTextFrom?: string; // Text to reflect in the analysis box
 }
 
 export interface EnhancedEditorRef {
@@ -35,6 +37,7 @@ export interface EnhancedEditorRef {
   getElement: () => HTMLTextAreaElement | null;
   analyzeText: () => void;
   toggleFragmentsVisibility: () => void;
+  clearAnalysis: () => void; // New method to clear analysis
 }
 
 const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
@@ -46,7 +49,9 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   toneHighlights = [],
   autoAnalyze = true,
   readOnly = false,
-  showFragments = false
+  showFragments = false,
+  isAnalysisBox = false,
+  reflectTextFrom = ''
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,6 +60,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const [isAnalyzingText, setIsAnalyzingText] = useState(false);
   const [shouldShowFragments, setShouldShowFragments] = useState(showFragments);
   const lastAnalyzedTextRef = useRef<string>('');
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Text analysis function with smart batching as per co-developer brief
   const analyzeText = useCallback(() => {
@@ -436,6 +442,14 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     setShouldShowFragments(prev => !prev);
   }, []);
   
+  // Method to clear analysis state
+  const clearAnalysis = useCallback(() => {
+    setTextFragments([]);
+    setShouldShowFragments(false);
+    lastAnalyzedTextRef.current = '';
+    setHighlightedHtml('');
+  }, []);
+  
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -459,6 +473,9 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         
         onChange(newText);
         
+        // Clear text fragments and analysis to force a fresh analysis
+        clearAnalysis();
+        
         // Focus and set cursor position after the replacement
         setTimeout(() => {
           if (textareaRef.current) {
@@ -478,6 +495,9 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
           
           onChange(newText);
           
+          // Clear text fragments and analysis to force a fresh analysis
+          clearAnalysis();
+          
           // Focus and set cursor position
           setTimeout(() => {
             if (textareaRef.current) {
@@ -491,7 +511,12 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     },
     getElement: () => textareaRef.current,
     analyzeText,
-    toggleFragmentsVisibility
+    toggleFragmentsVisibility,
+    clearAnalysis,
+    clearAnalysis: () => {
+      setTextFragments([]);
+      setShouldShowFragments(false);
+    }
   }));
   
   // Trigger analysis when user stops typing or when showFragments prop changes

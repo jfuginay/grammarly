@@ -440,6 +440,8 @@ const DashboardPage = () => {
 
   const applySuggestion = (suggestionToApply: Suggestion) => {
     console.log("Applying suggestion via Engie:", suggestionToApply);
+    
+    // Apply the suggestion to the input editor
     applySuggestionLogic(
       text, 
       suggestionToApply, 
@@ -449,6 +451,11 @@ const DashboardPage = () => {
       debouncedUpdateDocument,
       editorRef
     );
+    
+    // Clear analysis from analysis editor
+    if (analysisEditorRef.current) {
+      analysisEditorRef.current.clearAnalysis();
+    }
   };
 
   const dismissSuggestion = (suggestionId: string) => {
@@ -713,18 +720,66 @@ const DashboardPage = () => {
                     </TooltipProvider>
                   </div>
                 </CardHeader>
-                <div className="min-h-[calc(100vh-550px)]">
-                  <EnhancedEditor 
-                    ref={editorRef}
-                    value={text} 
-                    onChange={handleTextChange} 
-                    suggestions={[]} // No highlighting in the input box
-                    toneHighlights={[]}
-                    autoAnalyze={false} // We'll manually sync with the analysis view
-                    className="main-editor-textarea h-full text-base sm:text-lg border-0 p-4 sm:p-6 rounded-xl focus-visible:ring-0 bg-background" 
-                    placeholder="Start writing your masterpiece..." 
-                    showFragments={false} // Never show fragments in the input box
-                  />
+                <div className="min-h-[calc(100vh-550px)] space-y-4">
+                  {/* Analysis Editor (Read-only) */}
+                  <Card>
+                    <CardHeader className="p-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium">Text Analysis View</CardTitle>
+                        <Badge variant="outline">Auto-updates every 3 seconds</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <EnhancedEditor 
+                        ref={analysisEditorRef}
+                        value={text} 
+                        onChange={(val) => {/* Read-only - no changes */}} 
+                        suggestions={suggestions}
+                        toneHighlights={toneHighlights}
+                        autoAnalyze={true}
+                        readOnly={true}
+                        className="analysis-editor h-40 text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30" 
+                        placeholder="Analysis will appear here..." 
+                        showFragments={true}
+                        isAnalysisBox={true}
+                        reflectTextFrom={text}
+                      />
+                    </CardContent>
+                  </Card>
+                
+                  {/* Input Editor (Editable) */}
+                  <Card>
+                    <CardHeader className="p-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium">Input Text</CardTitle>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <Pen className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Type here to edit your text</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <EnhancedEditor 
+                        ref={editorRef}
+                        value={text} 
+                        onChange={handleTextChange} 
+                        suggestions={[]} // No highlighting in the input box
+                        toneHighlights={[]}
+                        autoAnalyze={false} // We'll manually sync with the analysis view
+                        className="main-editor-textarea h-40 text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-background" 
+                        placeholder="Start writing your masterpiece..." 
+                        showFragments={false} // Never show fragments in the input box
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
               </Card>
             </div>

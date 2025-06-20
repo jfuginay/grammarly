@@ -4,6 +4,28 @@
   width: 100%;
 }
 
+/* Top analysis box - special styling */
+.analysis-editor.enhanced-editor {
+  background-color: rgba(243, 244, 246, 0.5);
+  border-radius: 0.5rem;
+}
+
+.analysis-editor .editor-highlights {
+  color: inherit !important;
+  opacity: 1 !important; /* Always show highlights in analysis box */
+}
+
+/* Bottom input box - standard styling */
+.main-editor-textarea.enhanced-editor {
+  background-color: white;
+  border-radius: 0.5rem;
+}
+
+/* Force fragments to be visible in analysis mode */
+.show-fragments .editor-highlights {
+  opacity: 1 !important;
+}
+
 .editor-highlights,
 .editor-textarea {
   position: absolute;
