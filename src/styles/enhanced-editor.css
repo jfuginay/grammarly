@@ -326,38 +326,185 @@
 
 /* Part of speech colors */
 .pos-noun {
-  background-color: rgba(52, 152, 219, 0.12);
-  border-color: rgba(52, 152, 219, 0.25);
+  background-color: rgba(59, 130, 246, 0.7); /* Blue */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(59, 130, 246, 0.9);
+}
+
+.dark .pos-noun {
+  background-color: rgba(59, 130, 246, 0.5);
+  color: rgba(230, 230, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(59, 130, 246, 0.7);
 }
 
 .pos-verb {
-  background-color: rgba(46, 204, 113, 0.12);
-  border-color: rgba(46, 204, 113, 0.25);
+  background-color: rgba(239, 68, 68, 0.7); /* Red */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(239, 68, 68, 0.9);
+}
+
+.dark .pos-verb {
+  background-color: rgba(239, 68, 68, 0.5);
+  color: rgba(255, 220, 220, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(239, 68, 68, 0.7);
 }
 
 .pos-adjective {
-  background-color: rgba(155, 89, 182, 0.12);
-  border-color: rgba(155, 89, 182, 0.25);
+  background-color: rgba(16, 185, 129, 0.7); /* Green */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(16, 185, 129, 0.9);
+}
+
+.dark .pos-adjective {
+  background-color: rgba(16, 185, 129, 0.5);
+  color: rgba(210, 255, 230, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(16, 185, 129, 0.7);
 }
 
 .pos-adverb {
-  background-color: rgba(243, 156, 18, 0.12);
-  border-color: rgba(243, 156, 18, 0.25);
+  background-color: rgba(245, 158, 11, 0.7); /* Amber */
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-weight: bold !important;
+  border-color: rgba(245, 158, 11, 0.9);
+}
+
+.dark .pos-adverb {
+  background-color: rgba(245, 158, 11, 0.6);
+  color: rgba(255, 245, 220, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(245, 158, 11, 0.8);
 }
 
 .pos-preposition {
-  background-color: rgba(231, 76, 60, 0.12);
-  border-color: rgba(231, 76, 60, 0.25);
+  background-color: rgba(139, 92, 246, 0.7); /* Purple */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(139, 92, 246, 0.9);
+}
+
+.dark .pos-preposition {
+  background-color: rgba(139, 92, 246, 0.5);
+  color: rgba(235, 225, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(139, 92, 246, 0.7);
 }
 
 .pos-conjunction {
-  background-color: rgba(22, 160, 133, 0.12);
-  border-color: rgba(22, 160, 133, 0.25);
+  background-color: rgba(236, 72, 153, 0.7); /* Pink */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(236, 72, 153, 0.9);
+}
+
+.dark .pos-conjunction {
+  background-color: rgba(236, 72, 153, 0.5);
+  color: rgba(255, 225, 235, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(236, 72, 153, 0.7);
 }
 
 .pos-article {
-  background-color: rgba(127, 140, 141, 0.12);
-  border-color: rgba(127, 140, 141, 0.25);
+  background-color: rgba(107, 114, 128, 0.7); /* Gray */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(107, 114, 128, 0.9);
+}
+
+.dark .pos-article {
+  background-color: rgba(107, 114, 128, 0.5);
+  color: rgba(220, 225, 230, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(107, 114, 128, 0.7);
+}
+
+.pos-pronoun {
+  background-color: rgba(6, 182, 212, 0.7); /* Cyan */
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-weight: bold !important;
+  border-color: rgba(6, 182, 212, 0.9);
+}
+
+.dark .pos-pronoun {
+  background-color: rgba(6, 182, 212, 0.5);
+  color: rgba(210, 250, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(6, 182, 212, 0.7);
+}
+
+.pos-interjection {
+  background-color: rgba(249, 115, 22, 0.7); /* Orange */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(249, 115, 22, 0.9);
+}
+
+.dark .pos-interjection {
+  background-color: rgba(249, 115, 22, 0.6);
+  color: rgba(255, 230, 215, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(249, 115, 22, 0.8);
+}
+
+.pos-determiner {
+  background-color: rgba(132, 204, 22, 0.7); /* Lime */
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-weight: bold !important;
+  border-color: rgba(132, 204, 22, 0.9);
+}
+
+.dark .pos-determiner {
+  background-color: rgba(132, 204, 22, 0.6);
+  color: rgba(235, 255, 215, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(132, 204, 22, 0.8);
+}
+
+.pos-punctuation {
+  background-color: rgba(55, 65, 81, 0.7); /* Dark Gray */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(55, 65, 81, 0.9);
+}
+
+.dark .pos-punctuation {
+  background-color: rgba(71, 85, 105, 0.5);
+  color: rgba(200, 205, 210, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(71, 85, 105, 0.7);
+}
+
+.pos-number {
+  background-color: rgba(124, 58, 237, 0.7); /* Violet */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(124, 58, 237, 0.9);
+}
+
+.dark .pos-number {
+  background-color: rgba(124, 58, 237, 0.5);
+  color: rgba(230, 220, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(124, 58, 237, 0.7);
+}
+
+.pos-unknown { /* For Unknown/Other */
+  background-color: rgba(156, 163, 175, 0.7); /* Light Gray */
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-weight: bold !important;
+  border-color: rgba(156, 163, 175, 0.9);
+}
+
+.dark .pos-unknown {
+  background-color: rgba(156, 163, 175, 0.5);
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: bold !important;
+  border-color: rgba(156, 163, 175, 0.7);
 }
 
 /* Loading indicator */
