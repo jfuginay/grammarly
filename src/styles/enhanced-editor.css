@@ -17,7 +17,7 @@
 
 /* Bottom input box - standard styling */
 .main-editor-textarea.enhanced-editor {
-  background-color: white;
+  background-color: var(--input);
   border-radius: 0.5rem;
 }
 
