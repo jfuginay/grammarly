@@ -13,7 +13,7 @@ export const IdeationCard: React.FC<IdeationCardProps> = ({ message, onDismiss }
     <Card className="mb-4 bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700">
       <CardHeader className="p-3">
         <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-          Engie's Idea Corner
+          Engie&apos;s Idea Corner
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0">

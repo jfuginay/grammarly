@@ -50,10 +50,10 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
         </CardHeader>
         <CardContent className="p-3 pt-0">
           <p className="text-sm text-gray-500 dark:text-gray-400 line-through">
-            "{currentSuggestion.original}"
+            &quot;{currentSuggestion.original}&quot;
           </p>
           <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
-            "{currentSuggestion.suggestion}"
+            &quot;{currentSuggestion.suggestion}&quot;
           </p>
           <p className="text-xs text-muted-foreground mt-3">
             {currentSuggestion.explanation}

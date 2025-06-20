@@ -54,7 +54,7 @@ export const ToneTab: React.FC<ToneTabProps> = ({
               <ul className="space-y-1">
                 {toneAnalysisResult.highlightedSentences.slice(0, 3).map((item, index) => (
                   <li key={index} className="text-xs p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                    "{item.sentence}" - <span className="font-medium capitalize">{item.tone}</span> (Score: {formatScore(item.score)})
+                    &quot;{item.sentence}&quot; - <span className="font-medium capitalize">{item.tone}</span> (Score: {formatScore(item.score)})
                   </li>
                 ))}
               </ul>
