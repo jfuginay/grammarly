@@ -10,7 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "npm config set registry https://registry.npmjs.org/ && prisma db push --accept-data-loss && next build"
+    "vercel-build": "npm config set registry https://registry.npmjs.org/ && npx prisma generate && next build",
+    "db-push": "prisma db push --accept-data-loss",
+    "postinstall": "node prisma/postinstall.js"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
