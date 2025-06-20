@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { Suggestion } from './engie/types';
 import { useDebouncedCallback } from 'use-debounce';
+import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 
 interface TextFragment {
   text: string;
@@ -58,6 +59,14 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const [highlightedHtml, setHighlightedHtml] = useState<string>('');
   const [textFragments, setTextFragments] = useState<TextFragment[]>([]);
   const [isAnalyzingText, setIsAnalyzingText] = useState(false);
+  
+  // Use our custom hook to handle auto-resizing
+  useAutoResizeTextarea(
+    textareaRef, 
+    value, 
+    isAnalysisBox ? 100 : 150,  // Different min heights for analysis box vs main editor
+    isAnalysisBox ? 300 : undefined  // Set max height only for analysis box
+  );
   const [shouldShowFragments, setShouldShowFragments] = useState(showFragments);
   const lastAnalyzedTextRef = useRef<string>('');
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
