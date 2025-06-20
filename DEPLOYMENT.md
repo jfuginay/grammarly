@@ -123,3 +123,40 @@ curl -X POST \
 2. Verify environment variables are set
 3. Test with curl to isolate client vs server issues
 4. Check middleware execution order
+
+## Database Deployment Configuration
+
+### Required Environment Variables
+
+- `DATABASE_URL`: Your Neon PostgreSQL connection string
+  Example: `postgresql://user:password@ep-curly-poetry-a6jv04ie-pooler.us-west-2.aws.neon.tech:5432/neondb?sslmode=require&pgbouncer=true`
+
+### Important Database Notes
+
+1. **Build Process**: The build process has been modified to skip database migrations during build. This prevents build failures when the database cannot be reached.
+
+2. **Database Connection**: Ensure your Neon database is not in auto-suspend mode during deployment, or connections might fail. You may need to access the Neon dashboard to resume a suspended database.
+
+3. **IP Allowlist**: If using Neon with IP restrictions, make sure to add Vercel's build IP addresses to your allowlist.
+
+4. **Schema Migrations**: Database migrations (`prisma db push`) should be run manually after deployment:
+   ```bash
+   vercel env pull .env.production
+   npx prisma db push --schema=./prisma/schema.prisma
+   ```
+
+### Troubleshooting Database Issues
+
+1. **Connection Errors**: If seeing "Can't reach database server" errors:
+   - Check if the database endpoint is correct
+   - Verify the database is not in suspended state
+   - Ensure network access is allowed from Vercel IPs
+
+2. **Authentication Errors**: 
+   - Verify your database credentials in the environment variables
+   - Make sure the user has appropriate permissions
+
+3. **Schema Sync Issues**:
+   - After deployment, run migrations manually
+   - Use `npx prisma db push --accept-data-loss` for development
+   - Consider using `prisma migrate` for production
