@@ -30,10 +30,6 @@ interface EnhancedEditorProps {
   showFragments?: boolean; // Whether to always show fragments (for analysis display)
   isAnalysisBox?: boolean; // Whether this is the top analysis box
   reflectTextFrom?: string; // Text to reflect in the analysis box
-  posEnabled?: boolean; // External control for POS highlighting
-  suggestionsEnabled?: boolean; // External control for suggestions
-  onPosToggle?: (enabled: boolean) => void; // Callback for POS toggle
-  onSuggestionsToggle?: (enabled: boolean) => void; // Callback for suggestions toggle
 }
 
 export interface EnhancedEditorRef {
@@ -43,8 +39,6 @@ export interface EnhancedEditorRef {
   analyzeText: () => Promise<void>; // Updated to return Promise<void>
   toggleFragmentsVisibility: () => void;
   clearAnalysis: () => void; // Method to clear analysis
-  togglePOS: () => void; // Toggle POS highlighting
-  toggleSuggestions: () => void; // Toggle suggestions
 }
 
 const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
@@ -58,25 +52,13 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   readOnly = false,
   showFragments = false,
   isAnalysisBox = false,
-  reflectTextFrom = '',
-  posEnabled: externalPosEnabled,
-  suggestionsEnabled: externalSuggestionsEnabled,
-  onPosToggle,
-  onSuggestionsToggle
+  reflectTextFrom = ''
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [highlightedHtml, setHighlightedHtml] = useState<string>('');
   const [textFragments, setTextFragments] = useState<TextFragment[]>([]);
   const [isAnalyzingText, setIsAnalyzingText] = useState(false);
-  
-  // Internal toggle states (can be controlled externally)
-  const [internalPosEnabled, setInternalPosEnabled] = useState(false);
-  const [internalSuggestionsEnabled, setInternalSuggestionsEnabled] = useState(true);
-  
-  // Use external control if provided, otherwise use internal state
-  const posEnabled = externalPosEnabled !== undefined ? externalPosEnabled : internalPosEnabled;
-  const suggestionsEnabled = externalSuggestionsEnabled !== undefined ? externalSuggestionsEnabled : internalSuggestionsEnabled;
   
   // Use our custom hook to handle auto-resizing
   useAutoResizeTextarea(
@@ -134,12 +116,17 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
             return response.json();
           })
           .then(data => {
-            if (data.textAnalysis && data.textAnalysis.fragments) {
+            // Ensure we're not working with an aborted request
+            if (signal.aborted) {
+              return resolve(); // Resolve immediately if aborted
+            }
+            
+            if (data && data.textAnalysis && Array.isArray(data.textAnalysis.fragments)) {
               // Process fragments based on the priority system defined in the co-developer brief
               const prioritizedFragments = assignPriorities(data.textAnalysis.fragments);
               
               // Sort by priority for rendering (higher priority on top)
-              prioritizedFragments.sort((a, b) => {
+              prioritizedFragments.sort((a: TextFragment, b: TextFragment) => {
                 // Sort by priority first (lower number = higher priority)
                 const priorityDiff = (a.priority || 3) - (b.priority || 3);
                 if (priorityDiff !== 0) return priorityDiff;
@@ -158,12 +145,17 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
               lastAnalyzedTextRef.current = value;
               resolve(); // Resolve when analysis is complete
             } else {
+              console.log('API response missing fragments, falling back to local analysis');
               // Fallback to local analysis if API doesn't return fragments
               performLocalAnalysis();
               resolve(); // Resolve even with local analysis
             }
           })
           .catch(error => {
+            if (signal.aborted) {
+              return resolve(); // Resolve immediately if aborted
+            }
+            
             if (error.name !== 'AbortError') {
               console.error('Error fetching text analysis:', error);
               performLocalAnalysis();
@@ -180,12 +172,13 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
             }
           });
       } catch (error) {
-        console.error('Error analyzing text:', error);
+        console.error('Error in analyzeText:', error);
         setIsAnalyzingText(false);
-        reject(error); // Reject on critical errors
+        performLocalAnalysis();
+        resolve(); // Always resolve with fallback analysis
       }
     });
-  }, [value, textFragments]);
+  }, [value, textFragments, assignPriorities, performLocalAnalysis]);
   
   // Assign priorities to fragments based on the type and content
   const assignPriorities = useCallback((fragments: TextFragment[]): TextFragment[] => {
@@ -232,11 +225,134 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     });
   }, [value]);
 
-  // Local text analysis as fallback with priority assignments based on co-developer brief
+  // Enhanced phrase detection function with priority assignments
+  const identifyPhrases = useCallback((fragments: TextFragment[]) => {
+    // Common problematic phrases that should get higher priority
+    const wordyPhrases = [
+      'in order to', 'due to the fact that', 'at this point in time', 
+      'for the purpose of', 'in the event that', 'in spite of the fact that',
+      'with regard to', 'in the process of'
+    ];
+    
+    // Try to identify prepositional phrases (preposition + article/adjective? + noun)
+    for (let i = 0; i < fragments.length - 2; i++) {
+      if (
+        fragments[i].partOfSpeech === 'preposition' &&
+        (fragments[i+1].partOfSpeech === 'article' || fragments[i+1].partOfSpeech === 'adjective') &&
+        fragments[i+2].partOfSpeech === 'noun'
+      ) {
+        // Mark this sequence as a phrase
+        const startIndex = fragments[i].startIndex;
+        const endIndex = fragments[i+2].endIndex;
+        const phraseText = value.substring(startIndex, endIndex);
+        
+        // Check if this is a common wordy phrase (Priority 2)
+        let priority: 1 | 2 | 3 = 3;
+        let confidence = 0.6;
+        
+        if (wordyPhrases.some(wordyPhrase => 
+            phraseText.toLowerCase().includes(wordyPhrase))) {
+          priority = 2;
+          confidence = 0.8;
+        }
+        
+        // Create a new phrase fragment
+        fragments.push({
+          text: phraseText,
+          startIndex,
+          endIndex,
+          type: 'phrase',
+          partOfSpeech: 'prepositional phrase',
+          priority,
+          confidence
+        });
+      }
+    }
+    
+    // Try to identify noun phrases (article/adjective + noun)
+    for (let i = 0; i < fragments.length - 1; i++) {
+      if (
+        (fragments[i].partOfSpeech === 'article' || fragments[i].partOfSpeech === 'adjective') &&
+        fragments[i+1].partOfSpeech === 'noun'
+      ) {
+        // Mark this sequence as a phrase
+        const startIndex = fragments[i].startIndex;
+        const endIndex = fragments[i+1].endIndex;
+        
+        // Create a new phrase fragment with priority 3 (minor - word choice)
+        fragments.push({
+          text: value.substring(startIndex, endIndex),
+          startIndex,
+          endIndex,
+          type: 'phrase',
+          partOfSpeech: 'noun phrase',
+          priority: 3,
+          confidence: 0.5
+        });
+      }
+    }
+    
+    // Try to identify verb phrases (verb + adverb?)
+    for (let i = 0; i < fragments.length - 1; i++) {
+      if (
+        fragments[i].partOfSpeech === 'verb' &&
+        fragments[i+1].partOfSpeech === 'adverb'
+      ) {
+        // Mark this sequence as a phrase
+        const startIndex = fragments[i].startIndex;
+        const endIndex = fragments[i+1].endIndex;
+        const phraseText = value.substring(startIndex, endIndex);
+        
+        // Check for passive voice (priority 2)
+        let priority: 1 | 2 | 3 = 3;
+        let confidence = 0.6;
+        
+        if (/\b(is|are|was|were|be|been|being)\s+\w+ed\b/i.test(phraseText)) {
+          priority = 2; // Important (Priority 2): Style improvements
+          confidence = 0.75;
+        }
+        
+        // Create a new phrase fragment
+        fragments.push({
+          text: phraseText,
+          startIndex,
+          endIndex,
+          type: 'phrase',
+          partOfSpeech: 'verb phrase',
+          priority,
+          confidence
+        });
+      }
+    }
+    
+    // Look for passive voice constructions across longer spans
+    const passiveRegex = /\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi;
+    let passiveMatch;
+    while ((passiveMatch = passiveRegex.exec(value)) !== null) {
+      fragments.push({
+        text: passiveMatch[0],
+        startIndex: passiveMatch.index,
+        endIndex: passiveMatch.index + passiveMatch[0].length,
+        type: 'phrase',
+        partOfSpeech: 'passive voice',
+        priority: 2,
+        confidence: 0.8
+      });
+    }
+  }, [value]);
+
+  // Local text analysis as fallback with priority assignments
   const performLocalAnalysis = useCallback(() => {
     try {
       // Simple tokenization of the text into words, punctuation, etc.
       const fragments: TextFragment[] = [];
+      
+      // Skip analysis if text is empty
+      if (!value || value.trim() === '') {
+        setTextFragments([]);
+        setShouldShowFragments(false);
+        return;
+      }
       
       // Regular expression to match words, punctuation, spaces, and newlines
       // Enhanced to better separate words and ensure every word gets a fragment
@@ -366,158 +482,27 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       setShouldShowFragments(true);
     } catch (error) {
       console.error('Error in local text analysis:', error);
+      // Ensure we don't leave the UI in a loading state
+      setIsAnalyzingText(false);
     }
-  }, [value]);
+  }, [value, identifyPhrases]);
   
-  // Enhanced phrase detection function with priority assignments
-  const identifyPhrases = useCallback((fragments: TextFragment[]) => {
-    // Common problematic phrases that should get higher priority
-    const wordyPhrases = [
-      'in order to', 'due to the fact that', 'at this point in time', 
-      'for the purpose of', 'in the event that', 'in spite of the fact that',
-      'with regard to', 'in the process of'
-    ];
-    
-    // Try to identify prepositional phrases (preposition + article/adjective? + noun)
-    for (let i = 0; i < fragments.length - 2; i++) {
-      if (
-        fragments[i].partOfSpeech === 'preposition' &&
-        (fragments[i+1].partOfSpeech === 'article' || fragments[i+1].partOfSpeech === 'adjective') &&
-        fragments[i+2].partOfSpeech === 'noun'
-      ) {
-        // Mark this sequence as a phrase
-        const startIndex = fragments[i].startIndex;
-        const endIndex = fragments[i+2].endIndex;
-        const phraseText = value.substring(startIndex, endIndex);
-        
-        // Check if this is a common wordy phrase (Priority 2)
-        let priority: 1 | 2 | 3 = 3;
-        let confidence = 0.6;
-        
-        if (wordyPhrases.some(wordyPhrase => 
-            phraseText.toLowerCase().includes(wordyPhrase))) {
-          priority = 2;
-          confidence = 0.8;
-        }
-        
-        // Create a new phrase fragment
-        fragments.push({
-          text: phraseText,
-          startIndex,
-          endIndex,
-          type: 'phrase',
-          partOfSpeech: 'prepositional phrase',
-          priority,
-          confidence
-        });
-      }
-    }
-    
-    // Try to identify noun phrases (article/adjective + noun)
-    for (let i = 0; i < fragments.length - 1; i++) {
-      if (
-        (fragments[i].partOfSpeech === 'article' || fragments[i].partOfSpeech === 'adjective') &&
-        fragments[i+1].partOfSpeech === 'noun'
-      ) {
-        // Mark this sequence as a phrase
-        const startIndex = fragments[i].startIndex;
-        const endIndex = fragments[i+1].endIndex;
-        
-        // Create a new phrase fragment with priority 3 (minor - word choice)
-        fragments.push({
-          text: value.substring(startIndex, endIndex),
-          startIndex,
-          endIndex,
-          type: 'phrase',
-          partOfSpeech: 'noun phrase',
-          priority: 3,
-          confidence: 0.5
-        });
-      }
-    }
-    
-    // Try to identify verb phrases (verb + adverb?)
-    for (let i = 0; i < fragments.length - 1; i++) {
-      if (
-        fragments[i].partOfSpeech === 'verb' &&
-        fragments[i+1].partOfSpeech === 'adverb'
-      ) {
-        // Mark this sequence as a phrase
-        const startIndex = fragments[i].startIndex;
-        const endIndex = fragments[i+1].endIndex;
-        const phraseText = value.substring(startIndex, endIndex);
-        
-        // Check for passive voice (priority 2)
-        let priority: 1 | 2 | 3 = 3;
-        let confidence = 0.6;
-        
-        if (/\b(is|are|was|were|be|been|being)\s+\w+ed\b/i.test(phraseText)) {
-          priority = 2; // Important (Priority 2): Style improvements
-          confidence = 0.75;
-        }
-        
-        // Create a new phrase fragment
-        fragments.push({
-          text: phraseText,
-          startIndex,
-          endIndex,
-          type: 'phrase',
-          partOfSpeech: 'verb phrase',
-          priority,
-          confidence
-        });
-      }
-    }
-    
-    // Look for passive voice constructions across longer spans
-    const passiveRegex = /\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi;
-    let passiveMatch;
-    while ((passiveMatch = passiveRegex.exec(value)) !== null) {
-      fragments.push({
-        text: passiveMatch[0],
-        startIndex: passiveMatch.index,
-        endIndex: passiveMatch.index + passiveMatch[0].length,
-        type: 'phrase',
-        partOfSpeech: 'passive voice',
-        priority: 2,
-        confidence: 0.8
-      });
-    }
-  }, [value]);
+  // Toggle fragments visibility function has been moved near its other usages
   
-  // Debounced analyze function to trigger after the user stops typing (3 seconds as per co-developer brief)
-  const debouncedAnalyzeText = useDebouncedCallback(analyzeText, 3000, { // Fixed: Changed from 2000 to 3000
+  // Debounced analyze function to trigger after the user stops typing (2 seconds as per co-developer brief)
+  const debouncedAnalyzeText = useDebouncedCallback(analyzeText, 2000, {
     // Configure maxWait to ensure the function is called eventually
     // even if the user keeps typing continuously
-    maxWait: 6000, // Increased proportionally
+    maxWait: 5000,
     // Leading edge execution - ensures immediate response on first call
     leading: false,
     // Trailing edge execution - ensures execution after debounce period
     trailing: true
   });
   
-  // Toggle functions
-  const togglePOS = useCallback(() => {
-    const newState = !posEnabled;
-    if (onPosToggle) {
-      onPosToggle(newState);
-    } else {
-      setInternalPosEnabled(newState);
-    }
-  }, [posEnabled, onPosToggle]);
-  
-  const toggleSuggestions = useCallback(() => {
-    const newState = !suggestionsEnabled;
-    if (onSuggestionsToggle) {
-      onSuggestionsToggle(newState);
-    } else {
-      setInternalSuggestionsEnabled(newState);
-    }
-  }, [suggestionsEnabled, onSuggestionsToggle]);
-  
   // Toggle fragments visibility
   const toggleFragmentsVisibility = useCallback(() => {
-    setShouldShowFragments(prev => !prev);
+    setShouldShowFragments((prev: boolean) => !prev);
   }, []);
   
   // Method to clear analysis state
@@ -590,25 +575,19 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     getElement: () => textareaRef.current,
     analyzeText, // Already returns Promise<void>
     toggleFragmentsVisibility,
-    clearAnalysis: () => {
-      setTextFragments([]);
-      setShouldShowFragments(false);
-      lastAnalyzedTextRef.current = '';
-    },
-    togglePOS,
-    toggleSuggestions
+    clearAnalysis // Use the consistent implementation defined earlier
   }));
   
   // Trigger analysis when user stops typing or when showFragments prop changes
   useEffect(() => {
-    if (autoAnalyze && suggestionsEnabled) { // Only auto-analyze if suggestions are enabled
+    if (autoAnalyze) {
       debouncedAnalyzeText();
     }
     
     return () => {
       debouncedAnalyzeText.cancel();
     };
-  }, [value, autoAnalyze, suggestionsEnabled, debouncedAnalyzeText]);
+  }, [value, autoAnalyze, debouncedAnalyzeText]);
   
   // Sync with showFragments prop and ensure proper styling based on readOnly mode
   useEffect(() => {
@@ -648,7 +627,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     
     // Add text fragment highlights if analysis is active
     if (shouldShowFragments && textFragments.length > 0) {
-      textFragments.forEach((fragment) => {
+      textFragments.forEach((fragment: TextFragment) => {
         // Skip whitespace for highlighting
         if (fragment.type === 'space') return;
         
@@ -691,9 +670,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
           }
         }
         
-        // Add POS highlighting only if enabled
-        if (posEnabled && fragment.partOfSpeech) {
-          fragmentClass += ` pos-${fragment.partOfSpeech.toLowerCase().replace(/\s+/g, '-')}`;
+        if (fragment.partOfSpeech) {
+          fragmentClass += ` pos-${fragment.partOfSpeech.toLowerCase()}`;
           attributes['data-pos'] = fragment.partOfSpeech;
         }
         
@@ -714,31 +692,354 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       });
     }
     
-    // Add suggestion highlights only if suggestions are enabled
-    if (suggestionsEnabled) {
-      suggestions.forEach(suggestion => {
-        if (typeof suggestion.startIndex === 'number' && typeof suggestion.endIndex === 'number') {
-          const suggestionText = processedText.substring(suggestion.startIndex, suggestion.endIndex);
+    // Add suggestion highlights
+    suggestions.forEach((suggestion: Suggestion) => {
+      if (typeof suggestion.startIndex === 'number' && typeof suggestion.endIndex === 'number') {
+        const suggestionText = processedText.substring(suggestion.startIndex, suggestion.endIndex);
+        highlightMarkers.push({
+          index: suggestion.startIndex,
+          isStart: true,
+          class: `suggestion-${suggestion.type?.toLowerCase() || 'general'} suggestion-${suggestion.severity?.toLowerCase() || 'medium'}`,
+          suggestion,
+          text: suggestionText // Include the actual text
+        });
+        highlightMarkers.push({
+          index: suggestion.endIndex,
+          isStart: false,
+          class: `suggestion-${suggestion.type?.toLowerCase() || 'general'} suggestion-${suggestion.severity?.toLowerCase() || 'medium'}`,
+          suggestion
+        });
+      } else {
+        // If no indices, try to find the suggestion text in the content
+        const index = processedText.indexOf(suggestion.original);
+        if (index >= 0) {
           highlightMarkers.push({
-            index: suggestion.startIndex,
+            index,
             isStart: true,
             class: `suggestion-${suggestion.type?.toLowerCase() || 'general'} suggestion-${suggestion.severity?.toLowerCase() || 'medium'}`,
-            suggestion,
-            text: suggestionText // Include the actual text
+            suggestion
           });
           highlightMarkers.push({
-            index: suggestion.endIndex,
+            index: index + suggestion.original.length,
             isStart: false,
             class: `suggestion-${suggestion.type?.toLowerCase() || 'general'} suggestion-${suggestion.severity?.toLowerCase() || 'medium'}`,
             suggestion
           });
-        } else {
-          // If no indices, try to find the suggestion text in the content
-          const index = processedText.indexOf(suggestion.original);
-          if (index >= 0) {
-            highlightMarkers.push({
-              index,
-              isStart: true,
-              class: `suggestion-${suggestion.type?.toLowerCase() || 'general'} suggestion-${suggestion.severity?.toLowerCase() || 'medium'}`,
-              suggestion
+        }
+      }
+    });
+    
+    // Add tone highlights
+    if (toneHighlights && toneHighlights.length > 0) {
+      toneHighlights.forEach((tone: {
+        startIndex: number;
+        endIndex: number;
+        tone: string;
+        severity: string;
+      }) => {
+        highlightMarkers.push({
+          index: tone.startIndex,
+          isStart: true,
+          class: `tone-highlight tone-${tone.tone?.toLowerCase() || 'neutral'} tone-${tone.severity?.toLowerCase() || 'medium'}`
+        });
+        highlightMarkers.push({
+          index: tone.endIndex,
+          isStart: false,
+          class: `tone-highlight tone-${tone.tone?.toLowerCase() || 'neutral'} tone-${tone.severity?.toLowerCase() || 'medium'}`
+        });
+      });
+    }
+    
+    // Sort markers by index
+    highlightMarkers.sort((a, b) => {
+      // Sort by index, with end tags coming before start tags at the same position
+      if (a.index === b.index) {
+        return a.isStart ? 1 : -1;
+      }
+      return a.index - b.index;
+    });
+    
+    // Build HTML with highlight spans
+    let html = '';
+    let lastIndex = 0;
+    let openTags: string[] = [];
+    const fragmentTexts = new Map<number, {text: string, endIndex: number}>();
+    
+    // First pass: collect all fragment text
+    highlightMarkers
+      .filter(marker => marker.isStart && (marker.fragment || marker.suggestion))
+      .forEach(marker => {
+        if (marker.index >= 0 && marker.index <= processedText.length) {
+          const endIndex = marker.fragment?.endIndex || 
+                          (marker.suggestion?.endIndex || 
+                           marker.index + (marker.suggestion?.original.length || 0));
+          
+          if (endIndex > marker.index) {
+            const text = processedText.substring(marker.index, endIndex);
+            fragmentTexts.set(marker.index, {text, endIndex});
+          }
+        }
+      });
+    
+    // Second pass: build the HTML
+    highlightMarkers.forEach(marker => {
+      if (marker.index >= 0 && marker.index <= processedText.length) {
+        // Add text since last marker
+        if (!readOnly) {
+          // For input box, we don't need the actual text in highlights
+          html += processedText.substring(lastIndex, marker.index).replace(/\n/g, '<br>');
+        } else if (lastIndex < marker.index && !fragmentTexts.has(lastIndex)) {
+          // For analysis view, add text that's not part of any fragment
+          const textToAdd = processedText.substring(lastIndex, marker.index);
+          if (textToAdd.trim()) {
+            // If this is plain text not in a fragment, wrap it in a default fragment
+            html += `<span class="fragment-word default-fragment">${textToAdd.replace(/\n/g, '<br>')}</span>`;
+          } else {
+            html += textToAdd.replace(/\n/g, '<br>');
+          }
+        }
+        lastIndex = marker.index;
+        
+        if (marker.isStart) {
+          let attributesString = '';
+          
+          // Add suggestion-specific attributes
+          if (marker.suggestion) {
+            attributesString = ` data-id="${marker.suggestion.id}" data-suggestion="${encodeURIComponent(marker.suggestion.suggestion)}"`;
+          }
+          
+          // Add fragment-specific attributes
+          if (marker.attributes) {
+            Object.entries(marker.attributes).forEach(([key, value]) => {
+              attributesString += ` ${key}="${encodeURIComponent(value)}"`;
             });
+          }
+          
+          // Start the span tag
+          html += `<span class="${marker.class}"${attributesString}>`;
+          
+          // For analysis view, always add the text directly inside the span
+          if (readOnly && fragmentTexts.has(marker.index)) {
+            const fragmentInfo = fragmentTexts.get(marker.index);
+            if (fragmentInfo) {
+              // Ensure the text is safely rendered inside the span
+              html += fragmentInfo.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              lastIndex = fragmentInfo.endIndex; // Skip to end of this fragment
+            }
+          }
+          
+          openTags.push('</span>');
+        } else {
+          if (openTags.length > 0) {
+            html += openTags.pop();
+          }
+        }
+      }
+    });
+    
+    // Add any remaining text
+    html += processedText.substring(lastIndex).replace(/\n/g, '<br>');
+    
+    // Close any open tags
+    while (openTags.length > 0) {
+      html += openTags.pop();
+    }
+    
+    // If empty, add placeholder
+    if (!html.trim()) {
+      html = `<span class="text-muted-foreground">${placeholder}</span>`;
+    }
+    
+    setHighlightedHtml(html);
+  }, [value, suggestions, toneHighlights, textFragments, shouldShowFragments, placeholder]);
+  
+  // Sync scroll position between textarea and highlight div
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    const highlighter = editorRef.current;
+    
+    if (!textarea || !highlighter) return;
+    
+    const syncScroll = () => {
+      highlighter.scrollTop = textarea.scrollTop;
+      highlighter.scrollLeft = textarea.scrollLeft;
+    };
+    
+    textarea.addEventListener('scroll', syncScroll);
+    window.addEventListener('resize', syncScroll);
+    
+    return () => {
+      textarea.removeEventListener('scroll', syncScroll);
+      window.removeEventListener('resize', syncScroll);
+    };
+  }, []);
+  
+  // Ensure cursor remains visible and text boxes handle input properly
+  useEffect(() => {
+    // Find the text boxes and adjust their styles to ensure text remains visible
+    const adjustTextBoxVisibility = () => {
+      const editorHighlights = editorRef.current?.querySelector('.editor-highlights') as HTMLElement | null;
+      const editorTextarea = textareaRef.current;
+      
+      if (!editorHighlights || !editorTextarea) return;
+      
+      // Synchronize exact position and dimensions
+      const textareaRect = editorTextarea.getBoundingClientRect();
+      editorHighlights.style.width = `${textareaRect.width}px`;
+      editorHighlights.style.height = `${textareaRect.height}px`;
+      
+      // Ensure textarea has proper focus handling
+      editorTextarea.addEventListener('focus', () => {
+        if (editorRef.current) {
+          editorRef.current.classList.add('textarea-focused');
+          // Make textarea fully visible when focused
+          editorTextarea.style.opacity = '0.9';
+        }
+      });
+      
+      editorTextarea.addEventListener('blur', () => {
+        if (editorRef.current) {
+          editorRef.current.classList.remove('textarea-focused');
+          // Make textarea semi-transparent when not focused so highlight text shows through
+          editorTextarea.style.opacity = '0.2';
+        }
+      });
+      
+      // Improve text visibility in highlight boxes
+      const fragmentSpans = editorHighlights.querySelectorAll('span[class*="fragment-"]');
+      fragmentSpans.forEach(span => {
+        // Ensure text in the highlight matches text in the textarea
+        const spanElement = span as HTMLElement;
+        const startIndex = Number(spanElement.getAttribute('data-start'));
+        const endIndex = Number(spanElement.getAttribute('data-end'));
+        
+        if (!isNaN(startIndex) && !isNaN(endIndex) && startIndex >= 0 && endIndex <= value.length) {
+          // Get the text that should be inside this span
+          const spanText = value.substring(startIndex, endIndex);
+          // This ensures the text actually appears inside the highlight box
+          spanElement.textContent = spanText;
+          // This ensures that the text position in the highlight div perfectly matches the textarea
+          spanElement.style.lineHeight = getComputedStyle(editorTextarea).lineHeight;
+          spanElement.style.fontFamily = getComputedStyle(editorTextarea).fontFamily;
+          spanElement.style.fontSize = getComputedStyle(editorTextarea).fontSize;
+          spanElement.style.letterSpacing = getComputedStyle(editorTextarea).letterSpacing;
+        }
+      });
+    };
+    
+    // Call once and add a resize listener
+    adjustTextBoxVisibility();
+    window.addEventListener('resize', adjustTextBoxVisibility);
+    
+    return () => {
+      window.removeEventListener('resize', adjustTextBoxVisibility);
+    };
+  }, [value, shouldShowFragments]);
+  
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value);
+    // Reset the fragment display when user starts typing again
+    if (shouldShowFragments) {
+      setShouldShowFragments(false);
+    }
+  };
+  
+  const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''}`;
+  
+  // Enhanced rendering with proper text placement
+  return (
+    <div className={editorClass}>
+      <div
+        ref={editorRef}
+        className="editor-highlights"
+        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+      />
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={handleTextareaChange}
+        className={`editor-textarea ${readOnly ? 'read-only' : 'input-mode'}`}
+        placeholder={placeholder}
+        style={{ 
+          opacity: readOnly ? '0' : '1', // Hide completely in read-only mode
+          caretColor: 'currentColor' // Ensure cursor is visible
+        }}
+        readOnly={readOnly}
+        spellCheck={false} // We're handling our own error highlighting
+        onFocus={() => {
+          // Keep input box clean with no ghosting
+          if (textareaRef.current && !readOnly) {
+            textareaRef.current.style.opacity = '1';
+            
+            // Ensure the highlight div doesn't interfere with editing
+            if (editorRef.current) {
+              const highlights = editorRef.current.querySelector('.editor-highlights') as HTMLElement;
+              if (highlights) {
+                highlights.style.pointerEvents = 'none';
+                
+                // For input mode, make highlights fully transparent
+                if (!readOnly && !showFragments) {
+                  highlights.style.opacity = '0';
+                }
+              }
+            }
+          }
+        }}
+        onBlur={() => {
+          // Keep input box clean with no ghosting
+          if (textareaRef.current && !readOnly) {
+            textareaRef.current.style.opacity = '1';
+          }
+        }}
+        onKeyUp={() => {
+          // Ensure text boxes and cursor stay aligned on text input
+          const textarea = textareaRef.current;
+          const highlights = editorRef.current?.querySelector('.editor-highlights') as HTMLElement;
+          if (textarea && highlights) {
+            // Synchronize scroll position to ensure alignment
+            highlights.scrollTop = textarea.scrollTop;
+            highlights.scrollLeft = textarea.scrollLeft;
+            
+            // Force update of fragments after typing
+            setTimeout(() => {
+              const fragmentSpans = highlights.querySelectorAll('span[class*="fragment-"]');
+              fragmentSpans.forEach(span => {
+                const spanElement = span as HTMLElement;
+                const startIndex = Number(spanElement.getAttribute('data-start'));
+                const endIndex = Number(spanElement.getAttribute('data-end'));
+                
+                if (!isNaN(startIndex) && !isNaN(endIndex) && startIndex >= 0 && endIndex <= value.length) {
+                  // Update the text content of each span
+                  const spanText = value.substring(startIndex, endIndex);
+                  spanElement.textContent = spanText;
+                }
+              });
+            }, 10);
+          }
+        }}
+      />
+      {isAnalyzingText && (
+        <div className="editor-loading-indicator">
+          <span className="loading-spinner"></span>
+          <span className="loading-text">Analyzing text...</span>
+        </div>
+      )}
+      {shouldShowFragments && (
+        <div className="fragment-analysis-indicator">
+          Text analysis active
+        </div>
+      )}
+    </div>
+  );
+});
+
+EnhancedEditor.displayName = 'EnhancedEditor';
+
+export default EnhancedEditor;
+
+// Extend Window interface to include our custom properties
+declare global {
+  interface Window {
+    activeTextAnalysisRequest: AbortController | null;
+  }
+}
