@@ -57,9 +57,20 @@ export interface EngieState {
   botAnimation: 'idle' | 'walking';
   botSpeed: 'normal' | 'fast';
   botDirection: 'left' | 'right';
+  botEmotion: BotEmotion; // Added emotion state
+  emotionReason: string; // Added reason for current emotion
   isTouchDevice: boolean;
 }
 
 export type BotAnimationState = 'idle' | 'walking';
 export type BotSpeed = 'normal' | 'fast';
-export type BotDirection = 'left' | 'right'; 
+export type BotDirection = 'left' | 'right';
+export type BotEmotion = 'happy' | 'excited' | 'concerned' | 'thoughtful' | 'neutral';
+
+// Added interface for emotion triggers based on text analysis
+export interface EmotionTrigger {
+  type: 'quality' | 'progress' | 'interaction';
+  score?: number; // For quality-based emotions
+  threshold?: number; // Threshold to trigger emotion
+  emotion: BotEmotion;
+}

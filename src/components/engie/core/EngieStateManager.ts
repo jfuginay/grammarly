@@ -33,6 +33,8 @@ export class EngieStateManager {
       botAnimation: 'idle',
       botSpeed: 'normal',
       botDirection: 'right',
+      botEmotion: 'neutral',
+      emotionReason: '',
       isTouchDevice: false,
     };
   }
@@ -98,6 +100,11 @@ export class EngieStateManager {
   setToneAnalysisResult(result: ToneAnalysis | null): void {
     this.state.toneAnalysisResult = result;
     this.notify();
+    
+    // Set emotion based on tone analysis
+    if (result) {
+      this.setEmotionBasedOnTone(result);
+    }
   }
 
   setOverallPageToneAnalysis(result: ToneAnalysis | null): void {
@@ -232,6 +239,103 @@ export class EngieStateManager {
     this.notify();
   }
 
+  // New method to set the emotion of Engie
+  setBotEmotion(emotion: 'happy' | 'excited' | 'concerned' | 'thoughtful' | 'neutral', reason: string): void {
+    this.state.botEmotion = emotion;
+    this.state.emotionReason = reason;
+    this.notify();
+  }
+
+  // Method to determine emotion based on tone analysis
+  setEmotionBasedOnTone(toneAnalysis: ToneAnalysis): void {
+    const { overallTone, overallScore } = toneAnalysis;
+    
+    if (!overallTone) return;
+    
+    // Match tone to appropriate emotion
+    if (overallTone.toLowerCase().includes('confident') || 
+        overallTone.toLowerCase().includes('positive') ||
+        overallTone.toLowerCase().includes('optimistic')) {
+      this.setBotEmotion('happy', `Responding to ${overallTone.toLowerCase()} tone`);
+    }
+    else if (overallTone.toLowerCase().includes('enthusiastic') || 
+             overallTone.toLowerCase().includes('passionate') ||
+             overallTone.toLowerCase().includes('energetic')) {
+      this.setBotEmotion('excited', `Responding to ${overallTone.toLowerCase()} tone`);
+    }
+    else if (overallTone.toLowerCase().includes('negative') || 
+             overallTone.toLowerCase().includes('critical') ||
+             overallTone.toLowerCase().includes('uncertain')) {
+      this.setBotEmotion('concerned', `Responding to ${overallTone.toLowerCase()} tone`);
+    }
+    else if (overallTone.toLowerCase().includes('analytical') || 
+             overallTone.toLowerCase().includes('formal') ||
+             overallTone.toLowerCase().includes('technical')) {
+      this.setBotEmotion('thoughtful', `Responding to ${overallTone.toLowerCase()} tone`);
+    }
+    else {
+      this.setBotEmotion('neutral', '');
+    }
+  }
+  
+  // Method to set emotion based on quality of writing
+  setEmotionBasedOnQuality(errorCount: number, textLength: number): void {
+    // Calculate error density (errors per 100 words, assuming average word is 5 chars)
+    const wordCount = textLength / 5;
+    const errorDensity = errorCount / (wordCount / 100);
+    
+    if (wordCount < 20) {
+      // Not enough text to evaluate
+      this.setBotEmotion('neutral', '');
+      return;
+    }
+    
+    if (errorDensity < 0.5) {
+      this.setBotEmotion('happy', 'Great writing with very few errors!');
+    } else if (errorDensity < 2) {
+      this.setBotEmotion('thoughtful', 'Decent writing with some improvements possible');
+    } else if (errorDensity < 5) {
+      this.setBotEmotion('concerned', 'Several errors detected');
+    } else {
+      this.setBotEmotion('concerned', 'Many errors detected');
+    }
+  }
+  
+  // Method to set emotion based on user progress
+  setEmotionBasedOnProgress(completedSuggestions: number, totalSuggestions: number): void {
+    if (totalSuggestions === 0) return;
+    
+    const progressRatio = completedSuggestions / totalSuggestions;
+    
+    if (progressRatio >= 0.9) {
+      this.setBotEmotion('excited', 'Almost all suggestions applied!');
+    } else if (progressRatio >= 0.5) {
+      this.setBotEmotion('happy', 'Good progress on suggestions');
+    } else if (progressRatio >= 0.2) {
+      this.setBotEmotion('thoughtful', 'Making progress on suggestions');
+    } else if (completedSuggestions > 0) {
+      this.setBotEmotion('thoughtful', 'Started applying suggestions');
+    }
+  }
+  
+  // Method to set emotion based on interaction context
+  setEmotionBasedOnInteraction(context: 'ideation' | 'suggestion-applied' | 'chat-opened' | 'encouragement'): void {
+    switch (context) {
+      case 'ideation':
+        this.setBotEmotion('thoughtful', 'Thinking of ideas');
+        break;
+      case 'suggestion-applied':
+        this.setBotEmotion('happy', 'Suggestion applied successfully');
+        break;
+      case 'chat-opened':
+        this.setBotEmotion('excited', 'Ready to help');
+        break;
+      case 'encouragement':
+        this.setBotEmotion('happy', 'Offering encouragement');
+        break;
+    }
+  }
+
   // Computed properties
   getActiveSuggestions(externalSuggestions: Suggestion[]): Suggestion[] {
     return this.state.internalSuggestions.length > 0 ? this.state.internalSuggestions : externalSuggestions;
@@ -265,4 +369,4 @@ export class EngieStateManager {
     this.state.isIdeating = false;
     this.notify();
   }
-} 
+}

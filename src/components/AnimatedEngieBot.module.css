@@ -219,4 +219,126 @@
     transform: translateY(-80px) scale(1.5);
     opacity: 0;
   }
-} 
+}
+
+/* Emotion Styles */
+
+/* Happy Emotion */
+.emotion-happy .engie-body {
+  background: linear-gradient(145deg, #9333EA, #6366F1);
+}
+
+.happy-eye {
+  height: 8px !important;
+  border-radius: 50% 50% 0 0 !important;
+  transform: translateY(2px);
+}
+
+.happy-mouth {
+  position: absolute;
+  width: 18px;
+  height: 8px;
+  background: transparent;
+  border-radius: 0 0 100px 100px;
+  border-bottom: 3px solid white;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+}
+
+/* Excited Emotion */
+.emotion-excited .engie-body {
+  background: linear-gradient(145deg, #F59E0B, #EC4899);
+  animation: excited-wiggle 0.5s infinite ease-in-out !important;
+}
+
+.excited-eye {
+  background: white;
+  height: 10px !important;
+  width: 10px !important;
+  border-radius: 50% !important;
+  animation: excited-blink 0.5s infinite !important;
+}
+
+.excited-mouth {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  border-radius: 50%;
+  border: 3px solid white;
+  left: 50%;
+  bottom: 5px;
+  transform: translateX(-50%);
+}
+
+@keyframes excited-wiggle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes excited-blink {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Concerned Emotion */
+.emotion-concerned .engie-body {
+  background: linear-gradient(145deg, #6366F1, #3B82F6);
+  animation: concerned-shake 1s infinite ease-in-out !important;
+}
+
+.concerned-eye {
+  height: 10px !important;
+  width: 6px !important;
+  border-radius: 50% !important;
+  transform: translateY(2px) rotate(10deg);
+}
+
+.concerned-eye.right {
+  transform: translateY(2px) rotate(-10deg);
+}
+
+.concerned-mouth {
+  position: absolute;
+  width: 14px;
+  height: 4px;
+  background: transparent;
+  border-radius: 100px 100px 0 0;
+  border-top: 3px solid white;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+}
+
+@keyframes concerned-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Thoughtful Emotion */
+.emotion-thoughtful .engie-body {
+  background: linear-gradient(145deg, #8B5CF6, #6366F1);
+}
+
+.thoughtful-eye {
+  height: 7px !important;
+  border-radius: 50% !important;
+  transform: scaleY(0.8);
+}
+
+.thoughtful-eye.right {
+  transform: scaleY(0.8);
+}
+
+.thoughtful-mouth {
+  position: absolute;
+  width: 8px;
+  height: 3px;
+  background: white;
+  border-radius: 5px;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+}

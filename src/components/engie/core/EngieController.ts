@@ -75,6 +75,7 @@ export class EngieController {
 
     this.stateManager.setIdeating(true);
     this.stateManager.setStatusMessage("Engie is thinking of ideas...");
+    this.stateManager.setEmotionBasedOnInteraction('ideation');
 
     try {
       const pageText = this.textExtractor.extractFullPageText();
@@ -137,6 +138,7 @@ export class EngieController {
     this.prevScannedTextRef = text;
     this.stateManager.setScanning(true);
     this.stateManager.setStatusMessage("Scanning for suggestions...");
+    this.stateManager.setBotEmotion('thoughtful', 'Analyzing your writing');
 
     try {
       console.log('Engie: Making API calls for suggestions and tone analysis');
@@ -150,6 +152,9 @@ export class EngieController {
       this.stateManager.setInternalSuggestions(suggestions);
       this.stateManager.setToneAnalysisResult(toneAnalysis);
       this.stateManager.setCurrentSuggestionIndex(0);
+      
+      // Set emotion based on quality of writing
+      this.stateManager.setEmotionBasedOnQuality(suggestions.length, text.length);
 
       if (suggestions.length > 0) {
         console.log('Engie: Found suggestions, opening chat and moving to first suggestion');
@@ -157,11 +162,21 @@ export class EngieController {
         this.stateManager.moveEngieToSuggestion(suggestions[0]);
         this.stateManager.setChatOpen(true);
         this.stateManager.setActiveTab('suggestions');
+        
+        // If many errors, show concerned emotion
+        if (suggestions.length > 5) {
+          this.stateManager.setBotEmotion('concerned', 'Found several issues to fix');
+        } else if (suggestions.length > 0) {
+          this.stateManager.setBotEmotion('thoughtful', 'Found a few suggestions');
+        }
       } else {
         console.log('Engie: No suggestions found');
+        // Show happy emotion if no errors found
+        this.stateManager.setBotEmotion('happy', 'Great writing! No issues found.');
       }
     } catch (error) {
       console.error('Engie: Error during scanning:', error);
+      this.stateManager.setBotEmotion('concerned', 'Had trouble analyzing your writing');
     } finally {
       this.stateManager.setScanning(false);
       this.stateManager.setStatusMessage("");
@@ -224,6 +239,8 @@ export class EngieController {
     if (!state.isChatOpen) {
       this.debouncedScan();
       this.analyzePageTone();
+      // Set excited emotion when chat is opened
+      this.stateManager.setEmotionBasedOnInteraction('chat-opened');
     }
     this.stateManager.setChatOpen(!state.isChatOpen);
   }
@@ -235,6 +252,8 @@ export class EngieController {
     if (activeSuggestions.length === 0) {
       this.stateManager.resetEngiePosition();
     }
+    // Return to neutral emotion when closed
+    this.stateManager.setBotEmotion('neutral', '');
   }
 
   handleApply(): void {
@@ -243,6 +262,17 @@ export class EngieController {
     
     if (currentSuggestion) {
       this.props.onApply(currentSuggestion);
+      
+      // Show happy emotion when suggestion is applied
+      this.stateManager.setEmotionBasedOnInteraction('suggestion-applied');
+      
+      // Check progress and update emotion based on it
+      const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
+      const totalSuggestions = activeSuggestions.length + 1; // +1 for the one just applied
+      const completedSuggestions = 1; // The one just applied
+      
+      this.stateManager.setEmotionBasedOnProgress(completedSuggestions, totalSuggestions);
+      
       this.handleNext();
     }
   }

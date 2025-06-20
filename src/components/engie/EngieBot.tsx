@@ -150,7 +150,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
               <AnimatedEngieBot 
                 animationState={state.botAnimation} 
                 speed={state.botSpeed} 
-                direction={state.botDirection} 
+                direction={state.botDirection}
+                emotion={state.botEmotion}
               />
               
               {/* Status indicators overlaid on the bot */}
@@ -163,6 +164,17 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
                     <Badge variant="destructive" className="absolute top-0 right-0">
                       {activeSuggestions.length}
                     </Badge>
+                  </motion.div>
+                )}
+                
+                {/* Emotion reason tooltip (only show when emotion is not neutral) */}
+                {state.emotionReason && state.botEmotion !== 'neutral' && (
+                  <motion.div 
+                    initial={{opacity: 0, y: 10}}
+                    animate={{opacity: 1, y: 0}}
+                    className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs shadow-md z-20"
+                  >
+                    {state.emotionReason}
                   </motion.div>
                 )}
               </div>
