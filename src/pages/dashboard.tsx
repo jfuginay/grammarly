@@ -77,78 +77,36 @@ interface User {
 }
 
 export const applySuggestionLogic = (
-  currentText: string,
   suggestionToApply: Suggestion,
-  setText: (newText: string) => void,
   setSuggestions: (updater: (currentSuggestions: Suggestion[]) => Suggestion[]) => void,
-  activeDocument: Document | null,
-  debouncedUpdateDocument: (docId: string, data: { content?: string }) => void,
   editorRef?: React.RefObject<EnhancedEditorRef>
+  // Parameters currentText, setText, activeDocument, and debouncedUpdateDocument removed
+  // as their functionality is now handled via EnhancedEditor's onChange -> handleTextChange
 ) => {
-  console.log("Original text:", currentText);
-  console.log("Suggestion to apply (original):", suggestionToApply.original);
-  console.log("Suggestion to apply (suggestion):", suggestionToApply.suggestion);
-  console.log("Suggestion indices:", suggestionToApply.startIndex, suggestionToApply.endIndex);
+  if (process.env.NODE_ENV === 'development') {
+    console.log("Applying suggestion (ID):", suggestionToApply.id);
+    console.log("Suggestion to apply (original):", suggestionToApply.original);
+    console.log("Suggestion to apply (suggestion):", suggestionToApply.suggestion);
+  }
 
-  // Use the enhanced editor's applySuggestion method if available
   if (editorRef?.current) {
-    console.log("Using EnhancedEditor to apply suggestion");
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Using EnhancedEditor to apply suggestion via editorRef");
+    }
     editorRef.current.applySuggestion(suggestionToApply);
     
-    // Remove the suggestion from the list
+    // Remove the suggestion from the list after attempting to apply it via editor
+    // The editor's onChange will handle setText and debouncedUpdateDocument.
     setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionToApply.id));
-    
-    // Update the document if needed
-    if (activeDocument) {
-      // The editor will call onChange which will update the text and trigger debouncedUpdateDocument
-    }
-    return;
-  }
-
-  // Fallback logic for applying suggestions manually (if needed)
-  let newText = currentText;
-  
-  // If we have start and end indices, use them for precise replacement
-  if (typeof suggestionToApply.startIndex === 'number' && typeof suggestionToApply.endIndex === 'number') {
-    newText =
-      currentText.substring(0, suggestionToApply.startIndex) +
-      suggestionToApply.suggestion +
-      currentText.substring(suggestionToApply.endIndex);
-    console.log("Applied suggestion using start/end indices.");
   } else {
-    // Try to find the original text in the content
-    const index = currentText.indexOf(suggestionToApply.original);
-    if (index >= 0) {
-      // We found the exact text to replace
-      newText =
-        currentText.substring(0, index) +
-        suggestionToApply.suggestion +
-        currentText.substring(index + suggestionToApply.original.length);
-      
-      // Update the suggestion with the correct indices for future use
-      suggestionToApply.startIndex = index;
-      suggestionToApply.endIndex = index + suggestionToApply.original.length;
-      
-      console.log("Applied suggestion by finding original text at index:", index);
-    } else {
-      // Couldn't find the exact text, use simple replace as last resort
-      if (suggestionToApply.original === "") {
-        console.error("Error: suggestionToApply.original is empty and could not be found in text. Skipping replacement.");
-        return;
-      }
-      newText = currentText.replace(suggestionToApply.original, suggestionToApply.suggestion);
-      console.log("Applied suggestion using string replace (first occurrence).");
-    }
+    // If editorRef is not available, log an error.
+    // The primary mechanism for text update is through the editor.
+    console.error("Error: editorRef is not available in applySuggestionLogic. Cannot apply suggestion.");
+    // Optionally, you could still filter the suggestion if desired,
+    // but the text itself won't be updated.
+    // setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionToApply.id));
   }
-
-  console.log("New text after replacement:", newText);
-
-  setText(newText);
-  setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionToApply.id));
-
-  if (activeDocument) {
-    debouncedUpdateDocument(activeDocument.id, { content: newText });
-  }
+  // No direct calls to setText or debouncedUpdateDocument here.
 };
 
 const DashboardPage = () => {
@@ -169,6 +127,7 @@ const DashboardPage = () => {
   const [showNewDocModal, setShowNewDocModal] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [creatingDoc, setCreatingDoc] = useState(false);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true); // Added loading state
   const [showDocumentHistory, setShowDocumentHistory] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(true); // Default to true
@@ -199,72 +158,82 @@ const DashboardPage = () => {
   // Fetch documents
   useEffect(() => {
     const fetchDocuments = async () => {
+      setIsLoadingDocuments(true);
       try {
-        // Mock data
-        const mockDocuments = [
-          {
-            id: '1',
-            title: 'Welcome Guide',
-            content: 'Welcome to Grammarly! This is a sample document to help you get started. Just start typing to see how our advanced writing assistant works.',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            title: 'Meeting Notes',
-            content: 'Team meeting agenda:\n- Project updates\n- Timeline review\n- Action items for next week',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          }
-        ];
-        
-        setDocuments(mockDocuments);
-      } catch (error) {
+        const response = await fetch('/api/documents');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Failed to fetch documents and parse error.' }));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+        const fetchedDocuments = await response.json();
+        setDocuments(fetchedDocuments);
+      } catch (error: any) {
         console.error('Error fetching documents:', error);
+        toast({
+          title: 'Error Fetching Documents',
+          description: error.message || 'An unexpected error occurred.',
+          variant: 'destructive',
+        });
+        setDocuments([]); // Clear documents or handle as per desired UX
+      } finally {
+        setIsLoadingDocuments(false);
       }
     };
 
     fetchDocuments();
-  }, []);
+  }, [toast]); // Added toast to dependency array
 
   // Debounced document update
   const debouncedUpdateDocument = useCallback(
-    (docId: string, data: { content?: string; title?: string }) => {
-      console.log('Updating document:', docId, data);
-      setAutoSaveState('saving');
+    async (docId: string, data: { content?: string; title?: string }) => {
+      if (!docId) return; // Should not happen if called correctly
       
-      // Simulate API call
-      setTimeout(() => {
-        setDocuments(prevDocs => 
-          prevDocs.map(doc => 
-            doc.id === docId 
-              ? { 
-                  ...doc, 
-                  ...(data.content !== undefined ? { content: data.content } : {}),
-                  ...(data.title !== undefined ? { title: data.title } : {}),
-                  updatedAt: new Date().toISOString()
-                } 
-              : doc
-          )
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Attempting to update document:', docId, data);
+      }
+      setAutoSaveState('saving');
+
+      try {
+        const response = await fetch(`/api/documents/${docId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data), // Send whatever is in data (content or title)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Failed to update document and parse error response.' }));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const updatedDocument: Document = await response.json();
+
+        // Update local documents state
+        setDocuments(prevDocs =>
+          prevDocs.map(doc => (doc.id === updatedDocument.id ? updatedDocument : doc))
         );
         
-        // If we're updating the active document, also update that
-        if (activeDocument && activeDocument.id === docId) {
-          setActiveDocument(prev => 
-            prev ? { 
-              ...prev, 
-              ...(data.content !== undefined ? { content: data.content } : {}),
-              ...(data.title !== undefined ? { title: data.title } : {}),
-              updatedAt: new Date().toISOString() 
-            } : null
-          );
+        // If the active document was updated, refresh its state
+        if (activeDocument && activeDocument.id === updatedDocument.id) {
+          setActiveDocument(updatedDocument);
+          if (data.content !== undefined) {
+             // setText(updatedDocument.content); // Potentially avoid if editor is source of truth
+          }
         }
         
         setAutoSaveState('saved');
-        console.log('Document updated successfully');
-      }, 500);
+        toast({ title: "Changes Saved", description: data.title ? "Title updated." : "Content saved."});
+
+      } catch (error: any) {
+        console.error('Error updating document:', error);
+        setAutoSaveState('error');
+        toast({
+          title: 'Error Saving Changes',
+          description: error.message || 'An unexpected error occurred.',
+          variant: 'destructive',
+        });
+      }
     },
-    [activeDocument]
+    [toast, activeDocument] // Added activeDocument to deps because it's used for potential update
   );
 
   // Handle text change
@@ -288,72 +257,162 @@ const DashboardPage = () => {
   }, []);
 
   // Create document
-  const handleCreateDocument = useCallback(() => {
-    const title = newDocTitle || 'Untitled Document';
+  const handleCreateDocument = useCallback(async () => {
+    const titleToCreate = newDocTitle.trim() || 'Untitled Document';
     setCreatingDoc(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const newDoc = {
-        id: Date.now().toString(),
-        title,
-        content: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    try {
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: titleToCreate, content: '' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create document and parse error.' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
       
-      setDocuments(prevDocs => [...prevDocs, newDoc]);
-      setActiveDocument(newDoc);
-      setText('');
-      setSuggestions([]);
-      setToneHighlights([]);
+      const newDocument = await response.json();
+
+      // Option 1: Add to existing list (simpler, might have ordering issues if not careful)
+      setDocuments(prevDocs => [newDocument, ...prevDocs]);
+      // Option 2: Re-fetch list (ensures consistency but more overhead)
+      // fetchDocuments(); // You'd need to make fetchDocuments available in this scope or pass it
+
+      setActiveDocument(newDocument);
+      setText(newDocument.content || '');
       setNewDocTitle('');
       setShowNewDocModal(false);
-      setCreatingDoc(false);
       
       toast({
         title: 'Document Created',
-        description: `"${title}" has been created successfully.`,
+        description: `"${newDocument.title}" has been created successfully.`,
       });
-    }, 500);
-  }, [newDocTitle, toast]);
+    } catch (error: any) {
+      console.error('Error creating document:', error);
+      toast({
+        title: 'Error Creating Document',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingDoc(false);
+    }
+  }, [newDocTitle, toast]); // Removed fetchDocuments from deps for now, if re-fetching, add it.
 
   // Save document title
-  const handleTitleSave = useCallback(() => {
-    if (activeDocument && newTitle.trim()) {
-      debouncedUpdateDocument(activeDocument.id, { title: newTitle });
+  const handleTitleSave = useCallback(async () => {
+    if (!activeDocument || !newTitle.trim() || newTitle.trim() === activeDocument.title) {
+      setIsEditingTitle(false);
+      return;
     }
-    setIsEditingTitle(false);
-  }, [activeDocument, debouncedUpdateDocument, newTitle]);
+
+    const trimmedTitle = newTitle.trim();
+    // Optimistically update UI, or wait for API response
+    // For now, we let debouncedUpdateDocument handle it if called directly,
+    // or make a specific call here. The subtask asks for a direct fetch here.
+
+    // To align with subtask, making a direct call instead of relying on debouncedUpdateDocument for title
+    // This also means debouncedUpdateDocument should primarily focus on content.
+    // Let's adjust debouncedUpdateDocument to only handle content if this is the case,
+    // or ensure it can handle both distinctly. The current debouncedUpdateDocument can handle title.
+
+    // For clarity and to meet subtask spec:
+    setAutoSaveState('saving'); // Show saving indicator for title
+    try {
+      const response = await fetch(`/api/documents/${activeDocument.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmedTitle }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update title and parse error.' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      const updatedDocument : Document = await response.json();
+
+      setActiveDocument(prev => prev ? { ...prev, title: updatedDocument.title, updatedAt: updatedDocument.updatedAt } : null);
+      setDocuments(prevDocs =>
+        prevDocs.map(doc => doc.id === updatedDocument.id ? updatedDocument : doc)
+      );
+      setAutoSaveState('saved');
+      toast({ title: "Title Updated", description: `Document title changed to "${updatedDocument.title}".` });
+
+    } catch (error: any) {
+      console.error('Error updating title:', error);
+      setAutoSaveState('error'); // Reflect error state
+      toast({
+        title: 'Error Updating Title',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+      // Optionally revert optimistic update if done
+    } finally {
+      setIsEditingTitle(false);
+    }
+  }, [activeDocument, newTitle, toast]);
+
 
   // Delete document
-  const handleDeleteDocument = useCallback(() => {
+  const handleDeleteDocument = useCallback(async () => {
     if (!activeDocument) return;
-    
-    setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== activeDocument.id));
-    setActiveDocument(null);
-    setText('');
-    setSuggestions([]);
-    setToneHighlights([]);
-    
-    toast({
-      title: 'Document Deleted',
-      description: `"${activeDocument.title}" has been deleted.`,
-    });
+
+    const docToDeleteTitle = activeDocument.title; // Store before clearing activeDocument
+
+    try {
+      const response = await fetch(`/api/documents/${activeDocument.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        // For 204, response.ok is true, but no json body.
+        // For other errors, try to parse json.
+        let errorMsg = `HTTP error! status: ${response.status}`;
+        if (response.status !== 204) {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to delete document and parse error response.' }));
+            errorMsg = errorData.message || errorMsg;
+        }
+        throw new Error(errorMsg);
+      }
+
+      // If response.ok is true, and status is 204, it's a successful delete with no content.
+      // If status is 200, it might have a success message (though 204 is more common for DELETE).
+
+      setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== activeDocument.id));
+      setActiveDocument(null);
+      setText('');
+      setSuggestions([]); // Clear suggestions related to the deleted document
+      setToneHighlights([]); // Clear tone highlights
+
+      toast({
+        title: 'Document Deleted',
+        description: `"${docToDeleteTitle}" has been successfully deleted.`,
+      });
+
+    } catch (error: any) {
+      console.error('Error deleting document:', error);
+      toast({
+        title: 'Error Deleting Document',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    }
   }, [activeDocument, toast]);
 
   const applySuggestion = (suggestionToApply: Suggestion) => {
-    console.log("Applying suggestion via Engie:", suggestionToApply);
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Applying suggestion via Engie:", suggestionToApply);
+    }
     
     // Apply the suggestion to the input editor
     applySuggestionLogic(
-      text, 
       suggestionToApply, 
-      setText, 
-      setSuggestions, 
-      activeDocument, 
-      debouncedUpdateDocument,
+      setSuggestions,
       editorRef
+      // text, setText, activeDocument, debouncedUpdateDocument are no longer passed
     );
     
     // Clear analysis from analysis editor
@@ -508,20 +567,33 @@ const DashboardPage = () => {
                 New Document
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {documents.map(doc => (
-                <Card key={doc.id} className="premium-document-card cursor-pointer" onClick={() => handleSelectDocument(doc)}>
-                  <CardHeader>
-                    <CardTitle className="truncate">{doc.title}</CardTitle>
-                    <CardDescription>{new Date(doc.updatedAt).toLocaleDateString()}</CardDescription>
-                  </CardHeader>
-                  <CardContent><p className="line-clamp-3 text-sm text-muted-foreground">{doc.content?.substring(0, 100) || "No content"}</p></CardContent>
+            {isLoadingDocuments ? (
+              <p>Loading documents...</p> // Basic loading indicator
+            ) : documents.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="mb-4 text-lg text-muted-foreground">No documents yet. Create your first one!</p>
+                <Button className="premium-button-gradient" onClick={() => setShowNewDocModal(true)}>
+                  <FilePlus className="mr-2 h-4 w-4" />
+                  Create Document
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {documents.map(doc => (
+                  <Card key={doc.id} className="premium-document-card cursor-pointer" onClick={() => handleSelectDocument(doc)}>
+                    <CardHeader>
+                      <CardTitle className="truncate">{doc.title}</CardTitle>
+                      <CardDescription>{new Date(doc.updatedAt).toLocaleDateString()}</CardDescription>
+                    </CardHeader>
+                    <CardContent><p className="line-clamp-3 text-sm text-muted-foreground">{doc.content?.substring(0, 100) || "No content"}</p></CardContent>
+                  </Card>
+                ))}
+                {/* Optional: Keep a dedicated "New Document" card if design prefers it, even with documents present */}
+                <Card className="flex items-center justify-center border-2 border-dashed rounded-xl premium-document-card bg-muted/50 hover:border-primary transition-colors min-h-[180px]" onClick={() => setShowNewDocModal(true)}>
+                   <Button variant="ghost" className="text-muted-foreground"><FilePlus className="mr-2 h-4 w-4" />New Document</Button>
                 </Card>
-              ))}
-              <Card className="flex items-center justify-center border-2 border-dashed rounded-xl premium-document-card bg-muted/50 hover:border-primary transition-colors min-h-[180px]" onClick={() => setShowNewDocModal(true)}>
-                 <Button variant="ghost" className="text-muted-foreground"><FilePlus className="mr-2 h-4 w-4" />New Document</Button>
-              </Card>
-            </div>
+              </div>
+            )}
           </div>
         ) : (
           <div>
