@@ -132,6 +132,46 @@ const DashboardPage = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(true); // Default to true
   const [showParts, setShowParts] = useState(false); // Default to false
+  // Grok mode state and timer
+  const [grokMode, setGrokMode] = useState(false);
+  const [grokPowerRemaining, setGrokPowerRemaining] = useState(0); // seconds
+  const grokTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Handle grok mode toggle
+  const handleGrokToggle = () => {
+    if (!grokMode) {
+      setGrokMode(true);
+      setGrokPowerRemaining(600); // 10 minutes
+    } else {
+      setGrokMode(false);
+      setGrokPowerRemaining(0);
+    }
+  };
+
+  // Grok timer effect
+  useEffect(() => {
+    if (grokMode && grokPowerRemaining > 0) {
+      grokTimerRef.current = setInterval(() => {
+        setGrokPowerRemaining(prev => {
+          if (prev <= 1) {
+            setGrokMode(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (!grokMode || grokPowerRemaining === 0) {
+      if (grokTimerRef.current) {
+        clearInterval(grokTimerRef.current);
+        grokTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (grokTimerRef.current) {
+        clearInterval(grokTimerRef.current);
+        grokTimerRef.current = null;
+      }
+    };
+  }, [grokMode, grokPowerRemaining]);
   
   // Load preferences from localStorage only on client-side
   useEffect(() => {
@@ -643,7 +683,7 @@ const DashboardPage = () => {
                         Auto Analysis {isAnalyzing && autoFragmentAnalysis && <span className="ml-1 text-xs text-muted-foreground">(analyzing...)</span>}
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Switch
                         id="show-parts"
@@ -654,7 +694,24 @@ const DashboardPage = () => {
                         Show Parts of Speech
                       </label>
                     </div>
-                    
+
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="grok-mode-toggle"
+                        checked={grokMode}
+                        onCheckedChange={handleGrokToggle}
+                        disabled={grokMode && grokPowerRemaining === 0}
+                      />
+                      <label htmlFor="grok-mode-toggle" className="text-sm font-medium">
+                        Grok Mode
+                        {grokMode && (
+                          <span className="ml-2 text-xs text-primary font-semibold">
+                            {`Grok Power: ${Math.floor(grokPowerRemaining/60)}:${(grokPowerRemaining%60).toString().padStart(2,'0')}`}
+                          </span>
+                        )}
+                      </label>
+                    </div>
+
                     <div className="flex gap-1 flex-wrap">
                       <div className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100">noun</div>
                       <div className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded border border-green-100">verb</div>
@@ -664,7 +721,7 @@ const DashboardPage = () => {
                       <div className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded border border-teal-100">conjunction</div>
                       <div className="px-2 py-1 bg-gray-50 text-gray-700 text-xs rounded border border-gray-100">article</div>
                     </div>
-                    
+
                     <div className="flex justify-end">
                       <Button size="sm" onClick={handleAnalyzeText} disabled={isAnalyzing}>
                         {isAnalyzing ? (
@@ -744,6 +801,8 @@ const DashboardPage = () => {
         onIdeate={() => {}}
         targetEditorSelector=".main-editor-textarea" // Target the input box
         documents={documents.map((d: any) => ({ id: d.id, title: d.title }))}
+        grokMode={grokMode}
+        grokPowerRemaining={grokPowerRemaining}
       />
       
       <Dialog open={showNewDocModal} onOpenChange={setShowNewDocModal}>

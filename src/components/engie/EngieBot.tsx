@@ -1,3 +1,19 @@
+  // Grok chat state for UI feedback
+  const [grokLoading, setGrokLoading] = useState(false);
+  const [grokError, setGrokError] = useState<string | null>(null);
+
+  // Handler for sending arbitrary Grok chat prompts
+  const handleSendGrokMessage = async (prompt: string) => {
+    setGrokError(null);
+    setGrokLoading(true);
+    try {
+      await controller.sendGrokChatMessage(prompt);
+    } catch (e) {
+      setGrokError('Sorry, there was an error sending your message to Grok.');
+    } finally {
+      setGrokLoading(false);
+    }
+  };
 import React, { useState, useEffect, useRef } from 'react';
 import Draggable from 'react-draggable';
 import { AnimatePresence } from 'framer-motion';
@@ -109,6 +125,22 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const onStopDrag = () => controller.onStopDrag();
   const formatScore = (score: number | undefined | null) => controller.formatScore(score);
 
+  // Grok chat state for UI feedback
+  const [grokLoading, setGrokLoading] = useState(false);
+  const [grokError, setGrokError] = useState<string | null>(null);
+
+  // Handler for sending arbitrary Grok chat prompts
+  const handleSendGrokMessage = async (prompt: string) => {
+    setGrokError(null);
+    setGrokLoading(true);
+    try {
+      await controller.sendGrokChatMessage(prompt);
+    } catch (e) {
+      setGrokError('Sorry, there was an error sending your message to Grok.');
+    } finally {
+      setGrokLoading(false);
+    }
+  };
   // Grok specific handlers
   const handleToggleGrokMode = () => controller.toggleGrokMode();
   const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
@@ -214,10 +246,13 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
                     onManualIdeate={handleManualIdeate}
                     onTabChange={handleTabChange}
                     formatScore={formatScore}
-                    // Pass Grok related props
+                    // Grok chat props
                     grokChatHistory={state.grokChatHistory}
                     handleToggleGrokMode={handleToggleGrokMode}
                     handleResearchWithGrok={handleResearchWithGrok}
+                    onSendGrokMessage={handleSendGrokMessage}
+                    grokLoading={grokLoading}
+                    grokError={grokError}
                   />
                 )}
               </AnimatePresence>

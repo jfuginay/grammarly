@@ -13,9 +13,10 @@ import { Switch } from '@/components/ui/switch'; // Import Switch
 import { Input } from '@/components/ui/input'; // Import Input
 import { Label } from '@/components/ui/label'; // Import Label
 
+
 interface EngieChatWindowProps {
   state: EngieState;
-  grokChatHistory: ChatMessage[]; // New prop
+  grokChatHistory: ChatMessage[];
   activeSuggestions: Suggestion[];
   currentSuggestion: Suggestion | null;
   documents: Array<{ id: string; title: string }>;
@@ -27,13 +28,17 @@ interface EngieChatWindowProps {
   onManualIdeate: () => void;
   onTabChange: (tab: string) => void;
   formatScore: (score: number | undefined | null) => string;
-  handleToggleGrokMode: () => void; // New prop
-  handleResearchWithGrok: (topic: string) => void; // New prop
+  handleToggleGrokMode: () => void;
+  handleResearchWithGrok: (topic: string) => void;
+  onSendGrokMessage?: (prompt: string) => void;
+  grokLoading?: boolean;
+  grokError?: string | null;
 }
+
 
 export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
   state,
-  grokChatHistory, // Destructure new prop
+  grokChatHistory,
   activeSuggestions,
   currentSuggestion,
   documents,
@@ -45,10 +50,42 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
   onManualIdeate,
   onTabChange,
   formatScore,
-  handleToggleGrokMode, // Destructure new prop
-  handleResearchWithGrok, // Destructure new prop
+  handleToggleGrokMode,
+  handleResearchWithGrok,
+  onSendGrokMessage,
+  grokLoading,
+  grokError,
 }) => {
   const [researchTopic, setResearchTopic] = React.useState('');
+  const [grokInput, setGrokInput] = React.useState('');
+        {/* Grok chat input for arbitrary prompts */}
+        {state.isGrokActive && (
+          <form
+            className="flex gap-2 mt-2"
+            onSubmit={e => {
+              e.preventDefault();
+              if (grokInput.trim() && onSendGrokMessage) {
+                onSendGrokMessage(grokInput.trim());
+                setGrokInput('');
+              }
+            }}
+          >
+            <Input
+              value={grokInput}
+              onChange={e => setGrokInput(e.target.value)}
+              placeholder="Ask Grok anything..."
+              disabled={grokLoading}
+              className="flex-1"
+              aria-label="Grok chat input"
+            />
+            <Button type="submit" disabled={grokLoading || !grokInput.trim()}>
+              {grokLoading ? 'Sending...' : 'Send'}
+            </Button>
+          </form>
+        )}
+        {grokError && (
+          <div className="text-xs text-red-500 mt-1">{grokError}</div>
+        )}
 
   const combinedChatHistory = React.useMemo(() => {
     let combined: ChatMessage[] = [];

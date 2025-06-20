@@ -1,3 +1,47 @@
+  /**
+   * Send a full chat history to Grok for multi-turn chat. Returns the assistant's response.
+   */
+  public async sendChat(messages: ChatMessage[]): Promise<string | null> {
+    if (!this.apiKey) {
+      console.error("Grok API key not configured. Cannot send chat.");
+      return null;
+    }
+
+    const requestBody: GrokApiRequest = {
+      messages,
+      model: 'mixtral-8x7b-32768', // Use the same model as other methods
+    };
+
+    try {
+      const response = await fetch(GROK_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        console.error(`Grok API error for chat: ${response.status} ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error("Error details:", errorBody);
+        return null;
+      }
+
+      const data: GrokApiResponse = await response.json();
+
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+        return data.choices[0].message.content.trim();
+      } else {
+        console.error("Grok API response for chat did not contain expected content:", data);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error sending chat to Grok API:", error);
+      return null;
+    }
+  }
 import { ChatMessage } from '../types';
 
 // Basic types for Grok API (can be expanded later)
@@ -20,6 +64,51 @@ interface GrokApiResponse {
 const GROK_API_ENDPOINT = 'https://api.groq.com/v1/chat/completions'; // Placeholder
 
 export class GrokApiService {
+
+  /**
+   * Send a full chat history to Grok for multi-turn chat. Returns the assistant's response.
+   */
+  public async sendChat(messages: ChatMessage[]): Promise<string | null> {
+    if (!this.apiKey) {
+      console.error("Grok API key not configured. Cannot send chat.");
+      return null;
+    }
+
+    const requestBody: GrokApiRequest = {
+      messages,
+      model: 'mixtral-8x7b-32768', // Use the same model as other methods
+    };
+
+    try {
+      const response = await fetch(GROK_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        console.error(`Grok API error for chat: ${response.status} ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error("Error details:", errorBody);
+        return null;
+      }
+
+      const data: GrokApiResponse = await response.json();
+
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+        return data.choices[0].message.content.trim();
+      } else {
+        console.error("Grok API response for chat did not contain expected content:", data);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error sending chat to Grok API:", error);
+      return null;
+    }
+  }
   private static instance: GrokApiService;
   private apiKey: string;
 
