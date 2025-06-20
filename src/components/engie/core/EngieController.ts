@@ -1,27 +1,26 @@
 import { EngieStateManager } from './EngieStateManager';
 import { EngieApiService } from '../services/EngieApiService';
 import { TextExtractorService } from '../services/TextExtractorService';
-import { GrokApiService } from '../services/GrokApiService'; // Import GrokApiService
+import { GrokApiService } from '../services/GrokApiService';
+
 import { ChatMessage, Suggestion, EngieProps } from '../types';
 
 export class EngieController {
   private stateManager: EngieStateManager;
   private apiService: EngieApiService;
   private textExtractor: TextExtractorService;
-  private grokApiService: GrokApiService; // Add GrokApiService instance
+  private grokApiService: GrokApiService;
   private debounceTimeoutRef: NodeJS.Timeout | null = null;
   private prevScannedTextRef: string = "";
   private inactivityTimerRef: NodeJS.Timeout | null = null;
-  private grokDeactivationTimer: NodeJS.Timeout | null = null; // Timer for Grok deactivation
+  private grokDeactivationTimer: NodeJS.Timeout | null = null;
   private lastX: number = 0;
 
-  constructor(
-    private props: EngieProps
-  ) {
+  constructor(private props: EngieProps) {
     this.stateManager = new EngieStateManager();
     this.apiService = EngieApiService.getInstance();
     this.textExtractor = TextExtractorService.getInstance();
-    this.grokApiService = GrokApiService.getInstance(); // Instantiate GrokApiService
+    this.grokApiService = GrokApiService.getInstance();
     this.setupInactivityTimer();
     this.detectTouchDevice();
   }
