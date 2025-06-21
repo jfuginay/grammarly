@@ -550,7 +550,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       textarea.removeEventListener('scroll', syncScroll);
       window.removeEventListener('resize', syncScroll);
     };
-  }, []);
+  }, [readOnly]);
   
   // Ensure cursor remains visible and text boxes handle input properly
   useEffect(() => {
