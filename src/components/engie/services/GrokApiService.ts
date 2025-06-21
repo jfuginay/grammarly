@@ -26,12 +26,19 @@ export class GrokApiService {
   private groqClient: Groq | null = null;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.GROQ_API_KEY || "";
-    
-    if (!this.apiKey) {
-      console.warn("GROQ_API_KEY is not set. GrokApiService will not function properly.");
+    // Only attempt to access environment variables on the server
+    if (typeof window === 'undefined') {
+      this.apiKey = apiKey || process.env.GROQ_API_KEY || "";
+      
+      if (!this.apiKey) {
+        console.warn("GROQ_API_KEY is not set. GrokApiService will not function properly.");
+      } else {
+        this.groqClient = new Groq({ apiKey: this.apiKey });
+      }
     } else {
-      this.groqClient = new Groq({ apiKey: this.apiKey });
+      // We're on the client, don't try to access server-only environment variables
+      // Set apiKey to empty but don't warn, as this is expected behavior for client-side
+      this.apiKey = "";
     }
   }
 
@@ -51,6 +58,12 @@ export class GrokApiService {
    * Send a full chat history to Grok for multi-turn chat. Returns the assistant's response.
    */
   public async sendChat(messages: ChatMessage[]): Promise<string | null> {
+    // Check if we're on the client-side
+    if (typeof window !== 'undefined') {
+      console.error("Grok API cannot be called from client-side. Use a server-side API route instead.");
+      return null;
+    }
+    
     if (!this.apiKey || !this.groqClient) {
       console.error("Grok API key not configured. Cannot send chat.");
       return null;
@@ -82,6 +95,12 @@ export class GrokApiService {
    * Get an opinionated comment on text from Grok
    */
   public async getOpinionatedComment(prompt: string): Promise<string | null> {
+    // Check if we're on the client-side
+    if (typeof window !== 'undefined') {
+      console.error("Grok API cannot be called from client-side. Use a server-side API route instead.");
+      return null;
+    }
+    
     if (!this.apiKey || !this.groqClient) {
       console.error("Grok API key not configured. Cannot fetch opinionated comment.");
       return null;
@@ -115,6 +134,12 @@ export class GrokApiService {
    * Research a topic using Grok
    */
   public async researchTopic(topic: string): Promise<string | null> {
+    // Check if we're on the client-side
+    if (typeof window !== 'undefined') {
+      console.error("Grok API cannot be called from client-side. Use a server-side API route instead.");
+      return null;
+    }
+    
     if (!this.apiKey || !this.groqClient) {
       console.error("Grok API key not configured. Cannot research topic.");
       return null;

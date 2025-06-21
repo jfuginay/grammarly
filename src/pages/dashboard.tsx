@@ -41,7 +41,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import EnhancedEditor, { EnhancedEditorRef } from '@/components/EnhancedEditor';
-import Engie from '@/components/Engie';
+import ClientEngie from '@/components/ClientEngie';
 
 // Type definitions
 interface Suggestion {
@@ -780,8 +780,8 @@ const DashboardPage = () => {
                       ref={analysisEditorRef}
                       value={text}
                       onChange={(val: any) => {/* Read-only - no changes */}}
-                       suggestions={suggestions} // Still pass suggestions for display
-                       toneHighlights={toneHighlights || []} // Still pass toneHighlights for display with null check
+                      suggestions={suggestions} // Still pass suggestions for display
+                      toneHighlights={toneHighlights} // Pass toneHighlights for display
                       autoAnalyze={true}
                       readOnly={true}
                       className="analysis-editor h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30"
@@ -789,8 +789,8 @@ const DashboardPage = () => {
                       showFragments={true}
                       isAnalysisBox={true}
                       reflectTextFrom={text}
-                       onSuggestionsFetched={setSuggestions}
-                       onToneHighlightsFetched={setToneHighlights}
+                      onSuggestionsFetched={setSuggestions}
+                      onToneHighlightsFetched={setToneHighlights}
                     />
                   </CardContent>
                 </Card>
@@ -802,8 +802,8 @@ const DashboardPage = () => {
       </DashboardLayout>
       
       {/* Engie is now always visible, regardless of document state */}
-      <Engie
-        suggestions={suggestions}
+      <ClientEngie
+        suggestions={suggestions || []}
         onApply={applySuggestion}
         onDismiss={dismissSuggestion}
         onIdeate={() => {}}
