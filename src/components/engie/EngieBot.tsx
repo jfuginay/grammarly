@@ -1,19 +1,3 @@
-  // Grok chat state for UI feedback
-  const [grokLoading, setGrokLoading] = useState(false);
-  const [grokError, setGrokError] = useState<string | null>(null);
-
-  // Handler for sending arbitrary Grok chat prompts
-  const handleSendGrokMessage = async (prompt: string) => {
-    setGrokError(null);
-    setGrokLoading(true);
-    try {
-      await controller.sendGrokChatMessage(prompt);
-    } catch (e) {
-      setGrokError('Sorry, there was an error sending your message to Grok.');
-    } finally {
-      setGrokLoading(false);
-    }
-  };
 import React, { useState, useEffect, useRef } from 'react';
 import Draggable from 'react-draggable';
 import { AnimatePresence } from 'framer-motion';

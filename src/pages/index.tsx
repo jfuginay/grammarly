@@ -70,7 +70,7 @@ const IndexPage = () => {
     }, 5000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [demoSentences.length]);
 
   // AI suggestion effect - simulates real-time feedback
   useEffect(() => {

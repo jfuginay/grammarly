@@ -612,7 +612,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     return () => {
       window.removeEventListener('resize', adjustTextBoxVisibility);
     };
-  }, [value, shouldShowFragments]);
+  }, [value, shouldShowFragments, readOnly]);
   
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);

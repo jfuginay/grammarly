@@ -467,4 +467,29 @@ export class EngieController {
       this.stateManager.setStatusMessage("");
     }
   }
+
+  /**
+   * Send a message to Grok chat and handle the response
+   */
+  public async sendGrokChatMessage(prompt: string): Promise<void> {
+    if (!this.grokApiService || !process.env.GROQ_API_KEY) {
+      console.error("Grok API service not available or API key not configured");
+      return;
+    }
+    
+    // Add the user message to chat history
+    this.stateManager.addGrokChatMessage({ role: 'user', content: prompt });
+    
+    // Send the entire chat history to get a contextual response
+    const chatHistory = this.stateManager.getState().grokChatHistory;
+    const response = await this.grokApiService.sendChat(chatHistory);
+    
+    if (response) {
+      // Add the assistant's response to chat history
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
+    } else {
+      // Handle error case
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't process your request." });
+    }
+  }
 }
