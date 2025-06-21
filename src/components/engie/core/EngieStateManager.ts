@@ -20,6 +20,7 @@ export class EngieStateManager {
       internalSuggestions: [],
       toneAnalysisResult: null,
       overallPageToneAnalysis: null,
+      documentContext: null,
       ideationMessage: null,
       encouragementMessageApi: null,
       lastEncouragementTone: null,
@@ -289,18 +290,18 @@ export class EngieStateManager {
     
     if (wordCount < 20) {
       // Not enough text to evaluate
-      this.setBotEmotion('neutral', '');
+      this.setBotEmotion('neutral', 'Getting started...');
       return;
     }
     
     if (errorDensity < 0.5) {
-      this.setBotEmotion('happy', 'Great writing with very few errors!');
+      this.setBotEmotion('happy', '✨ This writing looks great!');
     } else if (errorDensity < 2) {
-      this.setBotEmotion('thoughtful', 'Decent writing with some improvements possible');
+      this.setBotEmotion('thoughtful', '👀 Found a few ways to polish this');
     } else if (errorDensity < 5) {
-      this.setBotEmotion('concerned', 'Several errors detected');
+      this.setBotEmotion('concerned', '📝 Let\'s clean up a few things together');
     } else {
-      this.setBotEmotion('concerned', 'Many errors detected');
+      this.setBotEmotion('concerned', '💪 I\'ve got some helpful fixes for you');
     }
   }
   
@@ -311,30 +312,27 @@ export class EngieStateManager {
     const progressRatio = completedSuggestions / totalSuggestions;
     
     if (progressRatio >= 0.9) {
-      this.setBotEmotion('excited', 'Almost all suggestions applied!');
+      this.setBotEmotion('excited', '🏁 Almost perfect! You\'re crushing it');
     } else if (progressRatio >= 0.5) {
-      this.setBotEmotion('happy', 'Good progress on suggestions');
+      this.setBotEmotion('happy', '💪 Great progress! Keep it going');
     } else if (progressRatio >= 0.2) {
-      this.setBotEmotion('thoughtful', 'Making progress on suggestions');
+      this.setBotEmotion('thoughtful', '✨ Making good headway on these');
     } else if (completedSuggestions > 0) {
-      this.setBotEmotion('thoughtful', 'Started applying suggestions');
+      this.setBotEmotion('thoughtful', '👍 Nice start! Let\'s keep polishing');
     }
   }
   
-  // Method to set emotion based on interaction context
-  setEmotionBasedOnInteraction(context: 'ideation' | 'suggestion-applied' | 'chat-opened' | 'encouragement'): void {
-    switch (context) {
-      case 'ideation':
-        this.setBotEmotion('thoughtful', 'Thinking of ideas');
-        break;
+  // Method to set emotion based on user interactions  
+  setEmotionBasedOnInteraction(interactionType: 'suggestion-applied' | 'suggestion-dismissed' | 'chat-opened'): void {
+    switch (interactionType) {
       case 'suggestion-applied':
-        this.setBotEmotion('happy', 'Suggestion applied successfully');
+        this.setBotEmotion('excited', '🎉 Nice! That reads much better');
+        break;
+      case 'suggestion-dismissed': 
+        this.setBotEmotion('neutral', '👍 No worries, you know your style');
         break;
       case 'chat-opened':
-        this.setBotEmotion('excited', 'Ready to help');
-        break;
-      case 'encouragement':
-        this.setBotEmotion('happy', 'Offering encouragement');
+        this.setBotEmotion('happy', '👋 Hey! What can I help with?');
         break;
     }
   }

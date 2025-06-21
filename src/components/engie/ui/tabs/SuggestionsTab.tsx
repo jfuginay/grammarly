@@ -13,10 +13,20 @@ interface SuggestionsTabProps {
   onNext: () => void;
 }
 
-const severityColorMap: { [key in Suggestion['severity']]: string } = {
-  High: 'bg-red-500',
-  Medium: 'bg-yellow-500',
-  Low: 'bg-blue-500',
+// Friendly suggestion type labels
+const suggestionTypeLabels: { [key in Suggestion['type']]: string } = {
+  Spelling: '✏️ Quick fix',
+  Grammar: '📝 Polish', 
+  Style: '✨ Style boost',
+  Punctuation: '🔤 Punctuation',
+  Clarity: '💡 Clarity'
+};
+
+// Friendly severity colors and labels
+const severityDisplay: { [key in Suggestion['severity']]: { color: string; label: string; emoji: string } } = {
+  High: { color: 'bg-coral-500', label: 'Worth fixing', emoji: '👀' },
+  Medium: { color: 'bg-amber-500', label: 'Nice to have', emoji: '✨' },
+  Low: { color: 'bg-sage-500', label: 'Optional', emoji: '💫' },
 };
 
 export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
@@ -29,45 +39,118 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
 }) => {
   if (!currentSuggestion) {
     return (
-      <div className="text-center py-4">
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          Looking good! No suggestions found.
+      <div className="text-center py-6">
+        <div className="text-4xl mb-2">🎉</div>
+        <p className="text-sm font-medium text-foreground mb-1">
+          Looking fantastic!
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Your writing is in great shape - no suggestions needed.
         </p>
       </div>
     );
   }
 
+  const remainingCount = activeSuggestions.length - currentSuggestionIndex;
+  const isLastSuggestion = currentSuggestionIndex === activeSuggestions.length - 1;
+  const severity = severityDisplay[currentSuggestion.severity];
+
   return (
     <div className="mt-4">
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">
-        Found {activeSuggestions.length - currentSuggestionIndex} suggestion(s):
-      </p>
-      <Card key={currentSuggestion.id}>
-        <CardHeader className="flex flex-row items-center gap-2 p-3">
-          <span className={`h-2.5 w-2.5 rounded-full ${severityColorMap[currentSuggestion.severity]}`}></span>
-          <CardTitle className="text-sm font-semibold">{currentSuggestion.type}</CardTitle>
-          <Badge variant="outline" className="font-normal text-xs">{currentSuggestion.severity}</Badge>
+      {/* Progress indicator */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium text-foreground">
+          {remainingCount === 1 ? (
+            "Last suggestion! 🏁"
+          ) : (
+            `${remainingCount} suggestions found`
+          )}
+        </p>
+        {activeSuggestions.length > 1 && (
+          <div className="text-xs text-muted-foreground">
+            {currentSuggestionIndex + 1} of {activeSuggestions.length}
+          </div>
+        )}
+      </div>
+
+      {/* Suggestion card */}
+      <Card key={currentSuggestion.id} className="calm-card">
+        <CardHeader className="flex flex-row items-center gap-3 p-4 pb-2">
+          <span className="text-lg">{severity.emoji}</span>
+          <div className="flex-1">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              {suggestionTypeLabels[currentSuggestion.type]}
+              <Badge variant="outline" className="font-normal text-xs text-muted-foreground">
+                {severity.label}
+              </Badge>
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <p className="text-sm text-gray-500 dark:text-gray-400 line-through">
-            &quot;{currentSuggestion.original}&quot;
-          </p>
-          <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
-            &quot;{currentSuggestion.suggestion}&quot;
-          </p>
-          <p className="text-xs text-muted-foreground mt-3">
-            {currentSuggestion.explanation}
-          </p>
+        
+        <CardContent className="p-4 pt-2">
+          {/* Before/After */}
+          <div className="space-y-2 mb-3">
+            <div className="text-xs text-muted-foreground font-medium">Before:</div>
+            <p className="text-sm bg-muted/50 rounded-md p-2 line-through text-muted-foreground">
+              &quot;{currentSuggestion.original}&quot;
+            </p>
+            
+            <div className="text-xs text-muted-foreground font-medium">Engie suggests:</div>
+            <p className="text-sm bg-primary/10 rounded-md p-2 font-medium text-primary">
+              &quot;{currentSuggestion.suggestion}&quot;
+            </p>
+          </div>
+
+          {/* Friendly explanation */}
+          <div className="bg-accent/30 rounded-md p-3 border-l-2 border-primary/30">
+            <p className="text-xs text-foreground leading-relaxed">
+              {currentSuggestion.explanation}
+            </p>
+          </div>
         </CardContent>
       </Card>
-      <div className="flex justify-end gap-2 mt-4">
-        <Button variant="ghost" size="sm" onClick={onNext}>
-          {currentSuggestionIndex < activeSuggestions.length - 1 ? 'Next' : 'Ignore'}
+
+      {/* Action buttons */}
+      <div className="flex justify-between items-center gap-3 mt-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onDismiss}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          Skip this one
         </Button>
-        <Button variant="default" size="sm" onClick={onApply}>
-          Apply
-        </Button>
+        
+        <div className="flex gap-2">
+          {!isLastSuggestion && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onNext}
+              className="calm-button-secondary"
+            >
+              Next →
+            </Button>
+          )}
+          
+          <Button 
+            size="sm" 
+            onClick={onApply}
+            className="engie-button"
+          >
+            ✨ Apply it
+          </Button>
+        </div>
       </div>
+      
+      {/* Encouraging footer message */}
+      {isLastSuggestion && (
+        <div className="text-center mt-4 p-3 bg-accent/20 rounded-md">
+          <p className="text-xs text-muted-foreground">
+            🎯 Almost done! Apply this and you'll be all set.
+          </p>
+        </div>
+      )}
     </div>
   );
 }; 

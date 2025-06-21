@@ -88,7 +88,7 @@ export class EngieController {
 
     this.stateManager.setIdeating(true);
     this.stateManager.setStatusMessage("Engie is thinking of ideas...");
-    this.stateManager.setEmotionBasedOnInteraction('ideation');
+            this.stateManager.setBotEmotion('thoughtful', 'Thinking of ideas for you');
 
     try {
       const pageText = this.textExtractor.extractFullPageText();
@@ -175,8 +175,8 @@ export class EngieController {
 
     this.prevScannedTextRef = text;
     this.stateManager.setScanning(true);
-    this.stateManager.setStatusMessage("Scanning for suggestions...");
-    this.stateManager.setBotEmotion('thoughtful', 'Analyzing your writing');
+    this.stateManager.setStatusMessage("✨ Reading through your writing...");
+    this.stateManager.setBotEmotion('thoughtful', 'Taking a look at your work');
 
     try {
       if (process.env.NODE_ENV === 'development') {
