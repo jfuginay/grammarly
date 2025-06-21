@@ -22,173 +22,113 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({});
   const [popupPositionClass, setPopupPositionClass] = useState<string>('');
 
-
-  // Function to calculate popup position
+  // Simple, reliable popup positioning function
   const calculatePopupPosition = (engiePos: { x: number; y: number }, windowWidth: number, windowHeight: number) => {
-    let top: number | undefined;
-    let right: number | undefined;
-    let bottom: number | undefined;
-    let left: number | undefined;
+    const engieSize = 64;
+    const popupWidth = Math.min(320, windowWidth - 32); // Responsive width with 16px margin on each side
+    const popupMaxHeight = Math.min(400, windowHeight - 32); // Responsive height
+    const gap = 16; // Gap between Engie and popup
+    const edgeMargin = 16; // Minimum margin from screen edges
+
+    // Engie center point
+    const engieCenterX = engiePos.x + engieSize / 2;
+    const engieCenterY = engiePos.y + engieSize / 2;
+
+    let left: number;
+    let top: number;
     let positionClass = '';
 
-    // const engieSize = 64; // Engie bot size  <- This was the duplicate declaration
-    const engieBotTrueSize = 64; // Renamed for clarity, or use a shared constant if defined elsewhere
-    const minMargin = POPUP_OFFSET; // Minimum margin from screen edge
+    // Determine best position based on available space
+    const spaceRight = windowWidth - (engiePos.x + engieSize);
+    const spaceLeft = engiePos.x;
+    const spaceBottom = windowHeight - (engiePos.y + engieSize);
+    const spaceTop = engiePos.y;
 
-    // Determine Engie's quadrant
-    const engieCenterX = engiePos.x + engieBotTrueSize / 2;
-    const engieCenterY = engiePos.y + engieBotTrueSize / 2;
+    // Try to position to the right first (most natural for speech bubbles)
+    if (spaceRight >= popupWidth + gap + edgeMargin) {
+      // Position to the right
+      left = engiePos.x + engieSize + gap;
+      top = Math.max(edgeMargin, Math.min(
+        engiePos.y - 20, // Slightly offset up for better visual alignment
+        windowHeight - popupMaxHeight - edgeMargin
+      ));
+      positionClass = 'popup-from-left';
+    }
+    // Try to position to the left
+    else if (spaceLeft >= popupWidth + gap + edgeMargin) {
+      left = engiePos.x - popupWidth - gap;
+      top = Math.max(edgeMargin, Math.min(
+        engiePos.y - 20,
+        windowHeight - popupMaxHeight - edgeMargin
+      ));
+      positionClass = 'popup-from-right';
+    }
+    // Try to position below
+    else if (spaceBottom >= popupMaxHeight + gap + edgeMargin) {
+      left = Math.max(edgeMargin, Math.min(
+        engieCenterX - popupWidth / 2, // Center horizontally on Engie
+        windowWidth - popupWidth - edgeMargin
+      ));
+      top = engiePos.y + engieSize + gap;
+      positionClass = 'popup-from-top';
+    }
+    // Try to position above
+    else if (spaceTop >= popupMaxHeight + gap + edgeMargin) {
+      left = Math.max(edgeMargin, Math.min(
+        engieCenterX - popupWidth / 2,
+        windowWidth - popupWidth - edgeMargin
+      ));
+      top = engiePos.y - popupMaxHeight - gap;
+      positionClass = 'popup-from-bottom';
+    }
+    // Fallback: position in the largest available space, ensuring full visibility
+    else {
+      // Find the quadrant with most space
+      const spaces = [
+        { space: spaceRight, position: 'right' },
+        { space: spaceLeft, position: 'left' },
+        { space: spaceBottom, position: 'bottom' },
+        { space: spaceTop, position: 'top' }
+      ];
+      
+      const bestSpace = spaces.reduce((max, current) => 
+        current.space > max.space ? current : max
+      );
 
-    const isTopHalf = engieCenterY < windowHeight / 2;
-    const isLeftHalf = engieCenterX < windowWidth / 2;
-
-    // Ideal position preferences
-    if (isTopHalf && isLeftHalf) { // Engie top-left quadrant
-      positionClass = 'popup-bottom-right'; // Popup aims to be bottom-right of Engie
-      top = engiePos.y + engieBotTrueSize + POPUP_OFFSET;
-      left = engiePos.x + engieBotTrueSize + POPUP_OFFSET;
-      if (top + POPUP_HEIGHT > windowHeight) { // Adjust if too low
-        bottom = POPUP_OFFSET;
-        top = undefined;
-      }
-      if (left + POPUP_WIDTH > windowWidth) { // Adjust if too right
-        right = POPUP_OFFSET;
-        left = undefined;
-      }
-    } else if (isTopHalf && !isLeftHalf) { // Engie is top-right
-      // Popup bottom-left of Engie
-      positionClass = 'popup-bottom-left';
-      top = engiePos.y + engieBotTrueSize + POPUP_OFFSET;
-      right = windowWidth - engiePos.x + POPUP_OFFSET;
-      if (top + POPUP_HEIGHT > windowHeight) { // Adjust if too low
-        bottom = POPUP_OFFSET;
-        top = undefined;
-      }
-      if (right + POPUP_WIDTH > windowWidth) { // Adjust if too left
-        left = POPUP_OFFSET;
-        right = undefined;
-      }
-    } else if (!isTopHalf && isLeftHalf) { // Engie is bottom-left
-      // Popup top-right of Engie
-      positionClass = 'popup-top-right';
-      bottom = windowHeight - engiePos.y + POPUP_OFFSET;
-      left = engiePos.x + engieBotTrueSize + POPUP_OFFSET;
-      if (bottom + POPUP_HEIGHT > windowHeight) { // Adjust if too high
-        top = POPUP_OFFSET;
-        bottom = undefined;
-      }
-      if (left + POPUP_WIDTH > windowWidth) { // Adjust if too right
-        right = POPUP_OFFSET;
-        left = undefined;
-      }
-    } else { // Engie is bottom-right
-      // Popup top-left of Engie
-      positionClass = 'popup-top-left';
-      bottom = windowHeight - engiePos.y + POPUP_OFFSET;
-      right = windowWidth - engiePos.x + POPUP_OFFSET;
-      if (bottom + POPUP_HEIGHT > windowHeight) { // Adjust if too high
-        top = POPUP_OFFSET;
-        bottom = undefined;
-      }
-      if (right + POPUP_WIDTH > windowWidth) { // Adjust if too left
-        left = POPUP_OFFSET;
-        right = undefined;
+      switch (bestSpace.position) {
+        case 'right':
+          left = Math.max(engiePos.x + engieSize + 8, windowWidth - popupWidth - edgeMargin);
+          top = Math.max(edgeMargin, Math.min(engiePos.y, windowHeight - popupMaxHeight - edgeMargin));
+          positionClass = 'popup-from-left';
+          break;
+        case 'left':
+          left = Math.min(engiePos.x - 8, edgeMargin);
+          top = Math.max(edgeMargin, Math.min(engiePos.y, windowHeight - popupMaxHeight - edgeMargin));
+          positionClass = 'popup-from-right';
+          break;
+        case 'bottom':
+          left = Math.max(edgeMargin, Math.min(engieCenterX - popupWidth / 2, windowWidth - popupWidth - edgeMargin));
+          top = Math.max(engiePos.y + engieSize + 8, windowHeight - popupMaxHeight - edgeMargin);
+          positionClass = 'popup-from-top';
+          break;
+        default: // top
+          left = Math.max(edgeMargin, Math.min(engieCenterX - popupWidth / 2, windowWidth - popupWidth - edgeMargin));
+          top = Math.min(engiePos.y - 8, edgeMargin);
+          positionClass = 'popup-from-bottom';
+          break;
       }
     }
 
-    // Fallback and screen edge adjustments
-    // Ensure popup stays within viewport, prioritizing visibility
+    // Final safety clamps to ensure popup never goes off-screen
+    left = Math.max(edgeMargin, Math.min(left, windowWidth - popupWidth - edgeMargin));
+    top = Math.max(edgeMargin, Math.min(top, windowHeight - popupMaxHeight - edgeMargin));
 
-    // Horizontal adjustments
-    if (left !== undefined) {
-      if (left < minMargin) {
-        left = minMargin;
-      }
-      if (left + POPUP_WIDTH > windowWidth - minMargin) {
-        left = windowWidth - POPUP_WIDTH - minMargin;
-        // If adjusting left makes it overlap with Engie's right side when it should be on the right
-        if (positionClass.endsWith('-right') && left < engiePos.x + engieBotTrueSize) {
-           // Try placing on the other side or center
-        }
-      }
-    } else if (right !== undefined) {
-      if (right < minMargin) {
-        right = minMargin;
-      }
-      if (windowWidth - (right + POPUP_WIDTH) < minMargin) { // Equivalent to: right + POPUP_WIDTH > windowWidth - minMargin
-        right = windowWidth - POPUP_WIDTH - minMargin;
-         // If adjusting right makes it overlap with Engie's left side when it should be on the left
-        if (positionClass.endsWith('-left') && (windowWidth - right - POPUP_WIDTH) > engiePos.x) {
-            // Try placing on the other side or center
-        }
-      }
-       // Convert right to left for final application if left is not set (because CSS 'right' behaves differently with fixed positioning)
-      if (left === undefined) {
-        left = windowWidth - right - POPUP_WIDTH;
-        right = undefined;
-      }
-    }
-
-    // Vertical adjustments
-    if (top !== undefined) {
-      if (top < minMargin) {
-        top = minMargin;
-      }
-      if (top + POPUP_HEIGHT > windowHeight - minMargin) {
-        top = windowHeight - POPUP_HEIGHT - minMargin;
-      }
-    } else if (bottom !== undefined) {
-      if (bottom < minMargin) {
-        bottom = minMargin;
-      }
-      // Equivalent to: bottom + POPUP_HEIGHT > windowHeight - minMargin
-      if (windowHeight - (bottom + POPUP_HEIGHT) < minMargin) {
-        bottom = windowHeight - POPUP_HEIGHT - minMargin;
-      }
-       // Convert bottom to top for final application if top is not set
-      if (top === undefined) {
-        top = windowHeight - bottom - POPUP_HEIGHT;
-        bottom = undefined;
-      }
-    }
-
-    // Centering logic (simplified: if no specific corner logic fits well, or Engie is near center)
-    // This is a very basic centering. A more sophisticated check for "centered Engie" might be needed.
-    const isEngieCentered = (
-      engieCenterX > windowWidth * 0.4 && engieCenterX < windowWidth * 0.6 &&
-      engieCenterY > windowHeight * 0.4 && engieCenterY < windowHeight * 0.6
-    );
-
-    if (isEngieCentered) {
-      positionClass = ''; // Clear corner-specific class for arrows
-      // Prefer above Engie, then below, then center screen
-      if (engiePos.y - POPUP_HEIGHT - POPUP_OFFSET > minMargin) { // Space above
-        top = engiePos.y - POPUP_HEIGHT - POPUP_OFFSET;
-        positionClass = 'popup-center-bottom'; // Arrow points down
-      } else if (engiePos.y + engieBotTrueSize + POPUP_HEIGHT + POPUP_OFFSET < windowHeight - minMargin) { // Space below
-        top = engiePos.y + engieBotTrueSize + POPUP_OFFSET;
-        positionClass = 'popup-center-top'; // Arrow points up
-      } else { // Default to screen center if no good fit above/below
-        top = Math.max(minMargin, (windowHeight - POPUP_HEIGHT) / 2);
-      }
-      left = Math.max(minMargin, (windowWidth - POPUP_WIDTH) / 2);
-      right = undefined;
-      bottom = undefined;
-    }
-
-    // Final check: if after all adjustments, values are out of bounds (e.g. small screen)
-    // clamp them. This is a last resort.
-    if (left !== undefined) {
-        left = Math.max(minMargin, Math.min(left, windowWidth - POPUP_WIDTH - minMargin));
-    }
-    if (top !== undefined) {
-        top = Math.max(minMargin, Math.min(top, windowHeight - POPUP_HEIGHT - minMargin));
-    }
-
-
-    // TODO: Add more sophisticated logic for available space check for main text box
-
-    setPopupPositionStyle({ top, right, bottom, left });
+    setPopupPositionStyle({ 
+      left, 
+      top, 
+      width: popupWidth,
+      maxHeight: popupMaxHeight
+    });
     setPopupPositionClass(positionClass);
   };
 
@@ -201,7 +141,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
       }
     });
     return unsubscribe;
-  }, [controller]); // Removed calculatePopupPosition from dependencies to avoid stale closures
+  }, [controller]);
 
   // Recalculate on window resize
   useEffect(() => {
@@ -226,8 +166,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     // Initial calculation
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, [state.engiePos, controller]); // Added controller to dependencies
-
+  }, [state.engiePos, controller]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -275,27 +214,6 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
       stateManager.resetEngiePosition();
     }, 100);
   }, [controller]);
-
-  // Handle window resize to keep Engie within bounds (now integrated into the recalculate on resize effect)
-  // useEffect(() => {
-  //   if (typeof window === 'undefined') return;
-    
-  //   const handleResize = () => {
-  //     const { x, y } = state.engiePos;
-  //     const maxX = window.innerWidth - 64;
-  //     const maxY = window.innerHeight - 64;
-      
-  //     if (x > maxX || y > maxY) {
-  //       controller.getStateManager().setEngiePos({
-  //         x: Math.min(x, maxX),
-  //         y: Math.min(y, maxY)
-  //       });
-  //     }
-  //   };
-
-  //   window.addEventListener('resize', handleResize);
-  //   return () => window.removeEventListener('resize', handleResize);
-  // }, [state.engiePos, controller]);
 
   // Computed values
   const activeSuggestions = controller.getStateManager().getActiveSuggestions(props.suggestions);
