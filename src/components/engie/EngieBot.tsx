@@ -31,15 +31,13 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     let left: number | undefined;
     let positionClass = '';
 
-    const engieSize = 64; // Engie bot size
-
-    // Determine Engie's corner/quadrant
-    const engieSize = 64; // Engie bot size
+    // const engieSize = 64; // Engie bot size  <- This was the duplicate declaration
+    const engieBotTrueSize = 64; // Renamed for clarity, or use a shared constant if defined elsewhere
     const minMargin = POPUP_OFFSET; // Minimum margin from screen edge
 
     // Determine Engie's quadrant
-    const engieCenterX = engiePos.x + engieSize / 2;
-    const engieCenterY = engiePos.y + engieSize / 2;
+    const engieCenterX = engiePos.x + engieBotTrueSize / 2;
+    const engieCenterY = engiePos.y + engieBotTrueSize / 2;
 
     const isTopHalf = engieCenterY < windowHeight / 2;
     const isLeftHalf = engieCenterX < windowWidth / 2;
@@ -47,8 +45,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     // Ideal position preferences
     if (isTopHalf && isLeftHalf) { // Engie top-left quadrant
       positionClass = 'popup-bottom-right'; // Popup aims to be bottom-right of Engie
-      top = engiePos.y + engieSize + POPUP_OFFSET;
-      left = engiePos.x + engieSize + POPUP_OFFSET;
+      top = engiePos.y + engieBotTrueSize + POPUP_OFFSET;
+      left = engiePos.x + engieBotTrueSize + POPUP_OFFSET;
       if (top + POPUP_HEIGHT > windowHeight) { // Adjust if too low
         bottom = POPUP_OFFSET;
         top = undefined;
@@ -60,7 +58,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     } else if (isTopHalf && !isLeftHalf) { // Engie is top-right
       // Popup bottom-left of Engie
       positionClass = 'popup-bottom-left';
-      top = engiePos.y + engieSize + POPUP_OFFSET;
+      top = engiePos.y + engieBotTrueSize + POPUP_OFFSET;
       right = windowWidth - engiePos.x + POPUP_OFFSET;
       if (top + POPUP_HEIGHT > windowHeight) { // Adjust if too low
         bottom = POPUP_OFFSET;
@@ -74,7 +72,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
       // Popup top-right of Engie
       positionClass = 'popup-top-right';
       bottom = windowHeight - engiePos.y + POPUP_OFFSET;
-      left = engiePos.x + engieSize + POPUP_OFFSET;
+      left = engiePos.x + engieBotTrueSize + POPUP_OFFSET;
       if (bottom + POPUP_HEIGHT > windowHeight) { // Adjust if too high
         top = POPUP_OFFSET;
         bottom = undefined;
@@ -109,7 +107,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
       if (left + POPUP_WIDTH > windowWidth - minMargin) {
         left = windowWidth - POPUP_WIDTH - minMargin;
         // If adjusting left makes it overlap with Engie's right side when it should be on the right
-        if (positionClass.endsWith('-right') && left < engiePos.x + engieSize) {
+        if (positionClass.endsWith('-right') && left < engiePos.x + engieBotTrueSize) {
            // Try placing on the other side or center
         }
       }
@@ -167,8 +165,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
       if (engiePos.y - POPUP_HEIGHT - POPUP_OFFSET > minMargin) { // Space above
         top = engiePos.y - POPUP_HEIGHT - POPUP_OFFSET;
         positionClass = 'popup-center-bottom'; // Arrow points down
-      } else if (engiePos.y + engieSize + POPUP_HEIGHT + POPUP_OFFSET < windowHeight - minMargin) { // Space below
-        top = engiePos.y + engieSize + POPUP_OFFSET;
+      } else if (engiePos.y + engieBotTrueSize + POPUP_HEIGHT + POPUP_OFFSET < windowHeight - minMargin) { // Space below
+        top = engiePos.y + engieBotTrueSize + POPUP_OFFSET;
         positionClass = 'popup-center-top'; // Arrow points up
       } else { // Default to screen center if no good fit above/below
         top = Math.max(minMargin, (windowHeight - POPUP_HEIGHT) / 2);
