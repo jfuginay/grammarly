@@ -215,7 +215,7 @@
   border-color: transparent !important;
 }
 
-/* Priority-Based Highlighting System */
+/* Priority-Based Highlighting System - Now using calm colors */
 .fragment-word {
   border-radius: 3px;
   margin: 0 1px;
@@ -235,60 +235,63 @@
   text-align: left;
 }
 
-/* Priority levels based on co-developer brief */
+/* Priority levels - much more subtle with new calm colors */
 .priority-1, .fragment-word.priority-1 {
-  background-color: rgba(254, 226, 226, 0.7); /* bg-red-200 */
-  border: 2px solid rgba(239, 68, 68, 0.7); /* border-red-500 */
+  background-color: hsl(var(--suggestion-critical));
+  border: 1px solid hsl(var(--suggestion-critical-border));
   z-index: 15;
 }
 
 .priority-2, .fragment-word.priority-2 {
-  background-color: rgba(254, 249, 195, 0.7); /* bg-yellow-100 */
-  border: 1px solid rgba(250, 204, 21, 0.7); /* border-yellow-400 */
+  background-color: hsl(var(--suggestion-important));
+  border: 1px solid hsl(var(--suggestion-important-border));
   z-index: 10;
 }
 
 .priority-3, .fragment-word.priority-3 {
-  background-color: rgba(219, 234, 254, 0.7); /* bg-blue-50 */
-  border: 1px solid rgba(147, 197, 253, 0.7); /* border-blue-300 */
+  background-color: hsl(var(--suggestion-minor));
+  border: 1px solid hsl(var(--suggestion-minor-border));
   opacity: 0.85;
   z-index: 5;
 }
 
-/* Hover states for priority levels */
+/* Hover states - more prominent but still gentle */
 .priority-1:hover, .fragment-word.priority-1:hover {
-  background-color: rgba(254, 226, 226, 0.9);
-  border-color: rgba(239, 68, 68, 0.9);
+  background-color: hsl(var(--suggestion-critical-border));
+  border-color: hsl(var(--suggestion-critical-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-critical-border), 0.2);
   z-index: 25;
 }
 
 .priority-2:hover, .fragment-word.priority-2:hover {
-  background-color: rgba(254, 249, 195, 0.9);
-  border-color: rgba(250, 204, 21, 0.9);
+  background-color: hsl(var(--suggestion-important-border));
+  border-color: hsl(var(--suggestion-important-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-important-border), 0.2);
   z-index: 20;
 }
 
 .priority-3:hover, .fragment-word.priority-3:hover {
-  background-color: rgba(219, 234, 254, 0.9);
-  border-color: rgba(147, 197, 253, 0.9);
+  background-color: hsl(var(--suggestion-minor-border));
+  border-color: hsl(var(--suggestion-minor-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-minor-border), 0.2);
   opacity: 1;
   z-index: 15;
 }
 
-/* Dark mode adaptations */
+/* Dark mode uses the same variables - they automatically adapt */
 .dark .priority-1, .dark .fragment-word.priority-1 {
-  background-color: rgba(185, 28, 28, 0.2);
-  border: 2px solid rgba(239, 68, 68, 0.5);
+  background-color: hsl(var(--suggestion-critical));
+  border: 1px solid hsl(var(--suggestion-critical-border));
 }
 
 .dark .priority-2, .dark .fragment-word.priority-2 {
-  background-color: rgba(161, 98, 7, 0.2);
-  border: 1px solid rgba(250, 204, 21, 0.5);
+  background-color: hsl(var(--suggestion-important));
+  border: 1px solid hsl(var(--suggestion-important-border));
 }
 
 .dark .priority-3, .dark .fragment-word.priority-3 {
-  background-color: rgba(30, 58, 138, 0.2);
-  border: 1px solid rgba(147, 197, 253, 0.5);
+  background-color: hsl(var(--suggestion-minor));
+  border: 1px solid hsl(var(--suggestion-minor-border));
 }
 
 /* Original fragment types with priority-based styling */
@@ -730,57 +733,62 @@
   to { transform: rotate(360deg); }
 }
 
-/* Suggestion highlights - Improved for better visibility */
+/* Suggestion highlights - Now using calm color system */
 .suggestion-spelling {
-  background-color: rgba(255, 50, 50, 0.15);
-  text-decoration: wavy underline rgba(255, 50, 50, 0.7);
+  background-color: hsl(var(--suggestion-critical));
+  text-decoration: wavy underline hsl(var(--suggestion-critical-border));
   cursor: pointer;
   position: relative;
   transition: background-color 0.2s ease;
 }
 
 .suggestion-spelling:hover {
-  background-color: rgba(255, 50, 50, 0.25);
+  background-color: hsl(var(--suggestion-critical-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-critical-border), 0.2);
 }
 
 .suggestion-grammar {
-  background-color: rgba(255, 150, 0, 0.15);
-  text-decoration: wavy underline rgba(255, 150, 0, 0.7);
+  background-color: hsl(var(--suggestion-important));
+  text-decoration: wavy underline hsl(var(--suggestion-important-border));
   transition: background-color 0.2s ease;
 }
 
 .suggestion-grammar:hover {
-  background-color: rgba(255, 150, 0, 0.25);
+  background-color: hsl(var(--suggestion-important-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-important-border), 0.2);
 }
 
 .suggestion-style {
-  background-color: rgba(0, 100, 255, 0.15);
-  text-decoration: wavy underline rgba(0, 100, 255, 0.7);
+  background-color: hsl(var(--suggestion-minor));
+  text-decoration: wavy underline hsl(var(--suggestion-minor-border));
   transition: background-color 0.2s ease;
 }
 
 .suggestion-style:hover {
-  background-color: rgba(0, 100, 255, 0.25);
+  background-color: hsl(var(--suggestion-minor-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-minor-border), 0.2);
 }
 
 .suggestion-punctuation {
-  background-color: rgba(128, 0, 255, 0.15);
-  text-decoration: wavy underline rgba(128, 0, 255, 0.7);
+  background-color: hsl(var(--suggestion-minor));
+  text-decoration: wavy underline hsl(var(--suggestion-minor-border));
   transition: background-color 0.2s ease;
 }
 
 .suggestion-punctuation:hover {
-  background-color: rgba(128, 0, 255, 0.25);
+  background-color: hsl(var(--suggestion-minor-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-minor-border), 0.2);
 }
 
 .suggestion-clarity {
-  background-color: rgba(0, 175, 0, 0.15);
-  text-decoration: wavy underline rgba(0, 175, 0, 0.7);
+  background-color: hsl(var(--suggestion-important));
+  text-decoration: wavy underline hsl(var(--suggestion-important-border));
   transition: background-color 0.2s ease;
 }
 
 .suggestion-clarity:hover {
-  background-color: rgba(0, 175, 0, 0.25);
+  background-color: hsl(var(--suggestion-important-border));
+  box-shadow: 0 2px 8px hsla(var(--suggestion-important-border), 0.2);
 }
 
 /* Severity modifiers */
@@ -851,30 +859,30 @@
   background-color: rgba(100, 255, 100, 0.25);
 }
 
-/* Dark mode adjustments */
+/* Dark mode uses same calm variables - they automatically adapt */
 .dark .suggestion-spelling {
-  background-color: rgba(255, 80, 80, 0.2);
-  text-decoration-color: rgba(255, 80, 80, 0.7);
+  background-color: hsl(var(--suggestion-critical));
+  text-decoration-color: hsl(var(--suggestion-critical-border));
 }
 
 .dark .suggestion-grammar {
-  background-color: rgba(255, 170, 0, 0.2);
-  text-decoration-color: rgba(255, 170, 0, 0.7);
+  background-color: hsl(var(--suggestion-important));
+  text-decoration-color: hsl(var(--suggestion-important-border));
 }
 
 .dark .suggestion-style {
-  background-color: rgba(50, 150, 255, 0.2);
-  text-decoration-color: rgba(50, 150, 255, 0.7);
+  background-color: hsl(var(--suggestion-minor));
+  text-decoration-color: hsl(var(--suggestion-minor-border));
 }
 
 .dark .suggestion-punctuation {
-  background-color: rgba(160, 50, 255, 0.2);
-  text-decoration-color: rgba(160, 50, 255, 0.7);
+  background-color: hsl(var(--suggestion-minor));
+  text-decoration-color: hsl(var(--suggestion-minor-border));
 }
 
 .dark .suggestion-clarity {
-  background-color: rgba(50, 200, 50, 0.2);
-  text-decoration-color: rgba(50, 200, 50, 0.7);
+  background-color: hsl(var(--suggestion-important));
+  text-decoration-color: hsl(var(--suggestion-important-border));
 }
 
 /* Animation for applying suggestions */
