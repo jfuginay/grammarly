@@ -1,4 +1,5 @@
 import '@/styles/globals.css'
+import '@/styles/editor-custom.css'
 import type { AppProps } from 'next/app'
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "next-themes"

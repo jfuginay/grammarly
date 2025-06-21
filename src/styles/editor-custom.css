@@ -1,0 +1,64 @@
+/* Additional styles for the EnhancedEditor component */
+
+/* Clear distinction between input and analysis editors */
+.main-editor-textarea .editor-highlights {
+  display: none !important; /* Force no highlighting on the input box */
+}
+
+/* Ensure analysis box highlights are visible */
+.analysis-editor .editor-highlights {
+  display: block !important;  /* Always show highlights in analysis box */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Ensure focus states are clean */
+.editor-textarea:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--color-primary);
+}
+
+/* Make sure the textarea fully captures all input */
+.editor-textarea.input-mode {
+  background-color: var(--background) !important;
+}
+
+/* Ensure text in input box is fully opaque and clear */
+.main-editor-textarea .editor-textarea {
+  opacity: 1 !important;
+}
+
+/* Specific styles for input vs analysis views */
+.input-view .editor-highlights {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.analysis-view .editor-highlights {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Ensure the textarea gets all inputs in input mode */
+.input-view .editor-textarea {
+  opacity: 1 !important;
+  z-index: 10;
+  background-color: var(--background, #ffffff) !important;
+}
+
+/* Make the analysis view highlights visible */
+.analysis-view .editor-textarea {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Override any highlighting in the input box */
+.main-editor-textarea.enhanced-editor .editor-highlights {
+  display: none !important;
+}
+
+/* Ensure highlighting works only in analysis box */
+.analysis-editor.enhanced-editor .editor-highlights {
+  display: block !important;
+}
