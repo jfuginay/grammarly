@@ -25,6 +25,12 @@ const Sidebar = ({ documents, activeDocument, onSelectDocument, onCreateDocument
         <Logo />
       </div>
       
+      {/* Premium gradient button with enhanced visual effects:
+          - Shadow effects that increase on hover
+          - Subtle y-axis translation on hover
+          - Focus ring for accessibility
+          - Consistent icon spacing and sizing
+      */}
       <Button 
         className="premium-button-gradient mb-8 shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30" 
         onClick={onCreateDocument}
