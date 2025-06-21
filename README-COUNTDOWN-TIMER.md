@@ -27,6 +27,13 @@ The implementation includes a visual countdown timer that appears in the bottom-
 
 ![Countdown Timer Screenshot](public/images/Screenshot%202025-06-21%20at%2012.40.33%20PM.png)
 
+## Deployment Notes
+
+- Uses CSS Modules instead of global CSS to avoid Next.js build errors
+- Compatible with Vercel deployments
+- No additional configuration required for build process
+- Integrates seamlessly with existing styling
+
 ## How to Test
 1. Open the application and navigate to any text editor
 2. Type some text and stop typing
