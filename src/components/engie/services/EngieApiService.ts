@@ -100,4 +100,30 @@ export class EngieApiService {
       return null;
     }
   }
-} 
+
+  async sendGrokChat(message: string, chatHistory: ChatMessage[]): Promise<string | null> {
+    try {
+      console.log('Engie: Sending Grok chat message via API');
+      const response = await fetch('/api/grok-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message,
+          chatHistory 
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Engie: Failed to send Grok chat. Status:', response.status, 'Error:', errorText);
+        return null;
+      }
+      
+      const data = await response.json();
+      return data.response || null;
+    } catch (error) {
+      console.error('Engie: Error sending Grok chat:', error);
+      return null;
+    }
+  }
+}

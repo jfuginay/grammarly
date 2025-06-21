@@ -20,7 +20,15 @@ export class EngieController {
     this.stateManager = new EngieStateManager();
     this.apiService = EngieApiService.getInstance();
     this.textExtractor = TextExtractorService.getInstance();
-    this.grokApiService = GrokApiService.getInstance();
+    
+    // Only initialize GrokApiService on the server side
+    if (typeof window === 'undefined') {
+      this.grokApiService = GrokApiService.getInstance();
+    } else {
+      // Set a null value on client side to avoid undefined errors
+      this.grokApiService = null as any;
+    }
+    
     this.setupInactivityTimer();
     this.detectTouchDevice();
   }
@@ -95,7 +103,7 @@ export class EngieController {
       }
 
       // Grok integration for opinionated comment
-      if (state.isGrokActive && this.grokApiService && process.env.GROQ_API_KEY) {
+      if (state.isGrokActive && typeof window === 'undefined' && this.grokApiService) {
         const commentPrompt = `Give me an opinionated, funny, or insightful comment about the following text: ${pageText.slice(0, 1000)}`;
         this.stateManager.addGrokChatMessage({ role: 'user', content: `Engie wants an opinionated comment on: "${pageText.substring(0,60)}..."` });
         const comment = await this.grokApiService.getOpinionatedComment(commentPrompt);
@@ -433,9 +441,35 @@ export class EngieController {
   }
 
   public async researchWithGrok(topic: string): Promise<void> {
-    if (!this.grokApiService || !process.env.GROQ_API_KEY) {
-      console.error("GrokApiService not available or API key missing. Cannot research.");
-      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I can't use Grok for research right now. The service or API key might be missing." });
+    // If we're on the client side, we should redirect this call to the server API
+    if (typeof window !== 'undefined' || !this.grokApiService) {
+      this.stateManager.setIdeating(true);
+      this.stateManager.setStatusMessage(`Engie is researching "${topic}" with Grok...`);
+      this.stateManager.addGrokChatMessage({ role: 'user', content: `Research: ${topic}` });
+      
+      try {
+        // Use API service to call the server endpoint
+        const response = await this.apiService.sendGrokChat(`Research this topic thoroughly: ${topic}`, []);
+        
+        if (response) {
+          this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
+        } else {
+          this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't find any research on that topic." });
+        }
+      } catch (error) {
+        console.error("Error researching with Grok:", error);
+        this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, there was an error while researching that topic." });
+      } finally {
+        this.stateManager.setIdeating(false);
+        this.stateManager.setStatusMessage('');
+      }
+      return;
+    }
+    
+    // Server-side processing with direct Groq client
+    if (!this.grokApiService) {
+      console.error("GrokApiService not available. Cannot research.");
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I can't use Grok for research right now." });
       return;
     }
 
@@ -472,8 +506,34 @@ export class EngieController {
    * Send a message to Grok chat and handle the response
    */
   public async sendGrokChatMessage(prompt: string): Promise<void> {
-    if (!this.grokApiService || !process.env.GROQ_API_KEY) {
-      console.error("Grok API service not available or API key not configured");
+    // If we're on the client side, we should redirect this call to the server API
+    if (typeof window !== 'undefined' || !this.grokApiService) {
+      // Add the user message to chat history
+      this.stateManager.addGrokChatMessage({ role: 'user', content: prompt });
+      
+      try {
+        // Use API service to call the server endpoint instead
+        const chatHistory = this.stateManager.getState().grokChatHistory;
+        const response = await this.apiService.sendGrokChat(prompt, chatHistory);
+        
+        if (response) {
+          // Add the assistant's response to chat history
+          this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
+        } else {
+          // Handle error case
+          this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't process your request." });
+        }
+      } catch (error) {
+        console.error("Error sending Grok chat via API:", error);
+        this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, there was an error processing your request." });
+      }
+      return;
+    }
+    
+    // Server-side processing with direct Groq client
+    if (!this.grokApiService) {
+      console.error("Grok API service not available");
+      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, Grok chat is not available at this time." });
       return;
     }
     

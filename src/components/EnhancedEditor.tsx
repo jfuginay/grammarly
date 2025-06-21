@@ -26,6 +26,8 @@ interface EnhancedEditorProps {
   showFragments?: boolean; // Whether to always show fragments (for analysis display)
   isAnalysisBox?: boolean; // Whether this is the top analysis box
   reflectTextFrom?: string; // Text to reflect in the analysis box
+  onSuggestionsFetched?: (suggestions: Suggestion[]) => void;
+  onToneHighlightsFetched?: (toneHighlights: Array<{ startIndex: number; endIndex: number; tone: string; severity: string }>) => void;
 }
 
 export interface EnhancedEditorRef {
@@ -43,12 +45,15 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   suggestions,
   className = '',
   placeholder = 'Start writing...',
-  toneHighlights = [],
+  // toneHighlights prop is received but local analysis results will be pushed up
+  // suggestions prop is received for display, but local analysis results will be pushed up
   autoAnalyze = true,
   readOnly = false,
   showFragments = false,
   isAnalysisBox = false,
-  reflectTextFrom = ''
+  reflectTextFrom = '',
+  onSuggestionsFetched,
+  onToneHighlightsFetched
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -115,22 +120,41 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
           .then(data => {
             if (signal.aborted) return resolve();
             
-            if (data && data.textAnalysis && Array.isArray(data.textAnalysis.fragments)) {
-              const prioritizedFragments = assignPriorities(data.textAnalysis.fragments, value); // Pass value
-              prioritizedFragments.sort((a, b) => {
-                const priorityDiff = (a.priority || 3) - (b.priority || 3);
-                if (priorityDiff !== 0) return priorityDiff;
-                if (a.confidence && b.confidence) return b.confidence - a.confidence;
-                return a.startIndex - b.startIndex;
-              });
-              setTextFragments(prioritizedFragments);
-              setShouldShowFragments(true);
+            if (data && data.textAnalysis) {
+              if (Array.isArray(data.textAnalysis.fragments)) {
+                const prioritizedFragments = assignPriorities(data.textAnalysis.fragments, value);
+                prioritizedFragments.sort((a, b) => {
+                  const priorityDiff = (a.priority || 3) - (b.priority || 3);
+                  if (priorityDiff !== 0) return priorityDiff;
+                  if (a.confidence && b.confidence) return b.confidence - a.confidence;
+                  return a.startIndex - b.startIndex;
+                });
+                setTextFragments(prioritizedFragments);
+                setShouldShowFragments(true);
+              } else {
+                setTextFragments([]); // Clear fragments if not provided
+              }
+
+              if (onSuggestionsFetched && Array.isArray(data.textAnalysis.suggestions)) {
+                onSuggestionsFetched(data.textAnalysis.suggestions);
+              } else if (onSuggestionsFetched) {
+                onSuggestionsFetched([]); // Clear suggestions if not provided
+              }
+
+              if (onToneHighlightsFetched && Array.isArray(data.textAnalysis.toneHighlights)) {
+                onToneHighlightsFetched(data.textAnalysis.toneHighlights);
+              } else if (onToneHighlightsFetched) {
+                onToneHighlightsFetched([]); // Clear tone highlights if not provided
+              }
+
               lastAnalyzedTextRef.current = value;
             } else {
               if (process.env.NODE_ENV === 'development') {
-                console.log('API response missing fragments, falling back to local analysis');
+                console.log('API response missing or malformed, falling back to local analysis for fragments and clearing suggestions/tone.');
               }
-              callPerformLocalAnalysis();
+              callPerformLocalAnalysis(); // For fragments
+              if (onSuggestionsFetched) onSuggestionsFetched([]);
+              if (onToneHighlightsFetched) onToneHighlightsFetched([]);
             }
             resolve();
           })
@@ -138,7 +162,9 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
             if (signal.aborted) return resolve();
             if (error.name !== 'AbortError') {
               console.error('Error fetching text analysis:', error);
-              callPerformLocalAnalysis();
+              callPerformLocalAnalysis(); // For fragments
+              if (onSuggestionsFetched) onSuggestionsFetched([]);
+              if (onToneHighlightsFetched) onToneHighlightsFetched([]);
             }
             resolve();
           })
@@ -407,8 +433,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       }
     });
     
-    // Add tone highlights
-    if (toneHighlights && toneHighlights.length > 0) {
+  // Add tone highlights
+    if (toneHighlights && Array.isArray(toneHighlights) && toneHighlights.length > 0) {
       toneHighlights.forEach((tone: {
         startIndex: number;
         endIndex: number;
