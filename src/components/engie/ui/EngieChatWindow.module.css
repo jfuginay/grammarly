@@ -3,49 +3,173 @@
 .chatWindow {
   /* Base styles for the chat window, if any beyond what's in EngieChatWindow.tsx */
   position: relative; /* Needed for absolute positioning of the arrow */
+  border-radius: 16px;
+  background-color: #fff;
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+  padding: 1px; /* Ensure border-radius is preserved with content */
 }
 
-/* Arrow pseudo-element */
-.chatWindow::before {
+/* Comic-style speech bubble */
+.chatWindow::before, 
+.chatWindow::after {
   content: '';
   position: absolute;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  /* Default arrow color, can be adjusted with theme */
-  --arrow-bg: var(--card-background, white);
-  --arrow-border-color: var(--border-color, #e5e7eb); /* Example border color */
+  background-color: #fff;
+  border: 2px solid #000;
 }
 
-/* Dark theme adjustments for arrow */
-[data-theme="dark"] .chatWindow::before {
-  --arrow-bg: var(--card-background-dark, #1f2937); /* Example dark bg */
-  --arrow-border-color: var(--border-color-dark, #4b5563); /* Example dark border */
+/* Dark theme adjustments for comic bubble */
+[data-theme="dark"] .chatWindow {
+  background-color: #1f2937;
+  border-color: #d1d5db;
+  box-shadow: 3px 3px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chatWindow::before,
+[data-theme="dark"] .chatWindow::after {
+  background-color: #1f2937;
+  border-color: #d1d5db;
 }
 
 
-/* Specific arrow positioning based on popupPositionClass */
-/* These classes will be on the PARENT div, so we need to adjust selectors if EngieChatWindow itself doesn't get the class */
-/* For now, assuming the parent div having the class is enough, and we adjust arrow based on that context */
-/* If not, we'll need to pass the class to EngieChatWindow and apply it directly */
-
-/* Arrow pointing towards top-left Engie (popup is bottom-right of Engie) */
+/* Specific speech bubble tails based on position */
+/* Bottom-right position - tail points to top-left */
 .popup-bottom-right::before {
-  top: -10px;
-  left: 20px;
-  border-width: 0 10px 10px 10px;
-  border-color: transparent transparent var(--arrow-border-color) transparent;
+  top: -15px;
+  left: 30px;
+  width: 30px;
+  height: 15px;
+  border-bottom-left-radius: 15px;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(10deg);
 }
-.popup-bottom-right::after { /* Inner part of arrow to match background */
-  content: '';
-  position: absolute;
-  top: -8px; /* Slightly offset from border */
-  left: 22px; /* Slightly offset from border */
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 8px 8px 8px;
-  border-color: transparent transparent var(--arrow-bg) transparent;
+
+.popup-bottom-right::after {
+  top: -25px;
+  left: 15px;
+  width: 20px;
+  height: 15px;
+  border-bottom-left-radius: 15px;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(30deg);
+}
+
+/* Bottom-left position - tail points to top-right */
+.popup-bottom-left::before {
+  top: -15px;
+  right: 30px;
+  width: 30px;
+  height: 15px;
+  border-bottom-right-radius: 15px;
+  border-top: 0;
+  border-left: 0;
+  transform: rotate(-10deg);
+}
+
+.popup-bottom-left::after {
+  top: -25px;
+  right: 15px;
+  width: 20px;
+  height: 15px;
+  border-bottom-right-radius: 15px;
+  border-top: 0;
+  border-left: 0;
+  transform: rotate(-30deg);
+}
+
+/* Top-right position - tail points to bottom-left */
+.popup-top-right::before {
+  bottom: -15px;
+  left: 30px;
+  width: 30px;
+  height: 15px;
+  border-top-left-radius: 15px;
+  border-bottom: 0;
+  border-right: 0;
+  transform: rotate(-10deg);
+}
+
+.popup-top-right::after {
+  bottom: -25px;
+  left: 15px;
+  width: 20px;
+  height: 15px;
+  border-top-left-radius: 15px;
+  border-bottom: 0;
+  border-right: 0;
+  transform: rotate(-30deg);
+}
+
+/* Top-left position - tail points to bottom-right */
+.popup-top-left::before {
+  bottom: -15px;
+  right: 30px;
+  width: 30px;
+  height: 15px;
+  border-top-right-radius: 15px;
+  border-bottom: 0;
+  border-left: 0;
+  transform: rotate(10deg);
+}
+
+.popup-top-left::after {
+  bottom: -25px;
+  right: 15px;
+  width: 20px;
+  height: 15px;
+  border-top-right-radius: 15px;
+  border-bottom: 0;
+  border-left: 0;
+  transform: rotate(30deg);
+}
+
+/* Center top - tail points straight up */
+.popup-center-top::before {
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 15px;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+  border-top: 0;
+}
+
+.popup-center-top::after {
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%) rotate(10deg);
+  width: 20px;
+  height: 15px;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+  border-top: 0;
+}
+
+/* Center bottom - tail points straight down */
+.popup-center-bottom::before {
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 15px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  border-bottom: 0;
+}
+
+.popup-center-bottom::after {
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  width: 20px;
+  height: 15px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  border-bottom: 0;
 }
 
 /* Arrow pointing towards top-right Engie (popup is bottom-left of Engie) */

@@ -36,6 +36,8 @@ export interface EngieProps {
   documents: Array<{ id: string; title: string }>;
 }
 
+import { DocumentContext } from './types/contextTypes';
+
 export interface EngieState {
   isChatOpen: boolean;
   currentSuggestionIndex: number;
@@ -44,6 +46,7 @@ export interface EngieState {
   internalSuggestions: Suggestion[];
   toneAnalysisResult: ToneAnalysis | null;
   overallPageToneAnalysis: ToneAnalysis | null;
+  documentContext: DocumentContext | null; // Added document context detection
   ideationMessage: ChatMessage | null;
   encouragementMessageApi: ChatMessage | null;
   lastEncouragementTone: string | null;
