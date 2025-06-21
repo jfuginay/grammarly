@@ -9,6 +9,18 @@ A Next.js-based grammar and spell-checking application with comprehensive CORS s
 - **Floating Suggestions** - Interactive hover-based corrections
 - **Multi-Origin Support** - Works across different domains and subdomains
 - **Responsive Design** - Works on desktop and mobile devices
+- **Enhanced UI/UX** - Polished button interactions, animations, and visual feedback
+
+## UI Components
+
+The application features carefully crafted UI elements with:
+- Gradient buttons with micro-interactions
+- Loading states with smooth animations
+- Focus states for accessibility
+- Visual feedback for user actions
+- Consistent design language across components
+
+View the button showcase at `/button-showcase` to see all button styles.
 
 ## Supported Origins
 

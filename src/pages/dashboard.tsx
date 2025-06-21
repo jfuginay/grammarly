@@ -594,8 +594,11 @@ const DashboardPage = () => {
           <div>
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold">My Documents</h1>
-              <Button className="premium-button-gradient hidden sm:flex" onClick={() => setShowNewDocModal(true)}>
-                <FilePlus className="mr-2 h-4 w-4" />
+              <Button 
+                className="premium-button-gradient hidden sm:flex items-center shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30" 
+                onClick={() => setShowNewDocModal(true)}
+              >
+                <FilePlus className="h-4 w-4 mr-1" />
                 New Document
               </Button>
             </div>
@@ -604,8 +607,11 @@ const DashboardPage = () => {
             ) : documents.length === 0 ? (
               <div className="text-center py-10">
                 <p className="mb-4 text-lg text-muted-foreground">No documents yet. Create your first one!</p>
-                <Button className="premium-button-gradient" onClick={() => setShowNewDocModal(true)}>
-                  <FilePlus className="mr-2 h-4 w-4" />
+                <Button 
+                  className="premium-button-gradient shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30" 
+                  onClick={() => setShowNewDocModal(true)}
+                >
+                  <FilePlus className="h-4 w-4 mr-1" />
                   Create Document
                 </Button>
               </div>
@@ -622,7 +628,13 @@ const DashboardPage = () => {
                 ))}
                 {/* Optional: Keep a dedicated "New Document" card if design prefers it, even with documents present */}
                 <Card className="flex items-center justify-center border-2 border-dashed rounded-xl premium-document-card bg-muted/50 hover:border-primary transition-colors min-h-[180px]" onClick={() => setShowNewDocModal(true)}>
-                   <Button variant="ghost" className="text-muted-foreground"><FilePlus className="mr-2 h-4 w-4" />New Document</Button>
+                   <Button 
+                     variant="ghost" 
+                     className="text-muted-foreground hover:text-blue-600 transition-colors duration-200"
+                   >
+                     <FilePlus className="h-4 w-4 mr-1" />
+                     New Document
+                   </Button>
                 </Card>
               </div>
             )}
@@ -723,10 +735,28 @@ const DashboardPage = () => {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button size="sm" onClick={handleAnalyzeText} disabled={isAnalyzing}>
+                      <Button 
+                        size="sm" 
+                        className={`analyze-button ${isAnalyzing ? 'loading-pulse' : ''}`}
+                        onClick={handleAnalyzeText} 
+                        disabled={isAnalyzing}
+                      >
                         {isAnalyzing ? (
                           <>
-                            <span className="animate-spin h-4 w-4 mr-1">&#8635;</span>
+                            <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                              <circle 
+                                className="opacity-25" 
+                                cx="12" cy="12" r="10" 
+                                stroke="currentColor" 
+                                strokeWidth="4" 
+                                fill="none" 
+                              />
+                              <path 
+                                className="opacity-75" 
+                                fill="currentColor" 
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" 
+                              />
+                            </svg>
                             Analyzing...
                           </>
                         ) : (
@@ -818,8 +848,38 @@ const DashboardPage = () => {
           <DialogHeader><DialogTitle>Create New Document</DialogTitle></DialogHeader>
           <Input placeholder="Enter document title" value={newDocTitle} onChange={(e: any) => setNewDocTitle(e.target.value)} onKeyDown={(e: any) => e.key === 'Enter' && handleCreateDocument()} />
           <DialogFooter>
-            <Button onClick={() => setShowNewDocModal(false)} variant="ghost">Cancel</Button>
-            <Button onClick={handleCreateDocument} disabled={creatingDoc}>{creatingDoc ? "Creating..." : "Create"}</Button>
+            <Button 
+              onClick={() => setShowNewDocModal(false)} 
+              variant="outline" 
+              className="transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateDocument} 
+              disabled={creatingDoc}
+              className={`premium-button-gradient ${creatingDoc ? 'loading-pulse' : ''}`}
+            >
+              {creatingDoc ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                    <circle 
+                      className="opacity-25" 
+                      cx="12" cy="12" r="10" 
+                      stroke="currentColor" 
+                      strokeWidth="4" 
+                      fill="none" 
+                    />
+                    <path 
+                      className="opacity-75" 
+                      fill="currentColor" 
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" 
+                    />
+                  </svg>
+                  Creating...
+                </>
+              ) : "Create"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
