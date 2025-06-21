@@ -1,0 +1,149 @@
+/* EngieChatWindow.module.css */
+
+.chatWindow {
+  /* Base styles for the chat window, if any beyond what's in EngieChatWindow.tsx */
+  position: relative; /* Needed for absolute positioning of the arrow */
+}
+
+/* Arrow pseudo-element */
+.chatWindow::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  /* Default arrow color, can be adjusted with theme */
+  --arrow-bg: var(--card-background, white);
+  --arrow-border-color: var(--border-color, #e5e7eb); /* Example border color */
+}
+
+/* Dark theme adjustments for arrow */
+[data-theme="dark"] .chatWindow::before {
+  --arrow-bg: var(--card-background-dark, #1f2937); /* Example dark bg */
+  --arrow-border-color: var(--border-color-dark, #4b5563); /* Example dark border */
+}
+
+
+/* Specific arrow positioning based on popupPositionClass */
+/* These classes will be on the PARENT div, so we need to adjust selectors if EngieChatWindow itself doesn't get the class */
+/* For now, assuming the parent div having the class is enough, and we adjust arrow based on that context */
+/* If not, we'll need to pass the class to EngieChatWindow and apply it directly */
+
+/* Arrow pointing towards top-left Engie (popup is bottom-right of Engie) */
+.popup-bottom-right::before {
+  top: -10px;
+  left: 20px;
+  border-width: 0 10px 10px 10px;
+  border-color: transparent transparent var(--arrow-border-color) transparent;
+}
+.popup-bottom-right::after { /* Inner part of arrow to match background */
+  content: '';
+  position: absolute;
+  top: -8px; /* Slightly offset from border */
+  left: 22px; /* Slightly offset from border */
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent var(--arrow-bg) transparent;
+}
+
+/* Arrow pointing towards top-right Engie (popup is bottom-left of Engie) */
+.popup-bottom-left::before {
+  top: -10px;
+  right: 20px;
+  border-width: 0 10px 10px 10px;
+  border-color: transparent transparent var(--arrow-border-color) transparent;
+}
+.popup-bottom-left::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 22px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent var(--arrow-bg) transparent;
+}
+
+/* Arrow pointing towards bottom-left Engie (popup is top-right of Engie) */
+.popup-top-right::before {
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px 10px 0 10px;
+  border-color: var(--arrow-border-color) transparent transparent transparent;
+}
+.popup-top-right::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 22px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 8px 0 8px;
+  border-color: var(--arrow-bg) transparent transparent transparent;
+}
+
+/* Arrow pointing towards bottom-right Engie (popup is top-left of Engie) */
+.popup-top-left::before {
+  bottom: -10px;
+  right: 20px;
+  border-width: 10px 10px 0 10px;
+  border-color: var(--arrow-border-color) transparent transparent transparent;
+}
+.popup-top-left::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  right: 22px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 8px 0 8px;
+  border-color: var(--arrow-bg) transparent transparent transparent;
+}
+
+/* Centered popup variations */
+/* Arrow for popup above Engie (pointing down) */
+.popup-center-top::before {
+  bottom: -10px; /* Arrow at the bottom of the popup */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 10px 10px 0 10px;
+  border-color: var(--arrow-border-color) transparent transparent transparent;
+}
+.popup-center-top::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 8px 0 8px;
+  border-color: var(--arrow-bg) transparent transparent transparent;
+}
+
+/* Arrow for popup below Engie (pointing up) */
+.popup-center-bottom::before {
+  top: -10px; /* Arrow at the top of the popup */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 10px 10px 10px;
+  border-color: transparent transparent var(--arrow-border-color) transparent;
+}
+.popup-center-bottom::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent var(--arrow-bg) transparent;
+}

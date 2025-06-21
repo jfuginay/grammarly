@@ -12,9 +12,11 @@ import { ChatMessage, ToneAnalysis, Suggestion, EngieState } from '../types';
 import { Switch } from '@/components/ui/switch'; // Import Switch
 import { Input } from '@/components/ui/input'; // Import Input
 import { Label } from '@/components/ui/label'; // Import Label
+import styles from './EngieChatWindow.module.css'; // Import CSS module
 
 
 interface EngieChatWindowProps {
+  // popupPositionClass?: string; // Optional: if specific styles needed on the window itself based on position
   state: EngieState;
   grokChatHistory: ChatMessage[];
   activeSuggestions: Suggestion[];
@@ -112,7 +114,10 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+      // Apply the base class from the CSS module
+      // The specific position classes (e.g., popup-top-left) are on the parent div in EngieBot.tsx
+      // The styles in EngieChatWindow.module.css use these parent classes to position the ::before pseudo-element for the arrow
+      className={`${styles.chatWindow} mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden`}
     >
       <header className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className='flex items-center gap-2'>
