@@ -45,8 +45,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   suggestions,
   className = '',
   placeholder = 'Start writing...',
-  // toneHighlights prop is received but local analysis results will be pushed up
-  // suggestions prop is received for display, but local analysis results will be pushed up
+  toneHighlights = [], // Default to empty array
   autoAnalyze = true,
   readOnly = false,
   showFragments = false,
@@ -199,6 +198,37 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     // Trailing edge execution - ensures execution after debounce period
     trailing: true
   });
+  
+  // Set up automatic checking for typos and grammar issues every 3 seconds
+  useEffect(() => {
+    // Only apply regular monitoring for the input editor (not the analysis box)
+    // and only when not in readOnly mode
+    if (readOnly || isAnalysisBox) return;
+    
+    // Don't start timer if there's no text to analyze
+    if (!value || value.trim() === '') return;
+    
+    // Don't analyze if we're already analyzing (prevents overlapping analysis)
+    if (isAnalyzingText) return;
+    
+    // Reference to keep track of the interval
+    const intervalId = setInterval(() => {
+      // Skip if already analyzing or if the text hasn't changed since last analysis
+      if (isAnalyzingText || lastAnalyzedTextRef.current === value) return;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Running scheduled grammar and typo check (3s interval)');
+      }
+      
+      // Run the analysis
+      analyzeText();
+    }, 3000); // Check every 3 seconds
+    
+    // Clean up the interval when component unmounts or dependencies change
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [value, isAnalyzingText, readOnly, isAnalysisBox, analyzeText]);
   
   // Toggle fragments visibility
   const toggleFragmentsVisibility = useCallback(() => {
