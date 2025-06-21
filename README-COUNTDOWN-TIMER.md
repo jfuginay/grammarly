@@ -17,6 +17,7 @@ This branch implements a visual countdown timer for the 3-second interval text s
 
 ## Technical Implementation
 - React functional component with hooks for state management
+- CSS Modules for component-specific styling and to avoid global CSS conflicts
 - CSS animations for smooth transitions and effects
 - Integration with the existing text analysis workflow
 - No external dependencies required
@@ -25,6 +26,13 @@ This branch implements a visual countdown timer for the 3-second interval text s
 The implementation includes a visual countdown timer that appears in the bottom-right corner of the editor:
 
 ![Countdown Timer Screenshot](public/images/Screenshot%202025-06-21%20at%2012.40.33%20PM.png)
+
+## Deployment Notes
+
+- Uses CSS Modules instead of global CSS to avoid Next.js build errors
+- Compatible with Vercel deployments
+- No additional configuration required for build process
+- Integrates seamlessly with existing styling
 
 ## How to Test
 1. Open the application and navigate to any text editor
