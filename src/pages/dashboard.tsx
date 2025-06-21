@@ -742,51 +742,59 @@ const DashboardPage = () => {
               </Card>
             )}
             
-            <div className="grid grid-cols-1 gap-4">
-              {/* Main Writing Card with Two Text Boxes */}
-              <Card className="shadow-lg">
-                {/* Analysis Box (Read-only) */}
-                <CardHeader className="border-b pb-2">
-                  <CardTitle className="text-sm font-medium">Text Analysis</CardTitle>
-                  <CardDescription className="text-xs">
-                    Auto-updates every 3 seconds
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="border-b p-4">
-                  <EnhancedEditor 
-                    ref={analysisEditorRef}
-                    value={text} 
-                    onChange={(val: any) => {/* Read-only - no changes */}} 
-                    suggestions={suggestions}
-                    toneHighlights={toneHighlights}
-                    autoAnalyze={true}
-                    readOnly={true}
-                    className="analysis-editor h-40 text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30" 
-                    placeholder="Analysis will appear here..." 
-                    showFragments={true}
-                    isAnalysisBox={true}
-                    reflectTextFrom={text}
-                  />
-                </CardContent>
-                
-                {/* Input Box (Editable) */}
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Write Your Text</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <EnhancedEditor 
-                    ref={editorRef}
-                    value={text} 
-                    onChange={handleTextChange} 
-                    suggestions={[]} // No highlighting in the input box
-                    toneHighlights={[]}
-                    autoAnalyze={false} // We'll manually sync with the analysis view
-                    className="main-editor-textarea h-40 text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-background" 
-                    placeholder="Start writing your masterpiece..." 
-                    showFragments={false} // Never show fragments in the input box
-                  />
-                </CardContent>
-              </Card>
+            {/* Container for side-by-side editors */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Left Column: Input Editor */}
+              <div className="md:w-1/2">
+                <Card className="shadow-lg h-full flex flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Write Your Text</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 flex-grow">
+                    <EnhancedEditor
+                      ref={editorRef}
+                      value={text}
+                      onChange={handleTextChange}
+                      suggestions={[]} // No highlighting in the input box
+                      toneHighlights={[]}
+                      autoAnalyze={false} // We'll manually sync with the analysis view
+                      className="main-editor-textarea h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-background"
+                      placeholder="Start writing your masterpiece..."
+                      showFragments={false} // Never show fragments in the input box
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Column: Analysis Box */}
+              <div className="md:w-1/2">
+                <Card className="shadow-lg h-full flex flex-col">
+                  <CardHeader className="border-b pb-2">
+                    <CardTitle className="text-sm font-medium">Text Analysis</CardTitle>
+                    <CardDescription className="text-xs">
+                      Analysis of the text on the left.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="border-b p-4 flex-grow">
+                    <EnhancedEditor
+                      ref={analysisEditorRef}
+                      value={text}
+                      onChange={(val: any) => {/* Read-only - no changes */}}
+                       suggestions={suggestions} // Still pass suggestions for display
+                       toneHighlights={toneHighlights} // Still pass toneHighlights for display
+                      autoAnalyze={true}
+                      readOnly={true}
+                      className="analysis-editor h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30"
+                      placeholder="Analysis will appear here..."
+                      showFragments={true}
+                      isAnalysisBox={true}
+                      reflectTextFrom={text}
+                       onSuggestionsFetched={setSuggestions}
+                       onToneHighlightsFetched={setToneHighlights}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         )}
