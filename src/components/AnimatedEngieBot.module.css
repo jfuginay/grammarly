@@ -1,3 +1,5 @@
+/* Premium Engie Bot - Design-conscious professional quality */
+
 .engie-bot {
   position: relative;
   width: 64px;
@@ -6,339 +8,484 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  filter: drop-shadow(0 8px 25px hsla(var(--engie-primary), 0.15));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.engie-bot:hover {
+  filter: drop-shadow(0 12px 35px hsla(var(--engie-primary), 0.25));
+  transform: translateY(-2px);
+}
+
+.engie-bot:active {
+  transform: translateY(-1px) scale(0.98);
+  filter: drop-shadow(0 6px 20px hsla(var(--engie-primary), 0.3));
 }
 
 .engie-bot .engie-body {
   width: 48px;
   height: 36px;
-  background: linear-gradient(145deg, #8B5CF6, #6366F1);
+  background: linear-gradient(145deg, 
+    hsl(var(--engie-primary)), 
+    hsl(var(--primary))
+  );
   border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
   position: relative;
-  border: 3px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  transition: transform 0.2s ease;
+  border: 2px solid hsla(0, 0%, 100%, 0.9);
+  box-shadow: 
+    0 4px 20px hsla(var(--engie-primary), 0.2),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.3),
+    inset 0 -1px 0 hsla(0, 0%, 0%, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
 
+/* Premium eye design */
 .engie-bot .engie-eye {
   position: absolute;
   width: 8px;
   height: 12px;
-  background: white;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 50%;
   top: 10px;
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.engie-bot .engie-eye::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #1e293b;
+  border-radius: 50%;
+  top: 4px;
+  left: 2.5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .engie-bot .engie-eye.left { left: 10px; }
 .engie-bot .engie-eye.right { right: 10px; }
 
+/* Premium leg design */
 .engie-bot .engie-leg {
   position: absolute;
   bottom: -10px;
   width: 8px;
   height: 16px;
-  background: #6366F1;
+  background: linear-gradient(180deg, 
+    hsl(var(--primary)), 
+    hsl(var(--primary) / 0.8)
+  );
   border-radius: 4px;
   transform-origin: top center;
+  box-shadow: 
+    0 2px 8px hsla(var(--primary), 0.2),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .engie-bot .engie-leg.left { left: 12px; }
 .engie-bot .engie-leg.right {
   right: 8px;
   transform-origin: 50% 0;
 }
 
-/* Idle Animations */
+/* Smooth idle animations with premium easing */
 .engie-bot.idle .engie-body {
-  animation: idle-bob 2s infinite ease-in-out;
+  animation: premium-idle-bob 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .engie-bot.idle .engie-eye {
-  animation: idle-blink 3s infinite ease-in-out;
+  animation: premium-idle-blink 6s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes idle-bob {
+@keyframes premium-idle-bob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-3px); }
 }
 
-@keyframes idle-blink {
-  0%, 90%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.1); }
+@keyframes premium-idle-blink {
+  0%, 90%, 100% { transform: scaleY(1); opacity: 1; }
+  93%, 97% { transform: scaleY(0.1); opacity: 0.8; }
 }
 
-/* Walking Animations */
+/* Sophisticated walking animations */
 .engie-bot.walking .engie-body {
-  animation: walk-bob 0.4s infinite ease-in-out;
+  animation: premium-walk-bob 0.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .engie-bot.walking .engie-leg.left {
-  animation: walk-left 0.4s infinite ease-in-out;
+  animation: premium-walk-left 0.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .engie-bot.walking .engie-leg.right {
-  animation: walk-right 0.4s infinite ease-in-out;
+  animation: premium-walk-right 0.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.engie-bot.walking.fast .engie-body { animation-duration: 0.25s; }
-.engie-bot.walking.fast .engie-leg { animation-duration: 0.25s; }
+.engie-bot.walking.fast .engie-body { animation-duration: 0.4s; }
+.engie-bot.walking.fast .engie-leg { animation-duration: 0.4s; }
 
-@keyframes walk-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-
-@keyframes walk-left {
-  0%, 100% { transform: rotate(-25deg); }
-  50% { transform: rotate(25deg); }
-}
-@keyframes walk-right {
-  0%, 100% { transform: rotate(25deg); }
-  50% { transform: rotate(-25deg); }
+@keyframes premium-walk-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(1deg); }
+  75% { transform: translateY(-2px) rotate(-1deg); }
 }
 
-.engie-bot-wrapper {
-  transition: transform 0.2s ease-out;
-}
-.engie-bot-wrapper.facing-left {
-  transform: scaleX(-1);
+@keyframes premium-walk-left {
+  0%, 100% { transform: rotate(-20deg); }
+  50% { transform: rotate(20deg); }
 }
 
-.engie-bot.flipped {
-  transform: scaleX(-1);
-}
-
-/* Walking animation */
-@keyframes walk {
+@keyframes premium-walk-right {
   0%, 100% { transform: rotate(20deg); }
+  50% { transform: rotate(-20deg); }
 }
 
-/* Idle Animations */
+/* Premium sitting animation */
 .engie-bot.sitting .engie-body {
-  transform: translateY(10px);
-  animation: sit 2s ease-in-out infinite alternate;
+  transform: translateY(8px);
+  animation: premium-sit 3s ease-in-out infinite alternate;
 }
+
 .engie-bot.sitting .engie-leg {
-  transform: translateY(10px) rotate(90deg);
+  transform: translateY(8px) rotate(80deg);
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes sit {
-  0% { transform: translateY(10px) scaleY(1); }
-  50% { transform: translateY(12px) scaleY(0.98); }
-  100% { transform: translateY(10px) scaleY(1); }
+@keyframes premium-sit {
+  0% { transform: translateY(8px) scaleY(1); }
+  100% { transform: translateY(10px) scaleY(0.97); }
 }
 
-/* Juggling */
+/* Enhanced juggling with premium physics */
 .engie-bot.juggling .engie-eye {
-  animation: juggle-eyes 1.5s linear infinite;
+  animation: premium-juggle-eyes 2s ease-in-out infinite;
 }
 
-@keyframes juggle-eyes {
+@keyframes premium-juggle-eyes {
   0%, 100% { transform: translateY(0); }
-  25% { transform: translateY(-2px); }
-  75% { transform: translateY(2px); }
+  25% { transform: translateY(-3px); }
+  75% { transform: translateY(3px); }
 }
 
 .juggling-balls {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  top: -20px;
-  left: 0;
+  width: 120%;
+  height: 120%;
+  top: -25px;
+  left: -10%;
 }
 
 .ball {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: #3498db;
-  animation: juggle-ball 1.5s linear infinite;
+  background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+  box-shadow: 
+    0 2px 8px rgba(59, 130, 246, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: premium-juggle-ball 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .ball2 {
-  animation-delay: -0.5s;
-  background-color: #e74c3c;
+  animation-delay: -0.67s;
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  box-shadow: 
+    0 2px 8px rgba(239, 68, 68, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .ball3 {
-  animation-delay: -1s;
-  background-color: #f1c40f;
+  animation-delay: -1.33s;
+  background: linear-gradient(145deg, #f59e0b, #d97706);
+  box-shadow: 
+    0 2px 8px rgba(245, 158, 11, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-@keyframes juggle-ball {
-  0%, 100% { top: 0; left: 5px; }
-  25% { top: -20px; left: 20px; }
-  50% { top: 0; left: 35px; }
-  75% { top: 20px; left: 20px; }
+@keyframes premium-juggle-ball {
+  0%, 100% { 
+    transform: translateX(5px) translateY(0) scale(1);
+    opacity: 1;
+  }
+  25% { 
+    transform: translateX(25px) translateY(-30px) scale(0.8);
+    opacity: 0.9;
+  }
+  50% { 
+    transform: translateX(45px) translateY(0) scale(1);
+    opacity: 1;
+  }
+  75% { 
+    transform: translateX(25px) translateY(25px) scale(1.1);
+    opacity: 0.8;
+  }
 }
 
-/* Blowing Bubbles */
+/* Premium bubble effects */
 .bubbles {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
+  width: 150%;
+  height: 150%;
+  top: -25%;
+  left: -25%;
   pointer-events: none;
 }
 
 .bubble {
   position: absolute;
-  background-color: rgba(52, 152, 219, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: linear-gradient(145deg, 
+    hsla(var(--primary), 0.2), 
+    hsla(var(--primary), 0.1)
+  );
+  border: 1px solid hsla(var(--primary), 0.3);
   border-radius: 50%;
-  animation: rise 4s ease-in infinite;
+  backdrop-filter: blur(4px);
+  animation: premium-bubble-rise 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-shadow: 
+    0 2px 12px hsla(var(--primary), 0.1),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.4);
 }
 
 .bubble1 {
-  width: 15px;
-  height: 15px;
-  left: 50%;
+  width: 12px;
+  height: 12px;
+  left: 45%;
   bottom: 5px;
   animation-delay: 0s;
 }
+
 .bubble2 {
-  width: 10px;
-  height: 10px;
-  left: 40%;
+  width: 8px;
+  height: 8px;
+  left: 35%;
   bottom: 10px;
-  animation-delay: 1.5s;
-}
-.bubble3 {
-  width: 12px;
-  height: 12px;
-  left: 60%;
-  bottom: 0;
-  animation-delay: 2.5s;
+  animation-delay: 2s;
 }
 
-@keyframes rise {
+.bubble3 {
+  width: 10px;
+  height: 10px;
+  left: 55%;
+  bottom: 0;
+  animation-delay: 3.5s;
+}
+
+@keyframes premium-bubble-rise {
   0% {
-    transform: translateY(0) scale(0);
+    transform: translateY(0) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
     opacity: 1;
+    transform: translateY(-10px) scale(1) rotate(10deg);
   }
   90% {
-    opacity: 1;
+    opacity: 0.8;
+    transform: translateY(-100px) scale(1.3) rotate(180deg);
   }
   100% {
-    transform: translateY(-80px) scale(1.5);
+    transform: translateY(-120px) scale(0) rotate(200deg);
     opacity: 0;
   }
 }
 
-/* Emotion Styles */
+/* Premium emotion styles with sophisticated gradients */
 
 /* Happy Emotion */
 .emotion-happy .engie-body {
-  background: linear-gradient(145deg, #9333EA, #6366F1);
+  background: linear-gradient(145deg, 
+    hsl(150, 70%, 60%), 
+    hsl(var(--primary))
+  );
+  animation: premium-happy-glow 2s ease-in-out infinite alternate;
 }
 
 .happy-eye {
-  height: 8px !important;
+  height: 6px !important;
   border-radius: 50% 50% 0 0 !important;
-  transform: translateY(2px);
+  transform: translateY(3px);
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
 }
 
 .happy-mouth {
   position: absolute;
-  width: 18px;
-  height: 8px;
+  width: 16px;
+  height: 6px;
   background: transparent;
-  border-radius: 0 0 100px 100px;
-  border-bottom: 3px solid white;
+  border-radius: 0 0 50px 50px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.9);
   left: 50%;
-  bottom: 8px;
+  bottom: 10px;
   transform: translateX(-50%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes premium-happy-glow {
+  0% { box-shadow: 
+    0 4px 20px hsla(150, 70%, 60%, 0.2),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.3);
+  }
+  100% { box-shadow: 
+    0 6px 30px hsla(150, 70%, 60%, 0.3),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.4);
+  }
 }
 
 /* Excited Emotion */
 .emotion-excited .engie-body {
-  background: linear-gradient(145deg, #F59E0B, #EC4899);
-  animation: excited-wiggle 0.5s infinite ease-in-out !important;
+  background: linear-gradient(145deg, 
+    hsl(var(--engie-primary)), 
+    hsl(280, 60%, 60%)
+  );
+  animation: premium-excited-bounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
 }
 
 .excited-eye {
-  background: white;
-  height: 10px !important;
-  width: 10px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  height: 8px !important;
+  width: 8px !important;
   border-radius: 50% !important;
-  animation: excited-blink 0.5s infinite !important;
+  animation: premium-excited-sparkle 0.6s ease-in-out infinite !important;
+  box-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.8),
+    inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .excited-mouth {
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   background: transparent;
   border-radius: 50%;
-  border: 3px solid white;
+  border: 2px solid rgba(255, 255, 255, 0.9);
   left: 50%;
-  bottom: 5px;
+  bottom: 8px;
   transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-@keyframes excited-wiggle {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
+@keyframes premium-excited-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  50% { transform: translateY(-6px) rotate(2deg) scale(1.05); }
 }
 
-@keyframes excited-blink {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+@keyframes premium-excited-sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.2) rotate(10deg); opacity: 0.8; }
 }
 
 /* Concerned Emotion */
 .emotion-concerned .engie-body {
-  background: linear-gradient(145deg, #6366F1, #3B82F6);
-  animation: concerned-shake 1s infinite ease-in-out !important;
+  background: linear-gradient(145deg, 
+    hsl(var(--primary)), 
+    hsl(220, 50%, 45%)
+  );
+  animation: premium-concerned-wobble 1.5s ease-in-out infinite;
 }
 
 .concerned-eye {
   height: 10px !important;
-  width: 6px !important;
+  width: 5px !important;
   border-radius: 50% !important;
-  transform: translateY(2px) rotate(10deg);
+  transform: translateY(2px) rotate(8deg);
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
 }
 
 .concerned-eye.right {
-  transform: translateY(2px) rotate(-10deg);
+  transform: translateY(2px) rotate(-8deg);
 }
 
 .concerned-mouth {
   position: absolute;
-  width: 14px;
-  height: 4px;
+  width: 12px;
+  height: 3px;
   background: transparent;
-  border-radius: 100px 100px 0 0;
-  border-top: 3px solid white;
+  border-radius: 50px 50px 0 0;
+  border-top: 2px solid rgba(255, 255, 255, 0.8);
   left: 50%;
-  bottom: 8px;
+  bottom: 10px;
   transform: translateX(-50%);
 }
 
-@keyframes concerned-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
+@keyframes premium-concerned-wobble {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-1px) rotate(-0.5deg); }
+  75% { transform: translateX(1px) rotate(0.5deg); }
 }
 
 /* Thoughtful Emotion */
 .emotion-thoughtful .engie-body {
-  background: linear-gradient(145deg, #8B5CF6, #6366F1);
+  background: linear-gradient(145deg, 
+    hsl(var(--engie-primary)), 
+    hsl(var(--primary))
+  );
+  animation: premium-thoughtful-pulse 3s ease-in-out infinite;
 }
 
 .thoughtful-eye {
-  height: 7px !important;
+  height: 6px !important;
   border-radius: 50% !important;
-  transform: scaleY(0.8);
-}
-
-.thoughtful-eye.right {
-  transform: scaleY(0.8);
+  transform: scaleY(0.7);
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
 }
 
 .thoughtful-mouth {
   position: absolute;
-  width: 8px;
-  height: 3px;
-  background: white;
-  border-radius: 5px;
+  width: 6px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 3px;
   left: 50%;
-  bottom: 10px;
+  bottom: 12px;
   transform: translateX(-50%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes premium-thoughtful-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(0.98); }
+}
+
+/* Flip animation for direction changes */
+.engie-bot.flipped {
+  transform: scaleX(-1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Premium hover states */
+.engie-bot:hover .engie-body {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.engie-bot:hover .engie-eye::after {
+  animation: premium-eye-follow 2s ease-in-out infinite;
+}
+
+@keyframes premium-eye-follow {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
+}
+
+/* Integration with design system */
+.engie-bot {
+  --shadow-color: hsl(var(--engie-primary) / 0.2);
+  --glow-color: hsl(var(--engie-primary) / 0.1);
+}
+
+/* Accessibility and reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .engie-bot,
+  .engie-bot *,
+  .engie-bot::before,
+  .engie-bot::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

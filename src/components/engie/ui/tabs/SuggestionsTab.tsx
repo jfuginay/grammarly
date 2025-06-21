@@ -74,7 +74,7 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
       </div>
 
       {/* Suggestion card */}
-      <Card key={currentSuggestion.id} className="calm-card">
+      <Card key={currentSuggestion.id} className="premium-suggestion-card">
         <CardHeader className="flex flex-row items-center gap-3 p-4 pb-2">
           <span className="text-lg">{severity.emoji}</span>
           <div className="flex-1">
@@ -116,7 +116,7 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
           variant="ghost" 
           size="sm" 
           onClick={onDismiss}
-          className="text-muted-foreground hover:text-foreground"
+          className="premium-hover-lift text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           Skip this one
         </Button>
@@ -127,7 +127,7 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
               variant="outline" 
               size="sm" 
               onClick={onNext}
-              className="calm-button-secondary"
+              className="premium-hover-lift premium-focus transition-all duration-200 hover:border-primary/30"
             >
               Next →
             </Button>
@@ -136,9 +136,12 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
           <Button 
             size="sm" 
             onClick={onApply}
-            className="engie-button"
+            className="premium-hover-lift bg-gradient-to-r from-engie-primary to-primary text-white shadow-lg shadow-engie-primary/20 hover:shadow-engie-primary/30 hover:shadow-xl transition-all duration-300 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent before:translate-x-[-100%] before:transition-transform before:duration-500 hover:before:translate-x-[100%]"
           >
-            ✨ Apply it
+            <span className="relative z-10 flex items-center gap-1">
+              <span className="premium-emoji">✨</span>
+              Apply it
+            </span>
           </Button>
         </div>
       </div>
