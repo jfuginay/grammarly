@@ -3,7 +3,7 @@ import { Suggestion } from './engie/types';
 import { useDebouncedCallback } from 'use-debounce';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import AnimatedEngieBot from './AnimatedEngieBot';
-import ScanCountdownTimer from './ScanCountdownTimer';
+import EnhancedScanIndicator from './EnhancedScanIndicator';
 import {
   TextFragment,
   assignPriorities,
@@ -642,6 +642,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     redo: redo,
     toggleCountdownTimer: () => {
       setShowCountdownTimer(prev => !prev);
+      // Additional logic for EnhancedScanIndicator could be added here if needed
     }
   }), [analyzeText, toggleFragmentsVisibility, clearAnalysis, undo, redo]);
   
@@ -1162,15 +1163,33 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         onKeyDown={handleKeyDown}
       />
       
-      {/* Countdown Timer - only show in the main editor, not analysis box */}
-      {!isAnalysisBox && !readOnly && autoAnalyze && (
-        <ScanCountdownTimer 
-          interval={3000}
+      {/* Enhanced Scan Indicator - only show in the main editor, not analysis box */}
+      {!isAnalysisBox && !readOnly && autoAnalyze && showCountdownTimer && value.trim().length > 0 && (
+        <EnhancedScanIndicator 
+          scanInterval={3}
           isTyping={isUserTyping}
           isAnalyzing={isAnalyzingText}
-          hasResults={shouldShowFragments}
-          onTimerComplete={analyzeText}
-          visible={value.trim().length > 0}
+          isProcessing={isAnalyzingText}
+          suggestionCount={suggestions.length}
+          onScanNow={() => {
+            // Trigger immediate scan
+            if (activeTextAnalysisControllerRef.current) {
+              activeTextAnalysisControllerRef.current.abort();
+            }
+            analyzeText();
+          }}
+          onToggleAutoScan={(enabled) => {
+            // Handle auto scan toggle here
+            if (!enabled && inactivityTimerRef.current) {
+              clearTimeout(inactivityTimerRef.current);
+              inactivityTimerRef.current = null;
+            }
+          }}
+          onIntervalChange={(seconds) => {
+            // Handle interval change here
+            console.log(`Scan interval changed to ${seconds} seconds`);
+            // This would typically update a configuration setting
+          }}
         />
       )}
 
