@@ -150,7 +150,7 @@ export const SuggestionsTab: React.FC<SuggestionsTabProps> = ({
       {isLastSuggestion && (
         <div className="text-center mt-4 p-3 bg-accent/20 rounded-md">
           <p className="text-xs text-muted-foreground">
-            🎯 Almost done! Apply this and you'll be all set.
+            🎯 Almost done! Apply this and you&apos;ll be all set.
           </p>
         </div>
       )}
