@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, us
 import { Suggestion } from './engie/types';
 import { useDebouncedCallback } from 'use-debounce';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
+import AnimatedEngieBot from './AnimatedEngieBot';
 import {
   TextFragment,
   assignPriorities,
@@ -59,6 +60,14 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const [highlightedHtml, setHighlightedHtml] = useState<string>('');
   const [textFragments, setTextFragments] = useState<TextFragment[]>([]);
   const [isAnalyzingText, setIsAnalyzingText] = useState(false);
+  
+  // Engie Bot animation states
+  const [showEngieBot, setShowEngieBot] = useState(false);
+  const [engieBotPosition, setEngieBotPosition] = useState({ top: 0, left: 0 });
+  const [engieBotDirection, setEngieBotDirection] = useState<'left' | 'right'>('right');
+  const [engieBotAnimationState, setEngieBotAnimationState] = useState<'idle' | 'walking'>('idle');
+  const [engieBotEmotion, setEngieBotEmotion] = useState<'happy' | 'excited' | 'concerned' | 'thoughtful' | 'neutral'>('neutral');
+  const [wordBeingChanged, setWordBeingChanged] = useState<string | null>(null);
   
   // Use our custom hook to handle auto-resizing
   useAutoResizeTextarea(
@@ -243,6 +252,173 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     setHighlightedHtml('');
   }, []);
   
+  // Animate Engie bot going through the text changes word by word
+  const animateEngieBotThroughChanges = useCallback((originalText: string, newText: string, startIndex: number) => {
+    // Only animate if this is the analysis view (right side)
+    if (!readOnly || !editorRef.current) return;
+    
+    const originalWords = originalText.split(/\s+/);
+    const newWords = newText.split(/\s+/);
+    
+    // If there are no words to animate through, don't show animation
+    if (originalWords.length === 0 && newWords.length === 0) return;
+    
+    // Find the position where the text starts
+    const getPositionFromIndex = (index: number) => {
+      const highlightElement = editorRef.current?.querySelector('.editor-highlights') as HTMLElement;
+      if (!highlightElement) return { top: 0, left: 0 };
+      
+      // Create a range to find the position
+      const textContent = value;
+      const range = document.createRange();
+      
+      // Create a temporary span to position at the desired index
+      const tempSpan = document.createElement('span');
+      tempSpan.style.display = 'inline';
+      tempSpan.style.visibility = 'hidden';
+      tempSpan.textContent = '';
+      tempSpan.id = 'temp-position-span';
+      
+      // Find the element that contains the text at the given index
+      const fragmentSpans = highlightElement.querySelectorAll('span[class*="fragment-"]');
+      let targetElement: HTMLElement | null = null;
+      let localOffset = 0;
+      
+      // Try to find the exact span containing our target index
+      for (const span of Array.from(fragmentSpans)) {
+        const spanElement = span as HTMLElement;
+        const startAttr = spanElement.getAttribute('data-start');
+        const endAttr = spanElement.getAttribute('data-end');
+        
+        if (startAttr && endAttr) {
+          const spanStart = parseInt(startAttr, 10);
+          const spanEnd = parseInt(endAttr, 10);
+          
+          if (spanStart <= index && index < spanEnd) {
+            targetElement = spanElement;
+            localOffset = index - spanStart;
+            break;
+          }
+        }
+      }
+      
+      // If we couldn't find a specific span, just use the container
+      if (!targetElement) {
+        targetElement = highlightElement;
+        
+        // Insert the temporary span at the start of the container
+        targetElement.insertBefore(tempSpan, targetElement.firstChild);
+      } else {
+        // Found a specific element, now we need to find the exact position
+        const textNode = targetElement.firstChild;
+        
+          if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            // If the offset is within the text node's length
+            if (localOffset <= (textNode as Text).textContent!.length) {
+              // Split the text node at the offset
+              targetElement.insertBefore(tempSpan, (textNode as Text).splitText(localOffset));
+            } else {
+              // If offset is beyond the text length, just append it
+              targetElement.appendChild(tempSpan);
+            }
+          } else {
+          // No text node, just append it
+          targetElement.appendChild(tempSpan);
+        }
+      }
+      
+      // Get the position of the span
+      const rect = tempSpan.getBoundingClientRect();
+      const highlightRect = highlightElement.getBoundingClientRect();
+      
+      // Calculate position relative to the highlight container
+      const position = {
+        top: rect.top - highlightRect.top + highlightElement.scrollTop,
+        left: rect.left - highlightRect.left + highlightElement.scrollLeft
+      };
+      
+      // Remove the temporary span
+      tempSpan.remove();
+      
+      return position;
+    };
+    
+    // Get the position where we should start the animation
+    const startPosition = getPositionFromIndex(startIndex);
+    
+    // Determine the direction based on whether we're adding or removing text
+    const direction = newText.length >= originalText.length ? 'right' : 'left';
+    
+    // Start the animation
+    setEngieBotPosition(startPosition);
+    setEngieBotDirection(direction);
+    setEngieBotAnimationState('walking');
+    setEngieBotEmotion(newText.length >= originalText.length ? 'excited' : 'thoughtful');
+    setShowEngieBot(true);
+    
+    // Animate through each word with a delay
+    let currentIndex = 0;
+    const totalWords = Math.max(originalWords.length, newWords.length);
+    
+    const animateNextWord = () => {
+      if (currentIndex >= totalWords) {
+        // Animation complete
+        setTimeout(() => {
+          setEngieBotAnimationState('idle');
+          setTimeout(() => {
+            setShowEngieBot(false);
+          }, 1000); // Hide Engie after 1 second of idle
+        }, 500);
+        return;
+      }
+      
+      const currentWord = currentIndex < originalWords.length ? originalWords[currentIndex] : '';
+      const newWord = currentIndex < newWords.length ? newWords[currentIndex] : '';
+      
+      // Highlight the word being changed
+      setWordBeingChanged(currentWord || newWord);
+      
+      // Calculate position for the current word
+      let wordPosition = { ...startPosition };
+      
+      // If we're beyond the first word, adjust position
+      if (currentIndex > 0) {
+        // Approximate position based on previous words
+        const previousWordsLength = originalWords.slice(0, currentIndex).join(' ').length + currentIndex; // +currentIndex for spaces
+        const wordStartIndex = startIndex + previousWordsLength;
+        const calculatedPosition = getPositionFromIndex(wordStartIndex);
+        
+        // Only update if we got a valid position
+        if (calculatedPosition.top > 0 || calculatedPosition.left > 0) {
+          wordPosition = calculatedPosition;
+        } else {
+          // If we couldn't get exact position, approximate it
+          wordPosition.left += (previousWordsLength * 8); // Approximate character width
+        }
+      }
+      
+      // Update Engie's position
+      setEngieBotPosition(wordPosition);
+      
+      // Change Engie's emotion based on the word change
+      if (currentWord && newWord) {
+        setEngieBotEmotion(currentWord.length <= newWord.length ? 'excited' : 'thoughtful');
+      } else if (currentWord && !newWord) {
+        setEngieBotEmotion('concerned'); // Removing a word
+      } else if (!currentWord && newWord) {
+        setEngieBotEmotion('happy'); // Adding a new word
+      }
+      
+      // Move to next word after a delay
+      currentIndex++;
+      setTimeout(animateNextWord, 800); // 800ms per word
+    };
+    
+    // Start the animation
+    animateNextWord();
+    
+  }, [readOnly, value, editorRef]);
+  
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -259,12 +435,18 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         suggestion.endIndex >= suggestion.startIndex &&
         suggestion.endIndex <= value.length
       ) {
+        const originalText = value.substring(suggestion.startIndex, suggestion.endIndex);
         const newText =
           value.substring(0, suggestion.startIndex) +
           suggestion.suggestion +
           value.substring(suggestion.endIndex);
         
         onChange(newText);
+        
+        // Animate Engie bot going through the changes if this is in read-only (analysis) mode
+        if (readOnly) {
+          animateEngieBotThroughChanges(originalText, suggestion.suggestion, suggestion.startIndex);
+        }
         
         // Clear text fragments and analysis to force a fresh analysis
         clearAnalysis();
@@ -281,12 +463,18 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         // Try to find the text if no indices
         const index = value.indexOf(suggestion.original);
         if (index >= 0) {
+          const originalText = suggestion.original;
           const newText =
             value.substring(0, index) +
             suggestion.suggestion +
             value.substring(index + suggestion.original.length);
           
           onChange(newText);
+          
+          // Animate Engie bot going through the changes if this is in read-only (analysis) mode
+          if (readOnly) {
+            animateEngieBotThroughChanges(originalText, suggestion.suggestion, index);
+          }
           
           // Clear text fragments and analysis to force a fresh analysis
           clearAnalysis();
@@ -698,7 +886,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
           // This ensures the left text box doesn't show any highlighting
           visibility: readOnly || shouldShowFragments ? 'visible' : 'hidden',
           opacity: readOnly || shouldShowFragments ? '1' : '0',
-          display: (!readOnly && !shouldShowFragments) ? 'none' : 'block' // Don't even render in input mode
+          display: (!readOnly && !shouldShowFragments) ? 'none' : 'block', // Don't even render in input mode
+          position: 'relative' // Added to enable absolute positioning of Engie bot
         }}
       />
       <textarea
@@ -777,6 +966,63 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       {shouldShowFragments && (
         <div className="fragment-analysis-indicator">
           Text analysis active
+        </div>
+      )}
+
+      {/* Engie Bot animation layer - only shown in read-only (analysis) mode when applying suggestions */}
+      {showEngieBot && readOnly && (
+        <div 
+          className="engie-bot-animation-layer" 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: 10
+          }}
+        >
+          {/* Word being changed highlight */}
+          {wordBeingChanged && (
+            <div 
+              className="word-highlight-animation"
+              style={{
+                position: 'absolute',
+                top: engieBotPosition.top - 5,
+                left: engieBotPosition.left,
+                backgroundColor: 'rgba(255, 217, 102, 0.5)',
+                borderRadius: '3px',
+                padding: '0 2px',
+                zIndex: 5,
+                pointerEvents: 'none',
+                animation: 'pulse 1s infinite alternate'
+              }}
+            >
+              {wordBeingChanged}
+            </div>
+          )}
+          
+          {/* Engie Bot */}
+          <div 
+            className="engie-bot-container"
+            style={{
+              position: 'absolute',
+              top: engieBotPosition.top - 40, // Position above the text
+              left: engieBotPosition.left,
+              transition: 'all 0.5s ease-in-out',
+              transform: 'scale(0.6)', // Make Engie smaller to fit in the editor
+              transformOrigin: 'bottom center',
+              zIndex: 10
+            }}
+          >
+            <AnimatedEngieBot 
+              animationState={engieBotAnimationState} 
+              speed="normal" 
+              direction={engieBotDirection}
+              emotion={engieBotEmotion}
+            />
+          </div>
         </div>
       )}
     </div>
