@@ -12,6 +12,7 @@ import { ChatMessage, ToneAnalysis, Suggestion, EngieState } from '../types';
 import { Switch } from '@/components/ui/switch'; // Import Switch
 import { Input } from '@/components/ui/input'; // Import Input
 import { Label } from '@/components/ui/label'; // Import Label
+import styles from './EngieChatWindow.module.css'; // Import CSS module
 
 
 interface EngieChatWindowProps {
@@ -33,6 +34,7 @@ interface EngieChatWindowProps {
   onSendGrokMessage?: (prompt: string) => void;
   grokLoading?: boolean;
   grokError?: string | null;
+  bubblePosition?: 'left' | 'right' | 'top' | 'bottom';
 }
 
 
@@ -55,6 +57,7 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
   onSendGrokMessage,
   grokLoading,
   grokError,
+  bubblePosition = 'left'
 }) => {
   const [researchTopic, setResearchTopic] = React.useState('');
   const [grokInput, setGrokInput] = React.useState('');
@@ -112,12 +115,12 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+      className={`${styles.speechBubble} ${styles[`${bubblePosition}Arrow`]} mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden`}
     >
-      <header className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <header className={`${styles.comicHeader} flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700`}>
         <div className='flex items-center gap-2'>
           <Sparkles className="h-6 w-6 text-purple-500"/>
-          <h3 className="font-semibold">Engie</h3>
+          <h3 className={styles.comicTitle}>Engie</h3>
         </div>
         <Button 
           variant="ghost" 
@@ -132,7 +135,7 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
         </Button>
       </header>
 
-      <div className="p-4 max-h-[60vh] overflow-y-auto">
+      <div className={`${styles.comicContent} max-h-[60vh] overflow-y-auto`}>
         {(state.isScanning || (state.isIdeating && state.statusMessage) || (!state.isIdeating && state.statusMessage && !state.ideationMessage)) && (
           <div className="mb-2 text-xs text-gray-500 dark:text-gray-400 italic text-center">
             {state.statusMessage}
@@ -144,9 +147,10 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
         {state.isGrokActive && grokChatHistory.length > 0 && (
           <div className="mb-4 space-y-2">
             {grokChatHistory.map((msg, index) => (
-              <div key={`grok-msg-${index}`} className={`p-2 rounded-md text-sm ${
-                msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900 ml-auto' : 'bg-purple-100 dark:bg-purple-900'
-              } max-w-[85%]`}>
+              <div 
+                key={`grok-msg-${index}`} 
+                className={`${styles.messageBubble} ${msg.role === 'user' ? styles.userMessage : styles.grokMessage}`}
+              >
                 <span className="font-bold capitalize">{msg.role === 'assistant' ? 'Grok' : msg.role}: </span>
                 {msg.content}
               </div>
@@ -158,9 +162,10 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
         {!state.isGrokActive && state.chatHistory.length > 0 && (
            <div className="mb-4 space-y-2">
             {state.chatHistory.map((msg, index) => (
-              <div key={`chat-msg-${index}`} className={`p-2 rounded-md text-sm ${
-                msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900 ml-auto' : 'bg-gray-100 dark:bg-gray-700'
-              } max-w-[85%]`}>
+              <div 
+                key={`chat-msg-${index}`} 
+                className={`${styles.messageBubble} ${msg.role === 'user' ? styles.userMessage : styles.botMessage}`}
+              >
                 <span className="font-bold capitalize">{msg.role}: </span>
                 {msg.content}
               </div>

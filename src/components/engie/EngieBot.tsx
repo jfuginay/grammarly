@@ -109,6 +109,69 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const onStopDrag = () => controller.onStopDrag();
   const formatScore = (score: number | undefined | null) => controller.formatScore(score);
 
+  // Calculate chat popup position relative to Engie's position
+  const calculatePopupPosition = () => {
+    if (typeof window === 'undefined' || !engieRef.current) return 'left';
+    
+    const engieBotTrueSize = 64; // Engie's width/height
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const { x, y } = state.engiePos;
+    
+    // Determine if Engie is near an edge
+    const nearLeftEdge = x < windowWidth * 0.25;
+    const nearRightEdge = x > windowWidth * 0.75;
+    const nearTopEdge = y < windowHeight * 0.25;
+    const nearBottomEdge = y > windowHeight * 0.75;
+    
+    // Determine popup position based on Engie's position
+    if (nearRightEdge) return 'left';
+    if (nearLeftEdge) return 'right';
+    if (nearBottomEdge) return 'top';
+    if (nearTopEdge) return 'bottom';
+    
+    // Default direction
+    return 'left';
+  };
+
+  // Get container styles based on popup position
+  const getPopupContainerStyle = (position: string) => {
+    switch (position) {
+      case 'right':
+        return { 
+          top: '0', 
+          right: 'full', 
+          marginRight: '20px' 
+        };
+      case 'left':
+        return { 
+          top: '0', 
+          left: 'full', 
+          marginLeft: '20px' 
+        };
+      case 'top':
+        return { 
+          bottom: 'full', 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          marginBottom: '20px' 
+        };
+      case 'bottom':
+        return { 
+          top: 'full', 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          marginTop: '20px' 
+        };
+      default:
+        return { 
+          top: '0', 
+          left: 'full', 
+          marginLeft: '20px' 
+        };
+    }
+  };
+
   // Grok chat state for UI feedback
   const [grokLoading, setGrokLoading] = useState(false);
   const [grokError, setGrokError] = useState<string | null>(null);
@@ -214,7 +277,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
             />
 
             {/* Chat Window */}
-            <div className="absolute top-0 left-full ml-4">
+            <div className="absolute" style={getPopupContainerStyle(calculatePopupPosition())}>
               <AnimatePresence>
                 {state.isChatOpen && (
                   <EngieChatWindow
@@ -237,6 +300,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
                     onSendGrokMessage={handleSendGrokMessage}
                     grokLoading={grokLoading}
                     grokError={grokError}
+                    // Position for speech bubble
+                    bubblePosition={calculatePopupPosition()}
                   />
                 )}
               </AnimatePresence>
