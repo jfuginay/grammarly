@@ -309,7 +309,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         // Insert the temporary span at the start of the container
         targetElement.insertBefore(tempSpan, targetElement.firstChild);
       } else {
-        // Found a specific element, now we need to find the exact position          const textNode = targetElement.firstChild;
+        // Found a specific element, now we need to find the exact position
+        const textNode = targetElement.firstChild;
         
           if (textNode && textNode.nodeType === Node.TEXT_NODE) {
             // If the offset is within the text node's length
