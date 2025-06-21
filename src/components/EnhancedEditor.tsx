@@ -38,6 +38,15 @@ export interface EnhancedEditorRef {
   analyzeText: () => Promise<void>; // Updated to return Promise<void>
   toggleFragmentsVisibility: () => void;
   clearAnalysis: () => void; // Method to clear analysis
+  undo: () => void;
+  redo: () => void;
+}
+
+// Import types at the top
+interface TextHistory {
+  text: string;
+  cursorPosition: { start: number; end: number };
+  scrollPosition: number;
 }
 
 const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
@@ -68,6 +77,12 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const [engieBotAnimationState, setEngieBotAnimationState] = useState<'idle' | 'walking'>('idle');
   const [engieBotEmotion, setEngieBotEmotion] = useState<'happy' | 'excited' | 'concerned' | 'thoughtful' | 'neutral'>('neutral');
   const [wordBeingChanged, setWordBeingChanged] = useState<string | null>(null);
+  
+  // Add history state for undo/redo functionality
+  const [history, setHistory] = useState<TextHistory[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const [maxHistorySize] = useState<number>(50); // Limit history size
+  const isUndoRedoOperation = useRef<boolean>(false);
   
   // Use our custom hook to handle auto-resizing
   useAutoResizeTextarea(
@@ -241,17 +256,91 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   
   // Toggle fragments visibility
   const toggleFragmentsVisibility = useCallback(() => {
-    setShouldShowFragments((prev: boolean) => !prev);
+    setShouldShowFragments(prev => !prev);
   }, []);
   
-  // Method to clear analysis state
-  const clearAnalysis = useCallback(() => {
-    setTextFragments([]);
-    setShouldShowFragments(false);
-    lastAnalyzedTextRef.current = '';
-    setHighlightedHtml('');
-  }, []);
-  
+  // Function to save the current state to history
+  const saveToHistory = useCallback((currentText: string) => {
+    if (isUndoRedoOperation.current) {
+      isUndoRedoOperation.current = false;
+      return;
+    }
+
+    if (!textareaRef.current) return;
+    
+    const currentState: TextHistory = {
+      text: currentText,
+      cursorPosition: {
+        start: textareaRef.current.selectionStart,
+        end: textareaRef.current.selectionEnd
+      },
+      scrollPosition: textareaRef.current.scrollTop
+    };
+
+    // If we're not at the end of the history, truncate forward history
+    if (historyIndex !== history.length - 1) {
+      const newHistory = history.slice(0, historyIndex + 1);
+      setHistory([...newHistory, currentState]);
+    } else {
+      // Add new state and trim if exceeding max size
+      const newHistory = [...history, currentState];
+      if (newHistory.length > maxHistorySize) {
+        newHistory.shift();
+      }
+      setHistory(newHistory);
+    }
+    
+    setHistoryIndex(prev => Math.min(history.length, maxHistorySize - 1));
+  }, [history, historyIndex, maxHistorySize]);
+
+  // Undo function
+  const undo = useCallback(() => {
+    if (historyIndex > 0 && history.length > 1) {
+      isUndoRedoOperation.current = true;
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      
+      const previousState = history[newIndex];
+      onChange(previousState.text);
+      
+      // Restore cursor and scroll position after state update
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.scrollTop = previousState.scrollPosition;
+          textareaRef.current.setSelectionRange(
+            previousState.cursorPosition.start,
+            previousState.cursorPosition.end
+          );
+        }
+      }, 0);
+    }
+  }, [history, historyIndex, onChange]);
+
+  // Redo function
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      isUndoRedoOperation.current = true;
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      
+      const nextState = history[newIndex];
+      onChange(nextState.text);
+      
+      // Restore cursor and scroll position after state update
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.scrollTop = nextState.scrollPosition;
+          textareaRef.current.setSelectionRange(
+            nextState.cursorPosition.start,
+            nextState.cursorPosition.end
+          );
+        }
+      }, 0);
+    }
+  }, [history, historyIndex, onChange]);
+
   // Animate Engie bot going through the text changes word by word
   const animateEngieBotThroughChanges = useCallback((originalText: string, newText: string, startIndex: number) => {
     // Only animate if this is the analysis view (right side)
@@ -427,73 +516,115 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     applySuggestion: (suggestion: Suggestion) => {
       if (!textareaRef.current) return;
       
-      // Use indices if available, otherwise try to find the text
+      // Save current scroll position and cursor position
+      const scrollTop = textareaRef.current.scrollTop;
+      const selectionStart = textareaRef.current.selectionStart;
+      const selectionEnd = textareaRef.current.selectionEnd;
+      const wasSelectionActive = selectionStart !== selectionEnd;
+      
+      // Get the current value and create a history point for undo/redo
+      const currentValue = value;
+      const originalText = suggestion.original;
+      let startIndex = -1;
+      let endIndex = -1;
+      let newText = currentValue;
+
+      // Use indices if available with validation
       if (
         typeof suggestion.startIndex === 'number' &&
         typeof suggestion.endIndex === 'number' &&
         suggestion.startIndex >= 0 &&
         suggestion.endIndex >= suggestion.startIndex &&
-        suggestion.endIndex <= value.length
+        suggestion.endIndex <= currentValue.length
       ) {
-        const originalText = value.substring(suggestion.startIndex, suggestion.endIndex);
-        const newText =
-          value.substring(0, suggestion.startIndex) +
-          suggestion.suggestion +
-          value.substring(suggestion.endIndex);
+        startIndex = suggestion.startIndex;
+        endIndex = suggestion.endIndex;
         
+        // Double-check that text at these indices matches the suggestion's original text
+        const textAtIndices = currentValue.substring(startIndex, endIndex);
+        if (textAtIndices.toLowerCase() !== originalText.toLowerCase()) {
+          // If case doesn't match but content does, use the indices anyway
+          console.warn("Text case mismatch but proceeding with replacement");
+        }
+      } else {
+        // If no indices or invalid indices, try exact match first
+        startIndex = currentValue.indexOf(originalText);
+        
+        // If exact match fails, try case-insensitive match
+        if (startIndex === -1) {
+          const lowerValue = currentValue.toLowerCase();
+          const lowerOriginal = originalText.toLowerCase();
+          const lowerIndex = lowerValue.indexOf(lowerOriginal);
+          
+          if (lowerIndex !== -1) {
+            startIndex = lowerIndex;
+          }
+        }
+        
+        if (startIndex !== -1) {
+          endIndex = startIndex + originalText.length;
+        }
+      }
+      
+      // If we found a valid position for replacement
+      if (startIndex !== -1 && endIndex !== -1) {
+        const extractedOriginal = currentValue.substring(startIndex, endIndex);
+        
+        // Perform the replacement
+        newText = 
+          currentValue.substring(0, startIndex) +
+          suggestion.suggestion +
+          currentValue.substring(endIndex);
+        
+        // Calculate new cursor position
+        const cursorOffset = suggestion.suggestion.length - (endIndex - startIndex);
+        let newCursorPos = selectionStart;
+        
+        // Adjust cursor position based on whether it was before, in, or after the edit
+        if (selectionStart > endIndex) {
+          // Cursor was after the edit, adjust by the difference in length
+          newCursorPos += cursorOffset;
+        } else if (selectionStart >= startIndex && selectionStart <= endIndex) {
+          // Cursor was inside the edit, place it at the end of the new text
+          newCursorPos = startIndex + suggestion.suggestion.length;
+        }
+        // If cursor was before the edit, leave it unchanged
+        
+        // Apply the change and prepare for animation
         onChange(newText);
         
         // Animate Engie bot going through the changes if this is in read-only (analysis) mode
         if (readOnly) {
-          animateEngieBotThroughChanges(originalText, suggestion.suggestion, suggestion.startIndex);
+          animateEngieBotThroughChanges(extractedOriginal, suggestion.suggestion, startIndex);
         }
         
         // Clear text fragments and analysis to force a fresh analysis
         clearAnalysis();
         
-        // Focus and set cursor position after the replacement
+        // Focus and restore cursor/selection position after state update
         setTimeout(() => {
           if (textareaRef.current) {
             textareaRef.current.focus();
-            const newCursorPos = (suggestion.startIndex as number) + suggestion.suggestion.length;
-            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+            textareaRef.current.scrollTop = scrollTop; // Restore scroll position
+            
+            if (wasSelectionActive && selectionStart < startIndex && selectionEnd > endIndex) {
+              // If there was a selection that encompassed the edit, adjust the end position
+              textareaRef.current.setSelectionRange(selectionStart, selectionEnd + cursorOffset);
+            } else {
+              textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+            }
           }
         }, 0);
       } else {
-        // Try to find the text if no indices
-        const index = value.indexOf(suggestion.original);
-        if (index >= 0) {
-          const originalText = suggestion.original;
-          const newText =
-            value.substring(0, index) +
-            suggestion.suggestion +
-            value.substring(index + suggestion.original.length);
-          
-          onChange(newText);
-          
-          // Animate Engie bot going through the changes if this is in read-only (analysis) mode
-          if (readOnly) {
-            animateEngieBotThroughChanges(originalText, suggestion.suggestion, index);
-          }
-          
-          // Clear text fragments and analysis to force a fresh analysis
-          clearAnalysis();
-          
-          // Focus and set cursor position
-          setTimeout(() => {
-            if (textareaRef.current) {
-              textareaRef.current.focus();
-              const newCursorPos = index + suggestion.suggestion.length;
-              textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-            }
-          }, 0);
-        }
+        console.warn("Could not find the text to replace:", originalText);
       }
     },
     getElement: () => textareaRef.current,
     analyzeText, // Already returns Promise<void>
     toggleFragmentsVisibility,
-    clearAnalysis // Use the consistent implementation defined earlier
+    clearAnalysis, // Use the consistent implementation defined earlier
+    undo,
+    redo
   }));
   
   // Trigger analysis when user stops typing or when showFragments prop changes
@@ -872,6 +1003,47 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     }
   };
   
+  // Method to clear analysis state
+  const clearAnalysis = useCallback(() => {
+    setTextFragments([]);
+    setShouldShowFragments(false);
+    lastAnalyzedTextRef.current = '';
+    setHighlightedHtml('');
+  }, []);
+
+  // Handle keyboard shortcuts for undo/redo
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Only handle shortcuts if not in read-only mode
+    if (readOnly) return;
+    
+    // Handle Ctrl/Cmd+Z for Undo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+      return;
+    }
+    
+    // Handle Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y for Redo
+    if (((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) || 
+        ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+      e.preventDefault();
+      redo();
+      return;
+    }
+  }, [readOnly, undo, redo]);
+
+  // Modify the existing applySuggestion function to save history properly
+  // Note: This edit is already applied separately with the replace_string_in_file tool
+
+  // After applying a suggestion, save to history
+  useEffect(() => {
+    if (value && history.length > 0 && history[history.length - 1]?.text !== value) {
+      saveToHistory(value);
+    }
+  }, [value, history, saveToHistory]);
+
+  // ... existing code ...
+
   const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''} ${readOnly ? 'analysis-view' : 'input-view'}`;
 
   // Enhanced rendering with proper text placement
@@ -956,6 +1128,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
             }, 10);
           }
         }}
+        onKeyDown={handleKeyDown}
       />
       {isAnalyzingText && (
         <div className="editor-loading-indicator">
