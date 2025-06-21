@@ -5,7 +5,7 @@ import { useEffect, RefObject } from 'react';
  * @param textareaRef - React ref object pointing to the textarea element
  * @param value - The current value of the textarea (triggers resize on change)
  * @param minHeight - Optional minimum height in pixels (default: 150)
- * @param maxHeight - Optional maximum height in pixels (default: none)
+ * @param maxHeight - Optional maximum height in pixels (default: none )
  */
 export function useAutoResizeTextarea(
   textareaRef: RefObject<HTMLTextAreaElement>,
