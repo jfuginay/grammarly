@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './ScanCountdownTimer.css';
+import styles from './ScanCountdownTimer.module.css';
 
 interface ScanCountdownTimerProps {
   interval?: number; // In milliseconds, default 3000
@@ -118,7 +118,7 @@ const ScanCountdownTimer: React.FC<ScanCountdownTimerProps> = ({
 
   return (
     <div 
-      className={`scan-countdown-timer ${timerState} ${isPulsing ? 'pulse' : ''}`}
+      className={`${styles.timer} ${styles[timerState]} ${isPulsing ? styles.pulse : ''}`}
       role="timer"
       aria-label={`Text scan ${
         timerState === 'ready' ? 'ready' : 
@@ -126,11 +126,11 @@ const ScanCountdownTimer: React.FC<ScanCountdownTimerProps> = ({
         timerState === 'analyzing' ? 'in progress' : 
         'complete'}`}
     >
-      <div className="timer-ring-container">
-        <svg className="timer-ring" viewBox="0 0 100 100">
-          <circle className="timer-ring-bg" cx="50" cy="50" r="45" />
+      <div className={styles.ringContainer}>
+        <svg className={styles.ring} viewBox="0 0 100 100">
+          <circle className={styles.ringBg} cx="50" cy="50" r="45" />
           <circle 
-            className="timer-ring-progress" 
+            className={styles.ringProgress} 
             cx="50" 
             cy="50" 
             r="45"
@@ -139,16 +139,16 @@ const ScanCountdownTimer: React.FC<ScanCountdownTimerProps> = ({
             style={{ stroke: getColor() }}
           />
         </svg>
-        <div className="timer-display" aria-hidden="true">
+        <div className={styles.display} aria-hidden="true">
           {timerState === 'analyzing' ? (
-            <div className="spinner"></div>
+            <div className={styles.spinner}></div>
           ) : timerState === 'success' ? (
-            <span className="success-icon">✓</span>
+            <span className={styles.successIcon}>✓</span>
           ) : (
             secondsRemaining
           )}
         </div>
-        <div className="timer-label">
+        <div className={styles.label}>
           {timerState === 'ready' && 'Ready'}
           {timerState === 'countdown' && `${secondsRemaining}s`}
           {timerState === 'analyzing' && 'Analyzing'}

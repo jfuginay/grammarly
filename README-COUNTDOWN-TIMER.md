@@ -17,6 +17,7 @@ This branch implements a visual countdown timer for the 3-second interval text s
 
 ## Technical Implementation
 - React functional component with hooks for state management
+- CSS Modules for component-specific styling and to avoid global CSS conflicts
 - CSS animations for smooth transitions and effects
 - Integration with the existing text analysis workflow
 - No external dependencies required
