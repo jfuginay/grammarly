@@ -1,5 +1,5 @@
 import { ChatMessage } from '../types';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
 // Basic types for Grok API
 interface GrokApiRequest {
@@ -18,13 +18,12 @@ interface GrokApiResponse {
   // Add other response fields if necessary
 }
 
-const GROK_API_ENDPOINT = 'https://api.groq.com/v1/chat/completions';
 const DEFAULT_MODEL = 'mixtral-8x7b-32768';
 
 export class GrokApiService {
   private static instance: GrokApiService;
   private apiKey: string;
-  private openaiClient: OpenAI | null = null;
+  private groqClient: Groq | null = null;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.GROQ_API_KEY || "";
@@ -32,10 +31,7 @@ export class GrokApiService {
     if (!this.apiKey) {
       console.warn("GROQ_API_KEY is not set. GrokApiService will not function properly.");
     } else {
-      this.openaiClient = new OpenAI({
-        apiKey: this.apiKey,
-        baseURL: 'https://api.groq.com/v1',
-      });
+      this.groqClient = new Groq({ apiKey: this.apiKey });
     }
   }
 
@@ -48,25 +44,26 @@ export class GrokApiService {
   
   public setApiKey(apiKey: string): void {
     this.apiKey = apiKey;
-    this.openaiClient = new OpenAI({
-      apiKey,
-      baseURL: 'https://api.groq.com/v1',
-    });
+    this.groqClient = new Groq({ apiKey });
   }
 
   /**
    * Send a full chat history to Grok for multi-turn chat. Returns the assistant's response.
    */
   public async sendChat(messages: ChatMessage[]): Promise<string | null> {
-    if (!this.apiKey || !this.openaiClient) {
+    if (!this.apiKey || !this.groqClient) {
       console.error("Grok API key not configured. Cannot send chat.");
       return null;
     }
 
     try {
-      const completion = await this.openaiClient.chat.completions.create({
+      const completion = await this.groqClient.chat.completions.create({
         messages,
         model: DEFAULT_MODEL,
+        temperature: 0.6,
+        max_completion_tokens: 32768,
+        top_p: 0.95,
+        stream: false,
       });
 
       if (completion.choices && completion.choices.length > 0 && completion.choices[0].message) {
@@ -85,17 +82,21 @@ export class GrokApiService {
    * Get an opinionated comment on text from Grok
    */
   public async getOpinionatedComment(prompt: string): Promise<string | null> {
-    if (!this.apiKey || !this.openaiClient) {
+    if (!this.apiKey || !this.groqClient) {
       console.error("Grok API key not configured. Cannot fetch opinionated comment.");
       return null;
     }
 
     try {
-      const completion = await this.openaiClient.chat.completions.create({
+      const completion = await this.groqClient.chat.completions.create({
         messages: [
           { role: 'user', content: prompt }
         ],
         model: DEFAULT_MODEL,
+        temperature: 0.7,
+        max_completion_tokens: 32768,
+        top_p: 0.95,
+        stream: false,
       });
 
       if (completion.choices && completion.choices.length > 0 && completion.choices[0].message) {
@@ -114,17 +115,21 @@ export class GrokApiService {
    * Research a topic using Grok
    */
   public async researchTopic(topic: string): Promise<string | null> {
-    if (!this.apiKey || !this.openaiClient) {
+    if (!this.apiKey || !this.groqClient) {
       console.error("Grok API key not configured. Cannot research topic.");
       return null;
     }
 
     try {
-      const completion = await this.openaiClient.chat.completions.create({
+      const completion = await this.groqClient.chat.completions.create({
         messages: [
           { role: 'user', content: `Research the following topic: ${topic}` }
         ],
         model: DEFAULT_MODEL,
+        temperature: 0.5,
+        max_completion_tokens: 32768,
+        top_p: 0.95,
+        stream: false,
       });
 
       if (completion.choices && completion.choices.length > 0 && completion.choices[0].message) {
