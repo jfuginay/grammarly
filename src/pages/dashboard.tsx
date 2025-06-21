@@ -780,8 +780,8 @@ const DashboardPage = () => {
                       ref={analysisEditorRef}
                       value={text}
                       onChange={(val: any) => {/* Read-only - no changes */}}
-                      suggestions={suggestions} // Still pass suggestions for display
-                      toneHighlights={toneHighlights} // Pass toneHighlights for display
+                      suggestions={suggestions || []} // Ensure suggestions is always an array
+                      toneHighlights={toneHighlights || []} // Ensure toneHighlights is always an array
                       autoAnalyze={true}
                       readOnly={true}
                       className="analysis-editor h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30"
@@ -789,8 +789,8 @@ const DashboardPage = () => {
                       showFragments={true}
                       isAnalysisBox={true}
                       reflectTextFrom={text}
-                      onSuggestionsFetched={setSuggestions}
-                      onToneHighlightsFetched={setToneHighlights}
+                      onSuggestionsFetched={suggestions => setSuggestions(suggestions || [])}
+                      onToneHighlightsFetched={highlights => setToneHighlights(highlights || [])}
                     />
                   </CardContent>
                 </Card>

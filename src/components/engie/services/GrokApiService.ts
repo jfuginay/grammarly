@@ -33,17 +33,28 @@ export class GrokApiService {
       if (!this.apiKey) {
         console.warn("GROQ_API_KEY is not set. GrokApiService will not function properly.");
       } else {
-        this.groqClient = new Groq({ apiKey: this.apiKey });
+        try {
+          this.groqClient = new Groq({ apiKey: this.apiKey });
+        } catch (error) {
+          console.error("Failed to initialize Groq client:", error);
+          this.groqClient = null;
+        }
       }
     } else {
       // We're on the client, don't try to access server-only environment variables
-      // Set apiKey to empty but don't warn, as this is expected behavior for client-side
+      // or initialize the client
       this.apiKey = "";
+      this.groqClient = null;
     }
   }
 
   public static getInstance(): GrokApiService {
-    if (!GrokApiService.instance) {
+    // On client-side, only create the instance if it already exists
+    if (typeof window !== 'undefined' && !GrokApiService.instance) {
+      // Create a client-side instance with empty API key
+      GrokApiService.instance = new GrokApiService("");
+    } else if (!GrokApiService.instance) {
+      // Create a server-side instance
       GrokApiService.instance = new GrokApiService();
     }
     return GrokApiService.instance;

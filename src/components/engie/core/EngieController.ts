@@ -24,6 +24,9 @@ export class EngieController {
     // Only initialize GrokApiService on the server side
     if (typeof window === 'undefined') {
       this.grokApiService = GrokApiService.getInstance();
+    } else {
+      // Set a null value on client side to avoid undefined errors
+      this.grokApiService = null as any;
     }
     
     this.setupInactivityTimer();
@@ -100,7 +103,7 @@ export class EngieController {
       }
 
       // Grok integration for opinionated comment
-      if (state.isGrokActive && this.grokApiService && process.env.GROQ_API_KEY) {
+      if (state.isGrokActive && typeof window === 'undefined' && this.grokApiService) {
         const commentPrompt = `Give me an opinionated, funny, or insightful comment about the following text: ${pageText.slice(0, 1000)}`;
         this.stateManager.addGrokChatMessage({ role: 'user', content: `Engie wants an opinionated comment on: "${pageText.substring(0,60)}..."` });
         const comment = await this.grokApiService.getOpinionatedComment(commentPrompt);
@@ -439,7 +442,7 @@ export class EngieController {
 
   public async researchWithGrok(topic: string): Promise<void> {
     // If we're on the client side, we should redirect this call to the server API
-    if (typeof window !== 'undefined' && !this.grokApiService) {
+    if (typeof window !== 'undefined' || !this.grokApiService) {
       this.stateManager.setIdeating(true);
       this.stateManager.setStatusMessage(`Engie is researching "${topic}" with Grok...`);
       this.stateManager.addGrokChatMessage({ role: 'user', content: `Research: ${topic}` });
@@ -504,7 +507,7 @@ export class EngieController {
    */
   public async sendGrokChatMessage(prompt: string): Promise<void> {
     // If we're on the client side, we should redirect this call to the server API
-    if (typeof window !== 'undefined' && !this.grokApiService) {
+    if (typeof window !== 'undefined' || !this.grokApiService) {
       // Add the user message to chat history
       this.stateManager.addGrokChatMessage({ role: 'user', content: prompt });
       
