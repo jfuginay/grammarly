@@ -338,26 +338,32 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   useEffect(() => {
     if (!editorRef.current || !textareaRef.current) return;
     
-  // Process the text content to add highlight markers
-  let processedText = value;
-  const highlightMarkers: Array<{ 
-    index: number, 
-    isStart: boolean, 
-    class: string, 
-    suggestion?: Suggestion,
-    fragment?: TextFragment,
-    attributes?: Record<string, string>,
-    text?: string // Store actual text content
-  }> = [];
-  
-  // Clear any previous rendered text
-  if (editorRef.current) {
-    const highlights = editorRef.current.querySelector('.editor-highlights');
-    if (highlights) {
-      // We'll rebuild all the highlights from scratch
-      // No need to clear here as we'll set innerHTML later
+    // Skip creating highlights for the input editor unless explicitly showing fragments
+    if (!readOnly && !shouldShowFragments) {
+      setHighlightedHtml(''); // Clear highlights for input editor
+      return;
     }
-  }
+    
+    // Process the text content to add highlight markers
+    let processedText = value;
+    const highlightMarkers: Array<{ 
+      index: number, 
+      isStart: boolean, 
+      class: string, 
+      suggestion?: Suggestion,
+      fragment?: TextFragment,
+      attributes?: Record<string, string>,
+      text?: string // Store actual text content
+    }> = [];
+    
+    // Clear any previous rendered text
+    if (editorRef.current) {
+      const highlights = editorRef.current.querySelector('.editor-highlights');
+      if (highlights) {
+        // We'll rebuild all the highlights from scratch
+        // No need to clear here as we'll set innerHTML later
+      }
+    }
     
     // Add text fragment highlights if analysis is active
     if (shouldShowFragments && textFragments.length > 0) {
@@ -678,8 +684,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     }
   };
   
-  const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''}`;
-  
+  const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''} ${readOnly ? 'analysis-view' : 'input-view'}`;
+
   // Enhanced rendering with proper text placement
   return (
     <div className={editorClass}>
@@ -687,6 +693,13 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         ref={editorRef}
         className="editor-highlights"
         dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        style={{
+          // Only show highlights in readOnly mode or when fragments are explicitly shown
+          // This ensures the left text box doesn't show any highlighting
+          visibility: readOnly || shouldShowFragments ? 'visible' : 'hidden',
+          opacity: readOnly || shouldShowFragments ? '1' : '0',
+          display: (!readOnly && !shouldShowFragments) ? 'none' : 'block' // Don't even render in input mode
+        }}
       />
       <textarea
         ref={textareaRef}
@@ -696,7 +709,9 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         placeholder={placeholder}
         style={{ 
           opacity: readOnly ? '0' : '1', // Hide completely in read-only mode
-          caretColor: 'currentColor' // Ensure cursor is visible
+          caretColor: 'currentColor', // Ensure cursor is visible
+          // Ensure text entry box is always fully opaque in input mode
+          backgroundColor: readOnly ? 'transparent' : 'var(--background, #ffffff)'
         }}
         readOnly={readOnly}
         spellCheck={false} // We're handling our own error highlighting
@@ -711,9 +726,10 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
               if (highlights) {
                 highlights.style.pointerEvents = 'none';
                 
-                // For input mode, make highlights fully transparent
+                // For input mode, make highlights fully transparent and invisible
                 if (!readOnly && !showFragments) {
                   highlights.style.opacity = '0';
+                  highlights.style.visibility = 'hidden';
                 }
               }
             }
