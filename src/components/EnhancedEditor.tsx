@@ -434,7 +434,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     });
     
     // Add tone highlights
-    if (toneHighlights && toneHighlights.length > 0) {
+    if (toneHighlights && Array.isArray(toneHighlights) && toneHighlights.length > 0) {
       toneHighlights.forEach((tone: {
         startIndex: number;
         endIndex: number;
