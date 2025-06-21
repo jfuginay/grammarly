@@ -25,8 +25,11 @@ const Sidebar = ({ documents, activeDocument, onSelectDocument, onCreateDocument
         <Logo />
       </div>
       
-      <Button className="premium-button-gradient mb-8" onClick={onCreateDocument}>
-        <Plus className="mr-2 h-4 w-4" />
+      <Button 
+        className="premium-button-gradient mb-8 shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30" 
+        onClick={onCreateDocument}
+      >
+        <Plus className="h-4 w-4 mr-1" />
         New Document
       </Button>
 
