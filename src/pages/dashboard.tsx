@@ -781,7 +781,7 @@ const DashboardPage = () => {
                       value={text}
                       onChange={(val: any) => {/* Read-only - no changes */}}
                        suggestions={suggestions} // Still pass suggestions for display
-                       toneHighlights={toneHighlights} // Still pass toneHighlights for display
+                       toneHighlights={toneHighlights || []} // Still pass toneHighlights for display with null check
                       autoAnalyze={true}
                       readOnly={true}
                       className="analysis-editor h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30"
