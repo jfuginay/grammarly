@@ -1,6 +1,6 @@
 /* EngieChatWindow.module.css */
 
-/* Premium EngieChatWindow - Design-conscious professional quality */
+/* Premium EngieChatWindow - Design-conscious professional quality with comic book speech bubbles */
 
 .chatWindow {
   position: relative;
@@ -17,6 +17,9 @@
   transform: scale(0.95) translateY(8px);
   opacity: 0;
   animation: premium-chat-entrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Ensure responsive sizing */
+  min-width: 280px;
+  max-width: 100%;
 }
 
 @keyframes premium-chat-entrance {
@@ -45,7 +48,7 @@
   transform: translateY(-2px);
 }
 
-/* Premium speech bubble tails with smooth curves */
+/* Comic book speech bubble tails - more pronounced and cleaner */
 .chatWindow::before, 
 .chatWindow::after {
   content: '';
@@ -53,6 +56,7 @@
   background: hsla(var(--card), 0.95);
   border: 1px solid hsla(var(--border), 0.8);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
 }
 
 /* Dark theme adjustments */
@@ -71,143 +75,106 @@
   border-color: hsla(var(--border), 0.6);
 }
 
-/* Enhanced speech bubble positioning with smooth curves */
-.popup-bottom-right::before {
-  top: -8px;
-  left: 24px;
+/* Comic Book Speech Bubble Tails - Simplified and More Reliable */
+
+/* Coming from Engie on the left (bubble to the right of Engie) */
+.popup-from-left::before {
+  left: -12px;
+  top: 32px;
   width: 20px;
-  height: 8px;
-  border-radius: 0 0 12px 12px;
+  height: 20px;
+  background: hsla(var(--card), 0.95);
+  border: 1px solid hsla(var(--border), 0.8);
+  border-right: none;
   border-top: none;
-  transform: rotate(8deg);
-  clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
+  transform: rotate(45deg);
+  border-radius: 0 0 0 8px;
 }
 
-.popup-bottom-right::after {
-  top: -6px;
-  left: 26px;
-  width: 16px;
-  height: 6px;
+.popup-from-left::after {
+  left: -8px;
+  top: 36px;
+  width: 12px;
+  height: 12px;
   background: hsla(var(--card), 1);
   border: none;
-  border-radius: 0 0 8px 8px;
-  transform: rotate(8deg);
-  clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
+  transform: rotate(45deg);
+  border-radius: 0 0 0 4px;
 }
 
-.popup-bottom-left::before {
-  top: -8px;
-  right: 24px;
+/* Coming from Engie on the right (bubble to the left of Engie) */
+.popup-from-right::before {
+  right: -12px;
+  top: 32px;
   width: 20px;
-  height: 8px;
-  border-radius: 0 0 12px 12px;
+  height: 20px;
+  background: hsla(var(--card), 0.95);
+  border: 1px solid hsla(var(--border), 0.8);
+  border-left: none;
   border-top: none;
-  transform: rotate(-8deg);
-  clip-path: polygon(0% 0%, 80% 0%, 100% 100%, 20% 100%);
+  transform: rotate(-45deg);
+  border-radius: 0 0 8px 0;
 }
 
-.popup-bottom-left::after {
-  top: -6px;
-  right: 26px;
-  width: 16px;
-  height: 6px;
+.popup-from-right::after {
+  right: -8px;
+  top: 36px;
+  width: 12px;
+  height: 12px;
   background: hsla(var(--card), 1);
   border: none;
-  border-radius: 0 0 8px 8px;
-  transform: rotate(-8deg);
-  clip-path: polygon(0% 0%, 75% 0%, 100% 100%, 25% 100%);
+  transform: rotate(-45deg);
+  border-radius: 0 0 4px 0;
 }
 
-.popup-top-right::before {
-  bottom: -8px;
-  left: 24px;
+/* Coming from Engie above (bubble below Engie) */
+.popup-from-top::before {
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
   width: 20px;
-  height: 8px;
-  border-radius: 12px 12px 0 0;
+  height: 20px;
+  background: hsla(var(--card), 0.95);
+  border: 1px solid hsla(var(--border), 0.8);
   border-bottom: none;
-  transform: rotate(-8deg);
-  clip-path: polygon(0% 0%, 80% 0%, 100% 100%, 20% 100%);
+  border-right: none;
+  border-radius: 8px 0 0 0;
 }
 
-.popup-top-right::after {
-  bottom: -6px;
-  left: 26px;
-  width: 16px;
-  height: 6px;
-  background: hsla(var(--card), 1);
-  border: none;
-  border-radius: 8px 8px 0 0;
-  transform: rotate(-8deg);
-  clip-path: polygon(0% 0%, 75% 0%, 100% 100%, 25% 100%);
-}
-
-.popup-top-left::before {
-  bottom: -8px;
-  right: 24px;
-  width: 20px;
-  height: 8px;
-  border-radius: 12px 12px 0 0;
-  border-bottom: none;
-  transform: rotate(8deg);
-  clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
-}
-
-.popup-top-left::after {
-  bottom: -6px;
-  right: 26px;
-  width: 16px;
-  height: 6px;
-  background: hsla(var(--card), 1);
-  border: none;
-  border-radius: 8px 8px 0 0;
-  transform: rotate(8deg);
-  clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
-}
-
-.popup-center-top::before {
+.popup-from-top::after {
   top: -8px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 8px;
-  border-radius: 0 0 12px 12px;
-  border-top: none;
-  clip-path: polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%);
-}
-
-.popup-center-top::after {
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 6px;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
   background: hsla(var(--card), 1);
   border: none;
-  border-radius: 0 0 8px 8px;
-  clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
+  border-radius: 4px 0 0 0;
 }
 
-.popup-center-bottom::before {
+/* Coming from Engie below (bubble above Engie) */
+.popup-from-bottom::before {
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  width: 20px;
+  height: 20px;
+  background: hsla(var(--card), 0.95);
+  border: 1px solid hsla(var(--border), 0.8);
+  border-top: none;
+  border-right: none;
+  border-radius: 0 0 0 8px;
+}
+
+.popup-from-bottom::after {
   bottom: -8px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 8px;
-  border-radius: 12px 12px 0 0;
-  border-bottom: none;
-  clip-path: polygon(0% 0%, 100% 0%, 75% 100%, 25% 100%);
-}
-
-.popup-center-bottom::after {
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 6px;
+  transform: translateX(-50%) rotate(-45deg);
+  width: 12px;
+  height: 12px;
   background: hsla(var(--card), 1);
   border: none;
-  border-radius: 8px 8px 0 0;
-  clip-path: polygon(0% 0%, 100% 0%, 70% 100%, 30% 100%);
+  border-radius: 0 0 0 4px;
 }
 
 /* Premium content styling */
@@ -447,6 +414,7 @@
   .chatWindow {
     border-radius: 12px;
     max-width: calc(100vw - 32px);
+    min-width: 280px;
   }
   
   .chatWindow .premium-content {
@@ -456,6 +424,17 @@
   
   .chatWindow .premium-header {
     padding: 12px 16px 8px;
+  }
+
+  /* Adjust speech bubble tails for mobile */
+  .popup-from-left::before,
+  .popup-from-right::before {
+    top: 24px;
+  }
+  
+  .popup-from-left::after,
+  .popup-from-right::after {
+    top: 28px;
   }
 }
 
@@ -486,5 +465,28 @@
   
   .chatWindow .premium-button {
     border: 2px solid currentColor;
+  }
+  
+  .chatWindow::before,
+  .chatWindow::after {
+    border-width: 2px;
+  }
+}
+
+/* Enhanced visual feedback for speech bubble */
+.chatWindow {
+  /* Add subtle pulsing to make it feel more alive like a comic book */
+  animation: premium-chat-entrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+             subtle-bob 3s ease-in-out infinite 1s;
+}
+
+@keyframes subtle-bob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatWindow {
+    animation: premium-chat-entrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
