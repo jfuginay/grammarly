@@ -3,6 +3,7 @@ import { Suggestion } from './engie/types';
 import { useDebouncedCallback } from 'use-debounce';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import AnimatedEngieBot from './AnimatedEngieBot';
+import ScanCountdownTimer from './ScanCountdownTimer';
 import {
   TextFragment,
   assignPriorities,
@@ -40,6 +41,7 @@ export interface EnhancedEditorRef {
   clearAnalysis: () => void; // Method to clear analysis
   undo: () => void;
   redo: () => void;
+  toggleCountdownTimer: () => void; // Method to toggle the countdown timer visibility
 }
 
 // Import types at the top
@@ -83,6 +85,11 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [maxHistorySize] = useState<number>(50); // Limit history size
   const isUndoRedoOperation = useRef<boolean>(false);
+  
+  // Countdown timer states
+  const [isUserTyping, setIsUserTyping] = useState(false);
+  const [showCountdownTimer, setShowCountdownTimer] = useState(true);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Use our custom hook to handle auto-resizing
   useAutoResizeTextarea(
@@ -340,6 +347,14 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       }, 0);
     }
   }, [history, historyIndex, onChange]);
+
+  // Method to clear analysis state
+  const clearAnalysis = useCallback(() => {
+    setTextFragments([]);
+    setShouldShowFragments(false);
+    lastAnalyzedTextRef.current = '';
+    setHighlightedHtml('');
+  }, []);
 
   // Animate Engie bot going through the text changes word by word
   const animateEngieBotThroughChanges = useCallback((originalText: string, newText: string, startIndex: number) => {
@@ -620,12 +635,15 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       }
     },
     getElement: () => textareaRef.current,
-    analyzeText, // Already returns Promise<void>
-    toggleFragmentsVisibility,
-    clearAnalysis, // Use the consistent implementation defined earlier
-    undo,
-    redo
-  }));
+    analyzeText: () => analyzeText(),
+    toggleFragmentsVisibility: toggleFragmentsVisibility,
+    clearAnalysis: clearAnalysis,
+    undo: undo,
+    redo: redo,
+    toggleCountdownTimer: () => {
+      setShowCountdownTimer(prev => !prev);
+    }
+  }), [analyzeText, toggleFragmentsVisibility, clearAnalysis, undo, redo]);
   
   // Trigger analysis when user stops typing or when showFragments prop changes
   useEffect(() => {
@@ -997,19 +1015,25 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
+    
+    // Set user typing state to true
+    setIsUserTyping(true);
+    
+    // Clear any existing typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set a timeout to detect when user stops typing
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsUserTyping(false);
+    }, 500); // 500ms delay to consider user stopped typing
+    
     // Reset the fragment display when user starts typing again
     if (shouldShowFragments) {
       setShouldShowFragments(false);
     }
   };
-  
-  // Method to clear analysis state
-  const clearAnalysis = useCallback(() => {
-    setTextFragments([]);
-    setShouldShowFragments(false);
-    lastAnalyzedTextRef.current = '';
-    setHighlightedHtml('');
-  }, []);
 
   // Handle keyboard shortcuts for undo/redo
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -1042,7 +1066,14 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
     }
   }, [value, history, saveToHistory]);
 
-  // ... existing code ...
+  // Clean up typing timeout
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''} ${readOnly ? 'analysis-view' : 'input-view'}`;
 
@@ -1130,19 +1161,21 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         }}
         onKeyDown={handleKeyDown}
       />
-      {isAnalyzingText && (
-        <div className="editor-loading-indicator">
-          <span className="loading-spinner"></span>
-          <span className="loading-text">Analyzing text...</span>
-        </div>
-      )}
-      {shouldShowFragments && (
-        <div className="fragment-analysis-indicator">
-          Text analysis active
-        </div>
+      
+      {/* Countdown Timer - only show in the main editor, not analysis box */}
+      {!isAnalysisBox && !readOnly && autoAnalyze && (
+        <ScanCountdownTimer 
+          interval={3000}
+          isTyping={isUserTyping}
+          isAnalyzing={isAnalyzingText}
+          hasResults={shouldShowFragments}
+          onTimerComplete={analyzeText}
+          visible={value.trim().length > 0}
+        />
       )}
 
-      {/* Engie Bot animation layer - only shown in read-only (analysis) mode when applying suggestions */}
+      {/* AnimatedEngieBot area */}
+      {/* AnimatedEngieBot area - only shown in read-only (analysis) mode when applying suggestions */}
       {showEngieBot && readOnly && (
         <div 
           className="engie-bot-animation-layer" 
