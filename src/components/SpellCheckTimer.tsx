@@ -49,6 +49,15 @@ const SpellCheckTimer: React.FC<SpellCheckTimerProps> = ({
     return '#f59e0b'; // Orange
   }, [progress, timerState, spellingSuggestionCount]);
 
+  // Watch for suggestion count changes to immediately update display
+  useEffect(() => {
+    if (spellingSuggestionCount === 0 && timerState === 'results') {
+      setTimerState('ready');
+      setTimeRemaining(interval);
+      setIsPulsing(false);
+    }
+  }, [spellingSuggestionCount, timerState, interval]);
+
   // Handle timer logic
   useEffect(() => {
     if (!visible || !autoScanEnabled) {
@@ -86,8 +95,8 @@ const SpellCheckTimer: React.FC<SpellCheckTimerProps> = ({
       return;
     }
 
-    // Handle results state
-    if (spellingSuggestionCount > 0 || (timerState === 'results' && timeRemaining <= 0)) {
+    // Handle results state - immediately reflect suggestion count changes
+    if (spellingSuggestionCount > 0) {
       setTimerState('results');
       setIsPulsing(true);
       
@@ -99,6 +108,13 @@ const SpellCheckTimer: React.FC<SpellCheckTimerProps> = ({
       }, 2000);
       
       return () => clearTimeout(pulseTimer);
+    }
+    
+    // Handle transition from results to ready when suggestions are cleared
+    if (spellingSuggestionCount === 0 && timerState === 'results') {
+      setTimerState('ready');
+      setTimeRemaining(interval);
+      setIsPulsing(false);
     }
 
     // Normal countdown logic
@@ -307,17 +323,24 @@ const SpellCheckTimer: React.FC<SpellCheckTimerProps> = ({
           </div>
           
           {/* Recent Activity */}
-          {spellingSuggestionCount > 0 && (
-            <div className={styles.activity}>
-              <h4 className={styles.activityHeader}>Current Issues</h4>
+          <div className={styles.activity}>
+            <h4 className={styles.activityHeader}>Current Status</h4>
+            {spellingSuggestionCount > 0 ? (
               <div className={styles.issueCount}>
                 <span className={styles.issueDot} style={{ backgroundColor: '#ef4444' }}></span>
                 <span className={styles.issueText}>
                   {spellingSuggestionCount} spelling error{spellingSuggestionCount !== 1 ? 's' : ''} found
                 </span>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className={styles.issueCount}>
+                <span className={styles.issueDot} style={{ backgroundColor: '#10b981' }}></span>
+                <span className={styles.issueText}>
+                  No spelling errors detected
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
