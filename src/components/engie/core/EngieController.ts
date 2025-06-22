@@ -13,7 +13,7 @@ export class EngieController {
   private debounceTimeoutRef: NodeJS.Timeout | null = null;
   private prevScannedTextRef: string = "";
   private inactivityTimerRef: NodeJS.Timeout | null = null;
-  private grokDeactivationTimer: NodeJS.Timeout | null = null;
+  // private grokDeactivationTimer: NodeJS.Timeout | null = null; // Removed
   private lastX: number = 0;
 
   constructor(private props: EngieProps) {
@@ -380,7 +380,7 @@ export class EngieController {
   cleanup(): void {
     if (this.debounceTimeoutRef) clearTimeout(this.debounceTimeoutRef);
     if (this.inactivityTimerRef) clearTimeout(this.inactivityTimerRef);
-    if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer);
+    // if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer); // Removed
   }
 
   public stepTowardMouse(): void {
@@ -402,105 +402,10 @@ export class EngieController {
     setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
 
-  public async toggleGrokMode(): Promise<void> {
-    const currentState = this.stateManager.getState();
-    if (!currentState.isGrokActive) {
-      if (!process.env.GROQ_API_KEY) {
-        console.error("GROQ_API_KEY is not set. Cannot activate Grok mode.");
-        this.stateManager.addGrokChatMessage({ role: 'assistant', content: "I can't activate Grok mode. The API key is missing." });
-        return;
-      }
-      this.stateManager.setIsGrokActive(true);
-      const endTime = Date.now() + 10 * 60 * 1000;
-      this.stateManager.setGrokEndTime(endTime);
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Grok mode activated");
-      }
-      this.stateManager.setBotEmotion('excited', 'Engie is feeling opinionated with Grok!');
-      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Grok mode activated! I'm ready for some opinionated comments and research." });
-
-      if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer);
-      this.grokDeactivationTimer = setTimeout(() => this.deactivateGrokMode(), 10 * 60 * 1000);
-    } else {
-      this.deactivateGrokMode();
-    }
-  }
-
-  public deactivateGrokMode(): void {
-    this.stateManager.setIsGrokActive(false);
-    this.stateManager.setGrokEndTime(null);
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Grok mode deactivated");
-    }
-    if (this.grokDeactivationTimer) {
-      clearTimeout(this.grokDeactivationTimer);
-      this.grokDeactivationTimer = null;
-    }
-    this.stateManager.setBotEmotion('neutral', 'Grok mode off.');
-    this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Grok mode deactivated." });
-  }
-
-  public async researchWithGrok(topic: string): Promise<void> {
-    // If we're on the client side, we should redirect this call to the server API
-    if (typeof window !== 'undefined' || !this.grokApiService) {
-      this.stateManager.setIdeating(true);
-      this.stateManager.setStatusMessage(`Engie is researching "${topic}" with Grok...`);
-      this.stateManager.addGrokChatMessage({ role: 'user', content: `Research: ${topic}` });
-      
-      try {
-        // Use API service to call the server endpoint
-        const response = await this.apiService.sendGrokChat(`Research this topic thoroughly: ${topic}`, []);
-        
-        if (response) {
-          this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
-        } else {
-          this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't find any research on that topic." });
-        }
-      } catch (error) {
-        console.error("Error researching with Grok:", error);
-        this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, there was an error while researching that topic." });
-      } finally {
-        this.stateManager.setIdeating(false);
-        this.stateManager.setStatusMessage('');
-      }
-      return;
-    }
-    
-    // Server-side processing with direct Groq client
-    if (!this.grokApiService) {
-      console.error("GrokApiService not available. Cannot research.");
-      this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I can't use Grok for research right now." });
-      return;
-    }
-
-    this.stateManager.setIdeating(true);
-    this.stateManager.setStatusMessage(`Engie is researching "${topic}" with Grok...`);
-    this.stateManager.addGrokChatMessage({ role: 'user', content: `Research: ${topic}` });
-
-    try {
-      const response = await this.grokApiService.researchTopic(topic);
-      if (response) {
-        this.stateManager.addGrokChatMessage({ role: 'assistant', content: response });
-        if (process.env.NODE_ENV === 'development') {
-          console.log("Grok Research Result:", response);
-        }
-        this.stateManager.setBotEmotion('thoughtful', `Found some research on ${topic.substring(0,20)}...`);
-      } else {
-        const errorMessage = "Sorry, I couldn't find information on that topic using Grok.";
-        this.stateManager.addGrokChatMessage({ role: 'assistant', content: errorMessage });
-        console.error(errorMessage); // This is an error from Grok service
-        this.stateManager.setBotEmotion('concerned', 'Grok research failed');
-      }
-    } catch (error) {
-      const errorMessage = "An error occurred while researching with Grok.";
-      this.stateManager.addGrokChatMessage({ role: 'assistant', content: errorMessage });
-      console.error(errorMessage, error);
-      this.stateManager.setBotEmotion('concerned', 'Grok research error');
-    } finally {
-      this.stateManager.setIdeating(false);
-      this.stateManager.setStatusMessage("");
-    }
-  }
+  // Removed toggleGrokMode, deactivateGrokMode, and researchWithGrok methods
+  // as the UI for these has been removed from GrokTab and EngieChatWindow.
+  // isGrokActive state will remain at its default (likely false)
+  // unless activated by other means not covered in this change.
 
   /**
    * Send a message to Grok chat and handle the response

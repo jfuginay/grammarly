@@ -15,6 +15,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const [controller] = useState(() => new EngieController(props));
   const [state, setState] = useState(controller.getStateManager().getState());
   const engieRef = useRef<HTMLDivElement>(null);
+  const [popupPosition, setPopupPosition] = useState<'above' | 'below' | 'left' | 'right'>('above');
 
   // Computed values
   const activeSuggestions = controller.getStateManager().getActiveSuggestions(props.suggestions);
@@ -29,9 +30,9 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return unsubscribe;
   }, [controller]);
 
-  // Simple popup positioning using CSS relative positioning
+  // Calculate popup position relative to Engie
   const calculatePopupPosition = () => {
-    if (!engieRef.current) return { position: 'above' as const };
+    if (!engieRef.current) return 'above';
 
     const engieRect = engieRef.current.getBoundingClientRect();
     const windowWidth = window.innerWidth;
@@ -39,7 +40,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     
     const popupWidth = 320;
     const popupHeight = 400;
-    const gap = 10;
+    const gap = 15;
 
     // Check available space in each direction
     const spaceRight = windowWidth - (engieRect.right + gap);
@@ -47,64 +48,79 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     const spaceBottom = windowHeight - (engieRect.bottom + gap);
     const spaceTop = engieRect.top - gap;
 
-    // Determine best position
-    if (spaceRight >= popupWidth && spaceBottom >= popupHeight) {
-      return { position: 'right' as const };
-    } else if (spaceLeft >= popupWidth && spaceBottom >= popupHeight) {
-      return { position: 'left' as const };
-    } else if (spaceBottom >= popupHeight) {
-      return { position: 'below' as const };
+    // Determine best position based on available space
+    if (spaceRight >= popupWidth) {
+      return 'right';
+    } else if (spaceLeft >= popupWidth) {
+      return 'left';
     } else if (spaceTop >= popupHeight) {
-      return { position: 'above' as const };
+      return 'above';
     } else {
-      // Fallback: find the direction with most space
-      const spaces = [
-        { direction: 'right', space: spaceRight },
-        { direction: 'left', space: spaceLeft },
-        { direction: 'below', space: spaceBottom },
-        { direction: 'above', space: spaceTop }
-      ];
-      
-      const bestSpace = spaces.reduce((max, current) => 
-        current.space > max.space ? current : max
-      );
-      
-      return { position: bestSpace.direction as any };
+      return 'below';
     }
   };
 
-  const popupPosition = calculatePopupPosition();
+  // Update popup position when chat opens or Engie moves
+  useEffect(() => {
+    if (state.isChatOpen && engieRef.current) {
+      const newPosition = calculatePopupPosition();
+      setPopupPosition(newPosition);
+    }
+  }, [state.isChatOpen, state.engiePos.x, state.engiePos.y]);
 
-  // Get the appropriate CSS class based on position
-  const getPopupClass = () => {
-    switch (popupPosition.position) {
+  // Get popup styles based on position
+  const getPopupStyles = () => {
+    if (!engieRef.current) return {};
+
+    const engieRect = engieRef.current.getBoundingClientRect();
+    const gap = 15;
+
+    switch (popupPosition) {
       case 'right':
-        return styles.engiePopupRight;
+        return {
+          position: 'fixed' as const,
+          left: engieRect.right + gap,
+          top: engieRect.top,
+          transform: 'translateY(-50%)',
+        };
       case 'left':
-        return styles.engiePopupLeft;
+        return {
+          position: 'fixed' as const,
+          right: window.innerWidth - engieRect.left + gap,
+          top: engieRect.top,
+          transform: 'translateY(-50%)',
+        };
       case 'below':
-        return styles.engiePopupBelow;
-      default:
-        return styles.engiePopup;
+        return {
+          position: 'fixed' as const,
+          left: engieRect.left + (engieRect.width / 2),
+          top: engieRect.bottom + gap,
+          transform: 'translateX(-50%)',
+        };
+      default: // above
+        return {
+          position: 'fixed' as const,
+          left: engieRect.left + (engieRect.width / 2),
+          bottom: window.innerHeight - engieRect.top + gap,
+          transform: 'translateX(-50%)',
+        };
     }
   };
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      // Recalculate position on resize
       if (state.isChatOpen) {
-        // Force re-render to recalculate position
-        controller.handleEngieClose();
-        setTimeout(() => controller.handleEngieTrigger(), 10);
+        const newPosition = calculatePopupPosition();
+        setPopupPosition(newPosition);
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [state.isChatOpen, controller]);
+  }, [state.isChatOpen]);
 
-  // Mouse following logic - simplified for now
+  // Mouse following logic
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       controller.updateMousePosition(e.clientX, e.clientY);
@@ -157,104 +173,103 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   return (
     <>
-      {/* Engie Container with Relative Positioning */}
-      <div className={styles.engieContainer}>
-        {/* Engie Character */}
-        <Draggable
-          onDrag={handleDrag}
-          onStart={onStartDrag}
-          onStop={onStopDrag}
+      {/* Engie Character */}
+      <Draggable
+        onDrag={handleDrag}
+        onStart={onStartDrag}
+        onStop={onStopDrag}
+      >
+        <motion.div
+          ref={engieRef}
+          className="engie-character cursor-pointer"
+          onClick={handleEngieTrigger}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          style={{
+            position: 'fixed',
+            left: state.engiePos.x,
+            top: state.engiePos.y,
+            zIndex: 1000,
+            width: 64,
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer'
+          }}
         >
-          <motion.div
-            ref={engieRef}
-            className="engie-character cursor-pointer"
-            onClick={handleEngieTrigger}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              position: 'fixed',
-              left: state.engiePos.x,
-              top: state.engiePos.y,
-              zIndex: 1000,
-              width: 64,
-              height: 64,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <AnimatedEngieBot
-              animationState={state.botAnimation}
-              speed={state.botSpeed}
-              direction={state.botDirection}
-              emotion={state.botEmotion}
-            />
-            
-            {/* Writing Status Badge */}
-            {state.isScanning && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute -top-2 -right-2"
-              >
-                <Badge variant="secondary" className="text-xs px-1 py-0.5">
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  Scanning
-                </Badge>
-              </motion.div>
-            )}
-          </motion.div>
-        </Draggable>
-
-        {/* Popup positioned relative to Engie */}
-        <AnimatePresence>
-          {state.isChatOpen && (
+          <AnimatedEngieBot
+            animationState={state.botAnimation}
+            speed={state.botSpeed}
+            direction={state.botDirection}
+            emotion={state.botEmotion}
+          />
+          
+          {/* Writing Status Badge */}
+          {state.isScanning && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              className={getPopupClass()}
-              style={{
-                zIndex: 1001,
-                maxWidth: '320px',
-                whiteSpace: 'normal'
-              }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute -top-2 -right-2"
             >
-              <EngieChatWindow
-                state={state}
-                grokChatHistory={state.grokChatHistory}
-                activeSuggestions={activeSuggestions}
-                currentSuggestion={currentSuggestion}
-                documents={props.documents || []}
-                onClose={handleEngieClose}
-                onApply={handleApply}
-                onDismiss={handleDismiss}
-                onNext={handleNext}
-                onDismissIdeation={handleDismissIdeation}
-                onManualIdeate={handleManualIdeate}
-                onTabChange={handleTabChange}
-                formatScore={formatScore}
-                handleToggleGrokMode={handleToggleGrokMode}
-                handleResearchWithGrok={handleResearchWithGrok}
-                onSendGrokMessage={handleSendGrokMessage}
-                grokLoading={false}
-                grokError={null}
-              />
+              <Badge variant="secondary" className="text-xs px-1 py-0.5">
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                Scanning
+              </Badge>
             </motion.div>
           )}
-        </AnimatePresence>
+        </motion.div>
+      </Draggable>
 
-        {/* Notifications */}
-        <EngieNotifications
-          unreadCount={unreadCount}
-          notificationOpen={state.notificationOpen}
-          ideaNotifications={state.ideaNotifications}
-          onDismissNotification={dismissNotification}
-        />
-      </div>
+      {/* Popup positioned relative to Engie */}
+      <AnimatePresence>
+        {state.isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            style={{
+              ...getPopupStyles(),
+              zIndex: 1001,
+              maxWidth: '320px',
+              whiteSpace: 'normal'
+            }}
+            className={`${styles.engiePopup} ${styles[`engiePopup${popupPosition.charAt(0).toUpperCase() + popupPosition.slice(1)}`] || ''}`}
+          >
+            <EngieChatWindow
+              state={state}
+              grokChatHistory={state.grokChatHistory}
+              activeSuggestions={activeSuggestions}
+              currentSuggestion={currentSuggestion}
+              documents={props.documents || []}
+              onClose={handleEngieClose}
+              onApply={handleApply}
+              onDismiss={handleDismiss}
+              onNext={handleNext}
+              onDismissIdeation={handleDismissIdeation}
+              onManualIdeate={handleManualIdeate}
+              onTabChange={handleTabChange}
+              formatScore={formatScore}
+              handleToggleGrokMode={handleToggleGrokMode}
+              handleResearchWithGrok={handleResearchWithGrok}
+              onSendGrokMessage={handleSendGrokMessage}
+              grokLoading={false}
+              grokError={null}
+              popupPosition={popupPosition}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notifications */}
+      <EngieNotifications
+        unreadCount={unreadCount}
+        notificationOpen={state.notificationOpen}
+        ideaNotifications={state.ideaNotifications}
+        onDismissNotification={dismissNotification}
+      />
     </>
   );
 };
