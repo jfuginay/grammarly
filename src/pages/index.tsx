@@ -312,9 +312,9 @@ const IndexPage = () => {
               </div>
             </div>
 
-            {/* Interactive Writing Demo */}
+            {/* Hardcoded Examples Demo - Moved from bottom */}
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-              {/* Writing Type Selector */}
+              {/* Left side - Introduction */}
               <div className="space-y-6">
                 <motion.h2 
                   className="font-bold text-gray-900 dark:text-white mb-6"
@@ -326,129 +326,138 @@ const IndexPage = () => {
                   See Engie&apos;s intelligent corrections in action
                 </motion.h2>
                 
-                <div className="space-y-3">
-                  {writingScenarios.map((scenario, index) => (
-                    <motion.button
+                <motion.p 
+                  className="text-lg text-gray-600 dark:text-gray-300 mb-8"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  Watch Engie analyze real technical writing scenarios, providing contextual suggestions that understand your domain. 
+                  From fixing grammar to improving clarity and style, Engie doesn&apos;t just correct—it teaches.
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                  className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-8"
+                >
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
+                    <Sparkles className="h-5 w-5" />
+                    <span className="font-semibold">This is the power of Engie Suggestion Technology</span>
+                  </div>
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Real-time analysis with contextual understanding for technical professionals
+                  </p>
+                </motion.div>
+
+                {/* Progress indicator */}
+                <motion.div 
+                  className="flex justify-start space-x-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                >
+                  {demoSentences.map((_, index) => (
+                    <motion.div
                       key={index}
-                      className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left group ${
-                        selectedWritingType === index
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-slate-800'
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        activeDemoIndex === index ? 'w-8 bg-blue-500' : 'w-2 bg-gray-300 dark:bg-gray-600'
                       }`}
-                      onClick={() => setSelectedWritingType(index)}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-lg bg-gradient-to-r ${scenario.color} text-white group-hover:scale-110 transition-transform duration-300`}>
-                          {scenario.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{scenario.type}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{scenario.context}</p>
-                        </div>
-                        <ArrowRight className={`h-5 w-5 transition-all duration-300 ${
-                          selectedWritingType === index ? 'text-blue-600 translate-x-1' : 'text-gray-400'
-                        }`} />
-                      </div>
-                    </motion.button>
+                      whileHover={{ scale: 1.2 }}
+                    />
                   ))}
-                </div>
+                </motion.div>
               </div>
 
-              {/* Live Demo Area */}
-              <motion.div
+              {/* Right side - Hardcoded examples */}
+              <motion.div 
                 className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 rounded-lg bg-gradient-to-r ${currentScenario.color} text-white`}>
-                    {currentScenario.icon}
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">{currentScenario.type}</h3>
-                  <Badge variant="outline" className="ml-auto text-xs">Live Demo</Badge>
+                <div className="flex items-center gap-3 mb-6">
+                  <MessageSquare className="h-6 w-6 text-blue-500" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Engie in Action</h3>
+                  <Badge variant="outline" className="ml-auto text-xs">Live Examples</Badge>
                 </div>
                 
-                <div className="relative">
-                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4 min-h-[120px] font-mono text-sm border border-gray-200 dark:border-gray-700">
-                    <div className="text-gray-500 dark:text-gray-400 mb-2 text-xs uppercase tracking-wide">
-                      {currentScenario.context}
-                    </div>
-                    <div className="text-gray-900 dark:text-white">
-                      {typedDemoText}
-                      <span className={`inline-block w-0.5 h-4 bg-blue-600 dark:bg-blue-400 ml-1 ${isTyping ? 'animate-pulse' : ''}`}></span>
-                    </div>
-                  </div>
-                  
-                  {/* Thinking indicator */}
-                  <AnimatePresence>
-                    {showThinking && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.3 }}
-                        className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="p-1 bg-purple-500 rounded-full"
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {demoSentences.map((demo, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ 
+                        opacity: activeDemoIndex === index ? 1 : 0.6,
+                        scale: activeDemoIndex === index ? 1 : 0.98,
+                        y: activeDemoIndex === index ? 0 : 5,
+                      }}
+                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                      className={`rounded-lg border-2 transition-all duration-300 ${
+                        activeDemoIndex === index 
+                          ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700 shadow-md' 
+                          : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      <div className="p-4">
+                        {/* Type Badge */}
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs font-medium ${
+                              demo.type === 'Grammar' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800' :
+                              demo.type === 'Style' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' :
+                              'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                            }`}
                           >
-                            <Brain className="h-3 w-3 text-white" />
-                          </motion.div>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Engie is analyzing...</span>
+                            {demo.type === 'Grammar' ? '📝' : demo.type === 'Style' ? '🎨' : '💡'} {demo.type}
+                          </Badge>
+                          {activeDemoIndex === index && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="text-xs text-blue-600 dark:text-blue-400 font-medium"
+                            >
+                              Active
+                            </motion.div>
+                          )}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
-                  <AnimatePresence>
-                    {typedDemoText.length > Math.min(currentScenario.sample.length * 0.7, 100) && !isTyping && !showThinking && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 0.8 }}
-                        className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <motion.div 
-                            className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 1.0, duration: 0.3 }}
-                          >
-                            <Sparkles className="h-4 w-4 text-white" />
-                          </motion.div>
-                          <div className="flex-1">
-                            <motion.p 
-                              className="font-medium text-purple-800 dark:text-purple-200 mb-1"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 1.2, duration: 0.4 }}
-                            >
-                              Engie suggests:
-                            </motion.p>
-                            <motion.p 
-                              className="text-gray-700 dark:text-gray-300 text-sm"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 1.4, duration: 0.4 }}
-                            >
-                              {currentScenario.aiSuggestion}
-                            </motion.p>
+
+                        {/* Original Text */}
+                        <div className="mb-3">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium uppercase tracking-wide">Original:</div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 line-through opacity-75">{demo.original}</p>
+                        </div>
+                        
+                        {/* Improved Text */}
+                        <div className="mb-3">
+                          <div className="text-xs text-green-600 dark:text-green-400 mb-1 font-medium uppercase tracking-wide flex items-center">
+                            <Check className="mr-1 h-3 w-3" /> Improved:
                           </div>
+                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">{demo.improved}</p>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+
+                        {/* Explanation (only for active demo) */}
+                        <AnimatePresence>
+                          {activeDemoIndex === index && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                              className="border-t border-gray-200 dark:border-gray-700 pt-3"
+                            >
+                              <div className="text-xs text-purple-600 dark:text-purple-400 mb-1 font-medium uppercase tracking-wide flex items-center">
+                                <Brain className="mr-1 h-3 w-3" /> Engie explains:
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{demo.explanation}</p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             </div>
@@ -779,104 +788,6 @@ const IndexPage = () => {
                       )}
                     </motion.div>
                   )}
-                </div>
-              </div>
-              
-              {/* Enhanced demo examples */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-1 md:order-2">
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <MessageSquare className="mr-2 h-5 w-5 text-blue-500" />
-                  See Engie&apos;s intelligent corrections
-                </h3>
-                
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {demoSentences.map((demo, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ 
-                        opacity: activeDemoIndex === index ? 1 : 0.6,
-                        scale: activeDemoIndex === index ? 1 : 0.98,
-                        y: activeDemoIndex === index ? 0 : 5,
-                      }}
-                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                      className={`rounded-lg border-2 transition-all duration-300 ${
-                        activeDemoIndex === index 
-                          ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700 shadow-md' 
-                          : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      <div className="p-4">
-                        {/* Type Badge */}
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs font-medium ${
-                              demo.type === 'Grammar' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800' :
-                              demo.type === 'Style' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' :
-                              'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-                            }`}
-                          >
-                            {demo.type === 'Grammar' ? '📝' : demo.type === 'Style' ? '🎨' : '💡'} {demo.type}
-                          </Badge>
-                          {activeDemoIndex === index && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="text-xs text-blue-600 dark:text-blue-400 font-medium"
-                            >
-                              Active
-                            </motion.div>
-                          )}
-                        </div>
-
-                        {/* Original Text */}
-                        <div className="mb-3">
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium uppercase tracking-wide">Original:</div>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 line-through opacity-75">{demo.original}</p>
-                        </div>
-                        
-                        {/* Improved Text */}
-                        <div className="mb-3">
-                          <div className="text-xs text-green-600 dark:text-green-400 mb-1 font-medium uppercase tracking-wide flex items-center">
-                            <Check className="mr-1 h-3 w-3" /> Improved:
-                          </div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">{demo.improved}</p>
-                        </div>
-
-                        {/* Explanation (only for active demo) */}
-                        <AnimatePresence>
-                          {activeDemoIndex === index && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                              className="border-t border-gray-200 dark:border-gray-700 pt-3"
-                            >
-                              <div className="text-xs text-purple-600 dark:text-purple-400 mb-1 font-medium uppercase tracking-wide flex items-center">
-                                <Brain className="mr-1 h-3 w-3" /> Engie explains:
-                              </div>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{demo.explanation}</p>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Progress indicator */}
-                <div className="flex justify-center mt-4 space-x-1">
-                  {demoSentences.map((_, index) => (
-                    <motion.div
-                      key={index}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        activeDemoIndex === index ? 'w-6 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
-                      }`}
-                      whileHover={{ scale: 1.2 }}
-                    />
-                  ))}
                 </div>
               </div>
             </div>
