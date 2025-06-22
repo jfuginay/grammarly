@@ -123,7 +123,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   // Mouse following logic - unified approach
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      controller.updateMousePosition(e.clientX, e.clientY);
+      // Store mouse position for later use
+      (window as any).__engieMousePos = { x: e.clientX, y: e.clientY };
     };
 
     const step = () => controller.stepTowardMouse();
@@ -165,14 +166,24 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   // Grok handlers
   const handleSendGrokMessage = async (prompt: string) => {
     try {
-      await controller.sendGrokMessage(prompt);
+      await controller.sendGrokChatMessage(prompt);
     } catch (error) {
       console.error('Error sending Grok message:', error);
     }
   };
 
-  const handleToggleGrokMode = () => controller.toggleGrokMode();
-  const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
+  // Document change handler for new/empty documents
+  const handleDocumentChange = (newText: string = '', isNewDocument: boolean = false) => {
+    controller.handleDocumentChange(newText, isNewDocument);
+  };
+
+  // Expose document change handler globally so parent can call it
+  useEffect(() => {
+    (window as any).__engieHandleDocumentChange = handleDocumentChange;
+    return () => {
+      delete (window as any).__engieHandleDocumentChange;
+    };
+  }, []);
 
   return (
     <>
@@ -259,12 +270,10 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
               onManualIdeate={handleManualIdeate}
               onTabChange={handleTabChange}
               formatScore={formatScore}
-              handleToggleGrokMode={handleToggleGrokMode}
-              handleResearchWithGrok={handleResearchWithGrok}
+              handleResearchWithGrok={() => {}}
               onSendGrokMessage={handleSendGrokMessage}
               grokLoading={false}
               grokError={null}
-              popupPosition={popupPosition}
             />
           </motion.div>
         )}

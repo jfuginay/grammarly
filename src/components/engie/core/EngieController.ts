@@ -280,6 +280,78 @@ export class EngieController {
     }
   }
 
+  /**
+   * Handle new document or empty document scenarios
+   * Shows contextual encouragement messages for starting to write
+   */
+  handleNewDocumentOrEmpty(text: string = ''): void {
+    const state = this.stateManager.getState();
+    
+    // Check if this is a new/empty document scenario
+    const isEmptyOrMinimal = !text || text.trim().length < 10;
+    
+    if (isEmptyOrMinimal && !state.isChatOpen) {
+      // Move to writing area to encourage user to start
+      this.stateManager.moveToOptimalPosition('writing');
+      
+      // Show contextual encouragement message for new documents
+      const contextualMessages = [
+        "Ready to write something amazing? 📝 Let's get started!",
+        "Fresh document, fresh ideas! ✨ What are you working on today?",
+        "Perfect! A blank canvas for your thoughts. 🎨 Let's bring them to life!",
+        "New document energy! 🚀 I'm here to help you craft something great.",
+        "Love a fresh start! 💫 What story are you going to tell today?",
+        "Technical writing, creative content, or professional docs - I'm ready to help! 🔧",
+        "Starting fresh? Perfect! 🌟 Let's make every word count.",
+        "Empty page, endless possibilities! ✨ Let's turn your ideas into words."
+      ];
+      
+      const randomMessage = contextualMessages[Math.floor(Math.random() * contextualMessages.length)];
+      
+      // Set a welcoming message and open chat briefly
+      this.stateManager.setIdeationMessage({
+        role: 'assistant',
+        content: randomMessage
+      });
+      
+      this.stateManager.setChatOpen(true);
+      this.stateManager.setBotEmotion('excited', 'Ready to help with your writing!');
+      
+      // Auto-close the message after 8 seconds to not be intrusive
+      setTimeout(() => {
+        if (this.stateManager.getState().ideationMessage?.content === randomMessage) {
+          this.stateManager.setIdeationMessage(null);
+          this.stateManager.setChatOpen(false);
+          this.stateManager.setBotEmotion('neutral', '');
+        }
+      }, 8000);
+    }
+  }
+
+  /**
+   * Handle document selection or creation
+   * Triggers appropriate contextual messages
+   */
+  handleDocumentChange(newText: string = '', isNewDocument: boolean = false): void {
+    const state = this.stateManager.getState();
+    
+    // Reset suggestions when document changes
+    this.stateManager.resetSuggestions();
+    this.stateManager.setCurrentSuggestionIndex(0);
+    
+    // If it's a new document or empty, show encouragement
+    if (isNewDocument || !newText || newText.trim().length < 10) {
+      // Delay slightly to allow UI to settle
+      setTimeout(() => {
+        this.handleNewDocumentOrEmpty(newText);
+      }, 500);
+    } else {
+      // For existing documents with content, move to analysis area
+      this.stateManager.moveToOptimalPosition('analysis');
+      this.stateManager.setBotEmotion('thoughtful', 'Looking at your document...');
+    }
+  }
+
   handleEngieClick(): void {
     const state = this.stateManager.getState();
     const unreadCount = this.stateManager.getUnreadCount();
