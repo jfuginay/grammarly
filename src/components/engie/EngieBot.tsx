@@ -22,13 +22,25 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({});
   const [popupPositionClass, setPopupPositionClass] = useState<string>('');
 
-  // Simple, reliable popup positioning function
+  // Computed values (moved up so they can be used in calculatePopupPosition)
+  const activeSuggestions = controller.getStateManager().getActiveSuggestions(props.suggestions);
+  const currentSuggestion = controller.getStateManager().getCurrentSuggestion(props.suggestions);
+
+  // Simple, reliable popup positioning function with different logic for suggestions vs chat
   const calculatePopupPosition = (engiePos: { x: number; y: number }, windowWidth: number, windowHeight: number) => {
     const engieSize = 64;
     const popupWidth = Math.min(320, windowWidth - 32); // Responsive width with 16px margin on each side
     const popupMaxHeight = Math.min(400, windowHeight - 32); // Responsive height
-    const gap = 16; // Gap between Engie and popup
+    
+    // Check if we're showing suggestions (need to stay close) vs general chat (can be further)
+    const isShowingSuggestions = activeSuggestions.length > 0 && (state.activeTab === 'suggestions' || currentSuggestion);
+    
+    // Different gaps for different content types
+    const gap = isShowingSuggestions ? 8 : 16; // Suggestions stay very close (8px), chat has comfortable spacing (16px)
     const edgeMargin = 16; // Minimum margin from screen edges
+    
+    // For suggestions, prioritize staying close even if it means less optimal positioning
+    const maxDistanceFromEngie = isShowingSuggestions ? 100 : 200; // Max pixels away from Engie center
 
     // Engie center point
     const engieCenterX = engiePos.x + engieSize / 2;
@@ -44,78 +56,136 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     const spaceBottom = windowHeight - (engiePos.y + engieSize);
     const spaceTop = engiePos.y;
 
-    // Try to position to the right first (most natural for speech bubbles)
-    if (spaceRight >= popupWidth + gap + edgeMargin) {
-      // Position to the right
-      left = engiePos.x + engieSize + gap;
-      top = Math.max(edgeMargin, Math.min(
-        engiePos.y - 20, // Slightly offset up for better visual alignment
-        windowHeight - popupMaxHeight - edgeMargin
-      ));
-      positionClass = 'popup-from-left';
-    }
-    // Try to position to the left
-    else if (spaceLeft >= popupWidth + gap + edgeMargin) {
-      left = engiePos.x - popupWidth - gap;
-      top = Math.max(edgeMargin, Math.min(
-        engiePos.y - 20,
-        windowHeight - popupMaxHeight - edgeMargin
-      ));
-      positionClass = 'popup-from-right';
-    }
-    // Try to position below
-    else if (spaceBottom >= popupMaxHeight + gap + edgeMargin) {
-      left = Math.max(edgeMargin, Math.min(
-        engieCenterX - popupWidth / 2, // Center horizontally on Engie
-        windowWidth - popupWidth - edgeMargin
-      ));
-      top = engiePos.y + engieSize + gap;
-      positionClass = 'popup-from-top';
-    }
-    // Try to position above
-    else if (spaceTop >= popupMaxHeight + gap + edgeMargin) {
-      left = Math.max(edgeMargin, Math.min(
-        engieCenterX - popupWidth / 2,
-        windowWidth - popupWidth - edgeMargin
-      ));
-      top = engiePos.y - popupMaxHeight - gap;
-      positionClass = 'popup-from-bottom';
-    }
-    // Fallback: position in the largest available space, ensuring full visibility
-    else {
-      // Find the quadrant with most space
-      const spaces = [
-        { space: spaceRight, position: 'right' },
-        { space: spaceLeft, position: 'left' },
-        { space: spaceBottom, position: 'bottom' },
-        { space: spaceTop, position: 'top' }
-      ];
-      
-      const bestSpace = spaces.reduce((max, current) => 
-        current.space > max.space ? current : max
-      );
-
-      switch (bestSpace.position) {
-        case 'right':
-          left = Math.max(engiePos.x + engieSize + 8, windowWidth - popupWidth - edgeMargin);
+    // For suggestions, try to stay as close as possible
+    if (isShowingSuggestions) {
+      // Try to position to the right first (most natural for speech bubbles) but stay close
+      if (spaceRight >= popupWidth + gap + edgeMargin) {
+        left = engiePos.x + engieSize + gap;
+        top = Math.max(edgeMargin, Math.min(
+          engiePos.y - 10, // Less offset for suggestions to stay closer
+          windowHeight - popupMaxHeight - edgeMargin
+        ));
+        positionClass = 'popup-from-left';
+      }
+      // Try to position to the left but stay close
+      else if (spaceLeft >= popupWidth + gap + edgeMargin) {
+        left = engiePos.x - popupWidth - gap;
+        top = Math.max(edgeMargin, Math.min(
+          engiePos.y - 10,
+          windowHeight - popupMaxHeight - edgeMargin
+        ));
+        positionClass = 'popup-from-right';
+      }
+      // Position below, centered on Engie
+      else if (spaceBottom >= popupMaxHeight + gap + edgeMargin) {
+        left = Math.max(edgeMargin, Math.min(
+          engieCenterX - popupWidth / 2,
+          windowWidth - popupWidth - edgeMargin
+        ));
+        top = engiePos.y + engieSize + gap;
+        positionClass = 'popup-from-top';
+      }
+      // Position above, centered on Engie
+      else if (spaceTop >= popupMaxHeight + gap + edgeMargin) {
+        left = Math.max(edgeMargin, Math.min(
+          engieCenterX - popupWidth / 2,
+          windowWidth - popupWidth - edgeMargin
+        ));
+        top = engiePos.y - popupMaxHeight - gap;
+        positionClass = 'popup-from-bottom';
+      }
+      // Fallback for suggestions: force close positioning even if not ideal
+      else {
+        // Position as close as possible to Engie, prioritizing proximity over perfect positioning
+        const rightDistance = Math.min(spaceRight, maxDistanceFromEngie);
+        const leftDistance = Math.min(spaceLeft, maxDistanceFromEngie);
+        
+        if (rightDistance >= leftDistance && rightDistance > 50) {
+          // Right side, as close as possible
+          left = engiePos.x + engieSize + Math.min(gap, rightDistance - popupWidth);
           top = Math.max(edgeMargin, Math.min(engiePos.y, windowHeight - popupMaxHeight - edgeMargin));
           positionClass = 'popup-from-left';
-          break;
-        case 'left':
-          left = Math.min(engiePos.x - 8, edgeMargin);
+        } else if (leftDistance > 50) {
+          // Left side, as close as possible
+          left = Math.max(edgeMargin, engiePos.x - popupWidth - Math.min(gap, leftDistance - popupWidth));
           top = Math.max(edgeMargin, Math.min(engiePos.y, windowHeight - popupMaxHeight - edgeMargin));
           positionClass = 'popup-from-right';
-          break;
-        case 'bottom':
+        } else {
+          // Fallback: below Engie, centered
           left = Math.max(edgeMargin, Math.min(engieCenterX - popupWidth / 2, windowWidth - popupWidth - edgeMargin));
-          top = Math.max(engiePos.y + engieSize + 8, windowHeight - popupMaxHeight - edgeMargin);
+          top = Math.min(engiePos.y + engieSize + gap, windowHeight - popupMaxHeight - edgeMargin);
           positionClass = 'popup-from-top';
-          break;
-        default: // top
-          left = Math.max(edgeMargin, Math.min(engieCenterX - popupWidth / 2, windowWidth - popupWidth - edgeMargin));
-          top = Math.min(engiePos.y - 8, edgeMargin);
-          positionClass = 'popup-from-bottom';
-          break;
+        }
+      }
+    } else {
+      // For general chat, use the original comfortable positioning logic
+      if (spaceRight >= popupWidth + gap + edgeMargin) {
+        left = engiePos.x + engieSize + gap;
+        top = Math.max(edgeMargin, Math.min(
+          engiePos.y - 20, // Slightly offset up for better visual alignment
+          windowHeight - popupMaxHeight - edgeMargin
+        ));
+        positionClass = 'popup-from-left';
+      }
+      else if (spaceLeft >= popupWidth + gap + edgeMargin) {
+        left = engiePos.x - popupWidth - gap;
+        top = Math.max(edgeMargin, Math.min(
+          engiePos.y - 20,
+          windowHeight - popupMaxHeight - edgeMargin
+        ));
+        positionClass = 'popup-from-right';
+      }
+      else if (spaceBottom >= popupMaxHeight + gap + edgeMargin) {
+        left = Math.max(edgeMargin, Math.min(
+          engieCenterX - popupWidth / 2,
+          windowWidth - popupWidth - edgeMargin
+        ));
+        top = engiePos.y + engieSize + gap;
+        positionClass = 'popup-from-top';
+      }
+      else if (spaceTop >= popupMaxHeight + gap + edgeMargin) {
+        left = Math.max(edgeMargin, Math.min(
+          engieCenterX - popupWidth / 2,
+          windowWidth - popupWidth - edgeMargin
+        ));
+        top = engiePos.y - popupMaxHeight - gap;
+        positionClass = 'popup-from-bottom';
+      }
+      else {
+        // Fallback for general chat: find the largest available space
+        const spaces = [
+          { space: spaceRight, position: 'right' },
+          { space: spaceLeft, position: 'left' },
+          { space: spaceBottom, position: 'bottom' },
+          { space: spaceTop, position: 'top' }
+        ];
+        
+        const bestSpace = spaces.reduce((max, current) => 
+          current.space > max.space ? current : max
+        );
+
+        switch (bestSpace.position) {
+          case 'right':
+            left = Math.max(engiePos.x + engieSize + 8, windowWidth - popupWidth - edgeMargin);
+            top = Math.max(edgeMargin, Math.min(engiePos.y, windowHeight - popupMaxHeight - edgeMargin));
+            positionClass = 'popup-from-left';
+            break;
+          case 'left':
+            left = Math.min(engiePos.x - 8, edgeMargin);
+            top = Math.max(edgeMargin, Math.min(engiePos.y, windowHeight - popupMaxHeight - edgeMargin));
+            positionClass = 'popup-from-right';
+            break;
+          case 'bottom':
+            left = Math.max(edgeMargin, Math.min(engieCenterX - popupWidth / 2, windowWidth - popupWidth - edgeMargin));
+            top = Math.max(engiePos.y + engieSize + 8, windowHeight - popupMaxHeight - edgeMargin);
+            positionClass = 'popup-from-top';
+            break;
+          default: // top
+            left = Math.max(edgeMargin, Math.min(engieCenterX - popupWidth / 2, windowWidth - popupWidth - edgeMargin));
+            top = Math.min(engiePos.y - 8, edgeMargin);
+            positionClass = 'popup-from-bottom';
+            break;
+        }
       }
     }
 
@@ -215,9 +285,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     }, 100);
   }, [controller]);
 
-  // Computed values
-  const activeSuggestions = controller.getStateManager().getActiveSuggestions(props.suggestions);
-  const currentSuggestion = controller.getStateManager().getCurrentSuggestion(props.suggestions);
+  // Computed values (continued)
   const unreadCount = controller.getStateManager().getUnreadCount();
 
   // Event handlers
