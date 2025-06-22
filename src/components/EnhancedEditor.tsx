@@ -4,6 +4,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
 import AnimatedEngieBot from './AnimatedEngieBot';
 import EnhancedScanIndicator from './EnhancedScanIndicator';
+import SpellCheckTimer from './SpellCheckTimer';
 import {
   TextFragment,
   assignPriorities,
@@ -43,6 +44,8 @@ export interface EnhancedEditorRef {
   undo: () => void;
   redo: () => void;
   toggleCountdownTimer: () => void; // Method to toggle the countdown timer visibility
+  performSpellCheck: () => Promise<void>; // Method to manually trigger spell check
+  getSpellingSuggestions: () => Suggestion[]; // Method to get current spelling suggestions
 }
 
 // Import types at the top
@@ -97,6 +100,12 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
   const [showCountdownTimer, setShowCountdownTimer] = useState(true);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Spell check states
+  const [spellingSuggestions, setSpellingSuggestions] = useState<Suggestion[]>([]);
+  const [isSpellChecking, setIsSpellChecking] = useState(false);
+  const [lastSpellCheckTime, setLastSpellCheckTime] = useState(0);
+  const spellCheckControllerRef = useRef<AbortController | null>(null);
+  
   // Use our custom hook to handle auto-resizing
   useAutoResizeTextarea(
     textareaRef, 
@@ -108,6 +117,60 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
   const lastAnalyzedTextRef = useRef<string>('');
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activeTextAnalysisControllerRef = useRef<AbortController | null>(null); // Added Ref
+  
+  // Spell check function using GPT-4o-mini
+  const performSpellCheck = useCallback(() => {
+    if (!value || value.trim().length < 3) {
+      setSpellingSuggestions([]);
+      return Promise.resolve();
+    }
+    
+    setIsSpellChecking(true);
+    const startTime = Date.now();
+
+    // Cancel any existing spell check request
+    if (spellCheckControllerRef.current) {
+      spellCheckControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    spellCheckControllerRef.current = controller;
+    const signal = controller.signal;
+
+    return fetch('/api/spell-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: value }),
+      signal: signal
+    })
+      .then(response => {
+        if (!response.ok) throw new Error(`Spell check API Error: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        if (signal.aborted) return;
+        
+        const scanTime = Date.now() - startTime;
+        setLastSpellCheckTime(scanTime);
+        
+        if (data && Array.isArray(data.suggestions)) {
+          setSpellingSuggestions(data.suggestions);
+          console.log(`Spell check completed in ${scanTime}ms, found ${data.suggestions.length} spelling errors`);
+        } else {
+          setSpellingSuggestions([]);
+        }
+      })
+      .catch(error => {
+        if (signal.aborted) return;
+        console.error('Spell check error:', error);
+        setSpellingSuggestions([]);
+      })
+      .finally(() => {
+        if (!signal.aborted) {
+          setIsSpellChecking(false);
+        }
+      });
+  }, [value]);
   
   // Text analysis function with smart batching as per co-developer brief
   // Now returns a Promise that resolves when analysis completes
@@ -671,8 +734,10 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
     toggleCountdownTimer: () => {
       setShowCountdownTimer(prev => !prev);
       // Additional logic for EnhancedScanIndicator could be added here if needed
-    }
-  }), [analyzeText, toggleFragmentsVisibility, clearAnalysis, undo, redo, animateEngieBotThroughChanges, onChange, readOnly, value]);
+    },
+    performSpellCheck: () => performSpellCheck(),
+    getSpellingSuggestions: () => spellingSuggestions
+  }), [analyzeText, toggleFragmentsVisibility, clearAnalysis, undo, redo, animateEngieBotThroughChanges, onChange, readOnly, value, performSpellCheck, spellingSuggestions]);
   
   // Trigger analysis when user stops typing or when showFragments prop changes
   useEffect(() => {
@@ -1104,11 +1169,17 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
     }
   }, [value, history, saveToHistory]);
 
-  // Clean up typing timeout
+  // Clean up timeouts and controllers
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+      }
+      if (spellCheckControllerRef.current) {
+        spellCheckControllerRef.current.abort();
+      }
+      if (activeTextAnalysisControllerRef.current) {
+        activeTextAnalysisControllerRef.current.abort();
       }
     };
   }, []);
@@ -1269,6 +1340,22 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
             onIntervalChange={(seconds) => {
               console.log(`Scan interval changed to ${seconds} seconds`);
             }}
+          />
+        )}
+        
+        {/* Spell Check Timer - positioned on left side */}
+        {!isAnalysisBox && !readOnly && value.trim().length > 0 && (
+          <SpellCheckTimer
+            interval={3}
+            isTyping={isUserTyping}
+            isScanning={isSpellChecking}
+            spellingSuggestionCount={spellingSuggestions.length}
+            onSpellCheck={performSpellCheck}
+            onToggleAutoScan={(enabled) => {
+              console.log(`Spell check auto-scan ${enabled ? 'enabled' : 'disabled'}`);
+            }}
+            visible={true}
+            lastScanTime={lastSpellCheckTime}
           />
         )}
     </div>
