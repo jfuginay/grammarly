@@ -165,7 +165,10 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const handleManualIdeate = () => controller.handleManualIdeate();
   const handleTabChange = (tab: string) => controller.getStateManager().setActiveTab(tab);
   const dismissNotification = (index: number) => controller.dismissNotification(index);
-  const handleDrag = (e: any, data: any) => controller.handleDrag(e, data);
+  const handleDrag = (e: any, data: any) => {
+    // Use deltaX and deltaY for smoother dragging
+    controller.updateEngiePosition(state.engiePos.x + data.deltaX, state.engiePos.y + data.deltaY);
+  };
   const onStartDrag = () => controller.onStartDrag();
   const onStopDrag = () => controller.onStopDrag();
   const formatScore = (score: number | undefined | null) => controller.formatScore(score);
