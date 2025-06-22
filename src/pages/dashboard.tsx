@@ -42,6 +42,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import EnhancedEditor, { EnhancedEditorRef } from '@/components/EnhancedEditor';
 import ClientEngie from '@/components/ClientEngie';
+import InteractiveOnboarding from '@/components/InteractiveOnboarding';
 
 // Type definitions
 interface Suggestion {
@@ -132,6 +133,8 @@ const DashboardPage = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [autoFragmentAnalysis, setAutoFragmentAnalysis] = useState(true); // Default to true
   const [showParts, setShowParts] = useState(false); // Default to false
+  // Interactive onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
   // Grok mode state and timer
   const [grokMode, setGrokMode] = useState(false);
   const [grokPowerRemaining, setGrokPowerRemaining] = useState(0); // seconds
@@ -187,6 +190,13 @@ const DashboardPage = () => {
       const savedShowParts = localStorage.getItem('showParts');
       if (savedShowParts !== null) {
         setShowParts(savedShowParts === 'true');
+      }
+
+      // Check if user has completed onboarding
+      const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding');
+      if (!hasCompletedOnboarding) {
+        // Show onboarding for new users, but wait for documents to load
+        setTimeout(() => setShowOnboarding(true), 1000);
       }
     }
   }, []);
@@ -464,6 +474,59 @@ const DashboardPage = () => {
   const dismissSuggestion = (suggestionId: string) => {
     setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionId));
   };
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = useCallback(async (userText: string, contentType: string) => {
+    // Create a new document with the onboarding content
+    const titleToCreate = `${contentType === 'linkedin' ? 'LinkedIn Post' : 
+                           contentType === 'email' ? 'Email Draft' : 
+                           contentType === 'instagram' ? 'Instagram Caption' : 
+                           'New Document'} - ${new Date().toLocaleDateString()}`;
+    
+    setCreatingDoc(true);
+    try {
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: titleToCreate, content: userText }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create document after onboarding.' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const newDocument = await response.json();
+
+      // Add to document list and select it
+      setDocuments(prevDocs => [newDocument, ...prevDocs]);
+      setActiveDocument(newDocument);
+      setText(userText);
+      
+      // Mark onboarding as completed
+      localStorage.setItem('hasCompletedOnboarding', 'true');
+      setShowOnboarding(false);
+      
+      toast({
+        title: '🎉 Welcome to Grammarly-est!',
+        description: `Your ${contentType} content is ready to edit. Engie is here to help!`,
+      });
+    } catch (error: any) {
+      console.error('Error creating document after onboarding:', error);
+      toast({
+        title: 'Error Creating Document',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+      // Still mark onboarding as completed even if document creation fails
+      localStorage.setItem('hasCompletedOnboarding', 'true');
+      setShowOnboarding(false);
+    } finally {
+      setCreatingDoc(false);
+    }
+  }, [toast]);
 
   // Manual text analysis
   const handleAnalyzeText = () => {
@@ -883,6 +946,16 @@ const DashboardPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Interactive Onboarding for new users */}
+      <InteractiveOnboarding
+        isOpen={showOnboarding}
+        onClose={() => {
+          setShowOnboarding(false);
+          localStorage.setItem('hasCompletedOnboarding', 'true');
+        }}
+        onComplete={handleOnboardingComplete}
+      />
     </>
   );
 };
