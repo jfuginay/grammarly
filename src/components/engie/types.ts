@@ -66,6 +66,7 @@ export interface EngieState {
   isGrokActive: boolean;
   grokEndTime: number | null;
   grokChatHistory: ChatMessage[];
+  isDragLocked: boolean; // Lock dragging when there are active suggestions
 }
 
 export type BotAnimationState = 'idle' | 'walking';
