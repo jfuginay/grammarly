@@ -154,11 +154,11 @@ const IndexPage = () => {
     setShowThinking(false);
   }, [selectedWritingType]);
 
-  // Auto-cycle through writing scenarios
+  // Auto-cycle through writing scenarios (increased to allow time for suggestions)
   useEffect(() => {
     const interval = setInterval(() => {
       setSelectedWritingType((prev) => (prev + 1) % writingScenarios.length);
-    }, 8000);
+    }, 12000); // Increased from 8s to 12s to allow full suggestion cycle
     
     return () => clearInterval(interval);
   }, [writingScenarios.length]);
