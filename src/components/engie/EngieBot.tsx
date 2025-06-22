@@ -167,6 +167,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   // Grok handlers
   const handleSendGrokMessage = async (prompt: string) => {
+    // This method is kept as EngieChatWindow might still have a chat input
+    // if isGrokActive were true (though it won't be with the toggle removed)
     try {
       await controller.sendGrokMessage(prompt);
     } catch (error) {
@@ -174,8 +176,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     }
   };
 
-  const handleToggleGrokMode = () => controller.toggleGrokMode();
-  const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
+  // const handleToggleGrokMode = () => controller.toggleGrokMode(); // Removed as UI toggle is gone
+  // const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic); // Removed as GrokTab UI is gone
 
   return (
     <>
@@ -258,11 +260,11 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
               onManualIdeate={handleManualIdeate}
               onTabChange={handleTabChange}
               formatScore={formatScore}
-              handleToggleGrokMode={handleToggleGrokMode}
-              handleResearchWithGrok={handleResearchWithGrok}
-              onSendGrokMessage={handleSendGrokMessage}
-              grokLoading={false}
-              grokError={null}
+              // handleToggleGrokMode={handleToggleGrokMode} // Removed
+              // handleResearchWithGrok={handleResearchWithGrok} // Removed
+              onSendGrokMessage={handleSendGrokMessage} // Kept: chat input might still render based on isGrokActive
+              grokLoading={false} // Kept: related to onSendGrokMessage
+              grokError={null} // Kept: related to onSendGrokMessage
               popupPosition={popupPosition}
             />
           </motion.div>
