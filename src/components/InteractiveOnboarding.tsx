@@ -773,7 +773,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                         className="bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white"
                       >
                         <Sparkles className="w-4 h-4 mr-2" />
-                        Get Engie's Help
+                                                 Get Engie&apos;s Help
                       </Button>
                       <Button 
                         variant="outline"
