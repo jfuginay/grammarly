@@ -18,36 +18,36 @@ interface ContentType {
 
 const contentTypes: ContentType[] = [
   {
+    id: 'code-review',
+    label: 'Code Review',
+    icon: <Zap className="w-4 h-4" />,
+    example: 'This implementation looks solid overall. I like the error handling approach, but have a few suggestions for the async logic...',
+    placeholder: 'Write your code review feedback...',
+    starterPrompt: 'This implementation looks solid overall. I like the error handling approach.'
+  },
+  {
+    id: 'sprint-planning',
+    label: 'Sprint Planning',
+    icon: <MessageSquare className="w-4 h-4" />,
+    example: 'As a user, I want to be able to export my data so that I can backup my information locally...',
+    placeholder: 'Write your user story or task description...',
+    starterPrompt: 'As a user, I want to be able to export my data so that I can backup my information.'
+  },
+  {
     id: 'linkedin',
     label: 'LinkedIn Post',
     icon: <Briefcase className="w-4 h-4" />,
-    example: 'Just launched our new product after 6 months of hard work. The journey was challenging but...',
-    placeholder: 'Share your professional update, achievement, or insight...',
-    starterPrompt: 'Just launched our new product after 6 months of hard work.'
+    example: 'Just finished debugging a tricky race condition that taught me something important about async JavaScript...',
+    placeholder: 'Share your tech insights or career update...',
+    starterPrompt: 'Just finished debugging a tricky race condition that taught me something important.'
   },
   {
-    id: 'email',
-    label: 'Email',
+    id: 'team-chat',
+    label: 'Team Communication',
     icon: <Mail className="w-4 h-4" />,
-    example: 'Hi Sarah, I wanted to follow up on our conversation yesterday about the project timeline...',
-    placeholder: 'Write your email here...',
-    starterPrompt: 'Hi Sarah, I wanted to follow up on our conversation yesterday.'
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram Caption',
-    icon: <Instagram className="w-4 h-4" />,
-    example: 'Perfect weekend vibes at the local coffee shop ☕ Nothing beats good coffee and great company...',
-    placeholder: 'Create your Instagram caption...',
-    starterPrompt: 'Perfect weekend vibes at the local coffee shop ☕'
-  },
-  {
-    id: 'general',
-    label: 'Other Writing',
-    icon: <MessageSquare className="w-4 h-4" />,
-    example: 'The future of remote work is changing rapidly. Companies are adapting to new models...',
-    placeholder: 'Start writing anything...',
-    starterPrompt: 'The future of remote work is changing rapidly.'
+    example: 'Quick update on the API refactor - deployed the changes to staging and initial tests look good...',
+    placeholder: 'Write your team update or Slack message...',
+    starterPrompt: 'Quick update on the API refactor - deployed the changes to staging.'
   }
 ];
 
@@ -87,12 +87,12 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
   // Mock AI improvement (in real app, this would call your API)
   const generateImprovement = (text: string, type: ContentType) => {
     const improvements = {
-      linkedin: text.replace(/our new product/, 'our game-changing product').replace(/challenging/, 'incredibly rewarding'),
-      email: text.replace(/I wanted to follow up/, 'I hope this finds you well! I wanted to follow up'),
-      instagram: text.replace(/Perfect weekend vibes/, '✨ Perfect weekend vibes').replace(/☕/, '☕✨'),
-      general: text.replace(/changing rapidly/, 'evolving at an unprecedented pace').replace(/Companies are/, 'Forward-thinking companies are')
+      'code-review': text.replace(/looks solid/, 'looks well-structured').replace(/I like/, 'I appreciate').replace(/suggestions/, 'recommendations that could enhance maintainability'),
+      'sprint-planning': text.replace(/export my data/, 'seamlessly export my data').replace(/backup/, 'create secure backups of').replace(/locally/, 'to my preferred storage location'),
+      linkedin: text.replace(/debugging/, 'debugging and resolving').replace(/taught me/, 'revealed important insights about').replace(/important/, 'fundamental principles of'),
+      'team-chat': text.replace(/Quick update/, '🚀 Quick update').replace(/deployed/, 'successfully deployed').replace(/initial tests/, 'preliminary testing')
     };
-    return improvements[type.id as keyof typeof improvements] || text + ' (with better flow and clarity)';
+    return improvements[type.id as keyof typeof improvements] || text + ' (with enhanced clarity and professional tone)';
   };
 
   const handleTypeSelection = (type: ContentType) => {
@@ -161,8 +161,8 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">Let's get writing!</h2>
-                <p className="text-sm text-muted-foreground">See the magic in action with your own content</p>
+                <h2 className="text-xl font-semibold">Let&apos;s write better code docs!</h2>
+                <p className="text-sm text-muted-foreground">See Engie enhance your tech writing in real-time</p>
               </div>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
@@ -179,8 +179,8 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                 className="space-y-6"
               >
                 <div className="text-center space-y-2">
-                  <h3 className="text-lg font-medium">What are you writing today?</h3>
-                  <p className="text-sm text-muted-foreground">Choose what you want to work on and start writing immediately</p>
+                  <h3 className="text-lg font-medium">What type of tech writing?</h3>
+                  <p className="text-sm text-muted-foreground">Pick your context and start writing - Engie adapts to each scenario</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
