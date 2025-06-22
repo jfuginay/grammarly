@@ -1086,9 +1086,15 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
 
   // Enhanced rendering with proper text placement
   return (
-    <div className={editorClass}>
+    <div className={editorClass} style={{ position: 'relative' }}>
       {!readOnly && !isAnalysisBox && value && value.trim().length > 0 && (
-        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
+        <div style={{ 
+          position: 'absolute', 
+          top: '10px', 
+          right: '10px', 
+          zIndex: 1000,
+          pointerEvents: 'auto'
+        }}>
           <ExportButton content={value} />
         </div>
       )}
@@ -1102,7 +1108,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
           visibility: readOnly || shouldShowFragments ? 'visible' : 'hidden',
           opacity: readOnly || shouldShowFragments ? '1' : '0',
           display: (!readOnly && !shouldShowFragments) ? 'none' : 'block', // Don't even render in input mode
-          position: 'relative' // Added to enable absolute positioning of Engie bot
+          position: 'relative', // Added to enable absolute positioning of Engie bot
+          pointerEvents: 'none' // Ensure highlights don't interfere with other UI elements
         }}
       />
       <textarea
