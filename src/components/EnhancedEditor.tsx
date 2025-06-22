@@ -1087,14 +1087,11 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
   // Enhanced rendering with proper text placement
   return (
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Write Your Text
-        </label>
-        {!readOnly && !isAnalysisBox && value && value.trim().length > 0 && (
+      {!readOnly && !isAnalysisBox && value && value.trim().length > 0 && (
+        <div className="flex justify-end mb-2">
           <ExportButton content={value} />
-        )}
-      </div>
+        </div>
+      )}
       <div className={`${editorClass} flex-grow`} style={{ position: 'relative' }}>
         <div
           ref={editorRef}
