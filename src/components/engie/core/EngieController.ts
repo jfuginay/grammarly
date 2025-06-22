@@ -29,6 +29,9 @@ export class EngieController {
       this.grokApiService = null as any;
     }
     
+    // Initialize drag lock based on initial suggestions
+    this.stateManager.updateDragLockWithExternalSuggestions(this.props.suggestions);
+    
     this.setupInactivityTimer();
     this.detectTouchDevice();
   }
@@ -290,6 +293,7 @@ export class EngieController {
     const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
     if (activeSuggestions.length === 0) {
       this.stateManager.resetEngiePosition();
+      this.stateManager.setDragLocked(false);
     }
     this.stateManager.setBotEmotion('neutral', '');
   }
@@ -338,6 +342,7 @@ export class EngieController {
     } else {
       this.stateManager.setCurrentSuggestionIndex(0);
       this.stateManager.resetSuggestions();
+      this.stateManager.setDragLocked(false);
       this.stateManager.resetEngiePosition();
     }
   }
@@ -355,6 +360,13 @@ export class EngieController {
   }
 
   handleDrag(e: any, data: any): void {
+    // Check if dragging is locked due to active suggestions
+    const state = this.stateManager.getState();
+    if (state.isDragLocked) {
+      // Prevent dragging by not updating position
+      return;
+    }
+
     const deltaX = data.x - this.lastX;
     if (Math.abs(deltaX) > 5) {
       this.stateManager.setBotDirection(deltaX > 0 ? 'right' : 'left');
@@ -365,10 +377,22 @@ export class EngieController {
   }
 
   onStartDrag(): void {
+    // Check if dragging is locked due to active suggestions
+    const state = this.stateManager.getState();
+    if (state.isDragLocked) {
+      return;
+    }
+
     this.stateManager.setBotAnimation('walking');
   }
 
   onStopDrag(): void {
+    // Check if dragging is locked due to active suggestions
+    const state = this.stateManager.getState();
+    if (state.isDragLocked) {
+      return;
+    }
+
     this.stateManager.setBotAnimation('idle');
     // Start walking back to text analysis area after a short delay
     setTimeout(() => {
@@ -460,5 +484,10 @@ export class EngieController {
       // Handle error case
       this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't process your request." });
     }
+  }
+
+  // Method to update drag lock when external suggestions change
+  updateSuggestions(suggestions: Suggestion[]): void {
+    this.stateManager.updateDragLockWithExternalSuggestions(suggestions);
   }
 }

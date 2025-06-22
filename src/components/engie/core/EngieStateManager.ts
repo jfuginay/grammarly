@@ -3,7 +3,7 @@ import { EngieState, ChatMessage, ToneAnalysis, Suggestion, BotAnimationState, B
 export class EngieStateManager {
   private state: EngieState;
   private listeners: Array<(state: EngieState) => void> = [];
-  private walkBackTimer: number | null = null;
+  private walkBackTimer: NodeJS.Timeout | null = null;
   private targetPosition: { x: number; y: number } | null = null;
 
   constructor() {
@@ -42,6 +42,7 @@ export class EngieStateManager {
       isGrokActive: false,
       grokEndTime: null,
       grokChatHistory: [],
+      isDragLocked: false,
     };
   }
 
@@ -211,6 +212,7 @@ export class EngieStateManager {
 
   setInternalSuggestions(suggestions: Suggestion[]): void {
     this.state.internalSuggestions = suggestions;
+    this.updateDragLock();
     this.notify();
   }
 
@@ -511,5 +513,24 @@ export class EngieStateManager {
       clearInterval(this.walkBackTimer);
       this.walkBackTimer = null;
     }
+  }
+
+  // Drag lock management
+  setDragLocked(locked: boolean): void {
+    this.state.isDragLocked = locked;
+    this.notify();
+  }
+
+  updateDragLock(): void {
+    // Lock dragging if there are active suggestions (internal or external)
+    const hasActiveSuggestions = this.state.internalSuggestions.length > 0;
+    this.setDragLocked(hasActiveSuggestions);
+  }
+
+  // Check if dragging should be locked based on external suggestions too
+  updateDragLockWithExternalSuggestions(externalSuggestions: Suggestion[]): void {
+    const activeSuggestions = this.getActiveSuggestions(externalSuggestions);
+    const hasActiveSuggestions = activeSuggestions.length > 0;
+    this.setDragLocked(hasActiveSuggestions);
   }
 }

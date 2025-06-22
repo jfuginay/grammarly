@@ -30,6 +30,11 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return unsubscribe;
   }, [controller]);
 
+  // Update controller when suggestions change
+  useEffect(() => {
+    controller.updateSuggestions(props.suggestions);
+  }, [props.suggestions, controller]);
+
   // Calculate popup position relative to Engie
   const calculatePopupPosition = () => {
     if (!engieRef.current) return 'above';
@@ -184,13 +189,14 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
         onDrag={handleDrag}
         onStart={onStartDrag}
         onStop={onStopDrag}
+        disabled={state.isDragLocked}
       >
         <motion.div
           ref={engieRef}
           className="engie-character cursor-pointer"
           onClick={handleEngieTrigger}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: state.isDragLocked ? 1.0 : 1.1 }}
+          whileTap={{ scale: state.isDragLocked ? 1.0 : 0.95 }}
           style={{
             position: 'fixed',
             left: state.engiePos.x,
@@ -203,7 +209,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
             justifyContent: 'center',
             background: 'transparent',
             border: 'none',
-            cursor: 'pointer'
+            cursor: state.isDragLocked ? 'pointer' : 'grab'
           }}
         >
           <AnimatedEngieBot
@@ -212,6 +218,20 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
             direction={state.botDirection}
             emotion={state.botEmotion}
           />
+          
+          {/* Drag Lock Indicator */}
+          {state.isDragLocked && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute -top-2 -left-2"
+              title="Engie is focused on suggestions - complete or dismiss them to unlock dragging"
+            >
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">🔒</span>
+              </div>
+            </motion.div>
+          )}
           
           {/* Writing Status Badge */}
           {state.isScanning && (
