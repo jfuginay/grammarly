@@ -145,7 +145,7 @@ const IndexPage = () => {
             </Badge>
             
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300">
-              Welcome to the <span className="text-blue-600 dark:text-blue-400">Grammarly-est</span>
+              Welcome to <span className="text-blue-600 dark:text-blue-400">Grammarly-est</span>
             </h1>
             
             <div className="h-12 mb-8 text-xl sm:text-2xl text-gray-700 dark:text-gray-300">
