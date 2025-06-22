@@ -1,0 +1,428 @@
+.container {
+  position: absolute;
+  bottom: 16px;
+  left: 16px; /* Position on left side to not conflict with existing timer */
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  border-radius: 24px;
+  z-index: 99; /* Slightly lower than existing timer */
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.container:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.expanded {
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  cursor: default;
+}
+
+/* Pulse animation for results */
+.pulse {
+  animation: pulse 0.6s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.95; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Compact Timer */
+.timerCompact {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+  z-index: 2;
+  border: 2px solid transparent;
+}
+
+.expanded .timerCompact {
+  box-shadow: none;
+  margin: 12px;
+}
+
+/* State-specific timer styles */
+.timerCompact.ready {
+  border-color: #10b981;
+}
+
+.timerCompact.countdown {
+  border-color: #eab308;
+}
+
+.timerCompact.scanning {
+  border-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.timerCompact.results {
+  border-color: #ef4444;
+}
+
+.timerCompact.paused {
+  border-color: #64748b;
+  background-color: rgba(100, 116, 139, 0.1);
+}
+
+/* Ring progress */
+.ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringBg {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 4;
+}
+
+.ringProgress {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.1s ease-in-out, stroke 0.3s ease-in-out;
+}
+
+/* Status icon */
+.statusIcon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+/* Spinner for scanning state */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error badge */
+.errorBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: bounce 0.5s ease-out;
+}
+
+@keyframes bounce {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Expanded Panel */
+.expandedPanel {
+  width: 280px;
+  background-color: transparent;
+  margin-bottom: 5px;
+  padding: 12px;
+  border-radius: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.statusIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.statusMessage {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.closeButton {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: #f1f5f9;
+  color: #1f2937;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.scanButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scanButton:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.scanButton:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.buttonIcon {
+  font-size: 14px;
+}
+
+/* Auto-scan toggle */
+.autoScanToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #10b981;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.toggleLabel {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}
+
+/* Stats */
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.statItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.statValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+  background-color: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Activity */
+.activity {
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.activityHeader {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 8px;
+}
+
+.issueCount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.issueDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.issueText {
+  font-size: 13px;
+  color: #475569;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .container {
+    bottom: 12px;
+    left: 12px;
+  }
+  
+  .timerCompact {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .statusIcon {
+    font-size: 14px;
+  }
+  
+  .expandedPanel {
+    width: 250px;
+  }
+  
+  .scanButton {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .container,
+  .timerCompact,
+  .ringProgress,
+  .slider,
+  .slider:before,
+  .expandedPanel,
+  .errorBadge {
+    transition: none;
+    animation: none;
+  }
+  
+  .spinner {
+    border: 2px solid #3b82f6;
+    border-top-color: rgba(59, 130, 246, 0.3);
+  }
+  
+  .pulse {
+    animation: none;
+  }
+}
+
+/* Focus styles for accessibility */
+.container:focus-visible,
+.scanButton:focus-visible,
+.closeButton:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+} 
