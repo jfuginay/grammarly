@@ -229,7 +229,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
             justifyContent: 'center',
             background: 'transparent',
             border: 'none',
-            cursor: 'pointer'
+            cursor: state.isDragLocked ? 'not-allowed' : 'pointer'
           }}
         >
           <AnimatedEngieBot
@@ -238,6 +238,19 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
             direction={state.botDirection}
             emotion={state.botEmotion}
           />
+          
+          {/* Lock indicator when Engie is locked */}
+          {state.isDragLocked && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute -top-1 -left-1"
+            >
+              <Badge variant="secondary" className="text-xs px-1 py-0.5 bg-yellow-100 text-yellow-800 border-yellow-300">
+                🔒
+              </Badge>
+            </motion.div>
+          )}
           
           {/* Writing Status Badge */}
           {state.isScanning && (
@@ -288,7 +301,6 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
               onSendGrokMessage={handleSendGrokMessage}
               grokLoading={false}
               grokError={null}
-              popupPosition={popupPosition}
             />
           </motion.div>
         )}
