@@ -1078,9 +1078,16 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
 
   const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''} ${readOnly ? 'analysis-view' : 'input-view'}`;
 
+import ExportButton from './ExportButton'; // Added import
+
   // Enhanced rendering with proper text placement
   return (
     <div className={editorClass}>
+      {!readOnly && !isAnalysisBox && value && value.trim().length > 0 && (
+        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
+          <ExportButton content={value} />
+        </div>
+      )}
       <div
         ref={editorRef}
         className="editor-highlights"
