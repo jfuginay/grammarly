@@ -218,6 +218,13 @@ export class EngieController {
         // Move to analysis area when no suggestions
         this.stateManager.moveToOptimalPosition('analysis');
         this.stateManager.setBotEmotion('happy', 'Great writing! No issues found.');
+        
+        // NEW: Check for technical writing when no grammar issues found
+        const state = this.stateManager.getState();
+        if (!state.ideationMessage && !state.encouragementMessageApi) {
+          console.log('🔍 No grammar issues found, checking for technical writing opportunities');
+          this.analyzeContentForTechnicalWriting(text);
+        }
       }
     } catch (error) {
       console.error('Engie: Error during scanning:', error);
@@ -277,6 +284,16 @@ export class EngieController {
     if (activeSuggestions.length === 0 && !state.isChatOpen) {
       this.stateManager.moveToOptimalPosition('writing');
       this.stateManager.setBotEmotion('thoughtful', 'Watching your writing flow...');
+      
+      // NEW: Analyze content for technical writing during typing
+      if (this.props.targetEditorSelector) {
+        const currentText = this.textExtractor.extractTextFromTarget(this.props.targetEditorSelector);
+        if (currentText && currentText.length > 50 && !state.ideationMessage) {
+          // Only analyze if there's substantial content and no existing message
+          console.log('⌨️ Analyzing content during typing for technical writing');
+          this.analyzeContentForTechnicalWriting(currentText);
+        }
+      }
     }
   }
 
@@ -329,10 +346,81 @@ export class EngieController {
           this.stateManager.setBotEmotion('neutral', '');
         }
       }, 8000);
+    } else if (!isEmptyOrMinimal && !state.isChatOpen) {
+      // NEW: Analyze existing content for technical writing
+      console.log('🔬 Analyzing existing content for technical writing detection');
+      this.analyzeContentForTechnicalWriting(text);
     } else {
       console.log('❌ Not showing popup because:', 
         'isEmptyOrMinimal:', isEmptyOrMinimal, 
         'isChatOpen:', state.isChatOpen);
+    }
+  }
+
+  /**
+   * Analyze content for technical writing and show appropriate prompts
+   */
+  private analyzeContentForTechnicalWriting(text: string): void {
+    // Technical writing detection patterns
+    const hasTechnicalTerms = /\b(API|function|database|algorithm|framework|deployment|testing|debugging|optimization|architecture|server|client|endpoint|repository|authentication|authorization|configuration|implementation|infrastructure|scalability|performance|security|documentation|code|programming|development|software|application|system|platform|integration|deployment|version|release|feature|bug|issue|pull request|commit|branch|merge|review)\b/i.test(text);
+    
+    const hasCodePatterns = /\b(class|function|const|let|var|if|else|for|while|return|import|export|async|await|try|catch|throw|console\.log|console\.error|JSON|HTTP|REST|GraphQL|SQL|NoSQL)\b/i.test(text);
+    
+    const hasDocumentationPatterns = /\b(installation|setup|configuration|getting started|prerequisites|requirements|usage|examples|tutorial|guide|documentation|readme|changelog|version|release notes)\b/i.test(text);
+    
+    const hasTechnicalFormats = /```|`[^`]+`|\#\s+[A-Z]|\*\*[^*]+\*\*|##\s+|\-\s+\w+/i.test(text);
+    
+    const technicalScore = 
+      (hasTechnicalTerms ? 1 : 0) + 
+      (hasCodePatterns ? 1 : 0) + 
+      (hasDocumentationPatterns ? 1 : 0) + 
+      (hasTechnicalFormats ? 1 : 0);
+    
+    console.log('🔬 Technical writing analysis:', {
+      hasTechnicalTerms,
+      hasCodePatterns, 
+      hasDocumentationPatterns,
+      hasTechnicalFormats,
+      technicalScore,
+      textPreview: text.substring(0, 100)
+    });
+    
+    // Show technical writing prompt if technical content detected
+    if (technicalScore >= 2) {
+      console.log('🔧 Technical writing detected! Showing technical writing prompt');
+      
+      const technicalMessages = [
+        "I see technical content! 🔧 I can help with clarity, structure, and technical accuracy.",
+        "Technical writing detected! 👨‍💻 Let me help you make this crystal clear for your audience.",
+        "Great technical content! 📚 I can suggest improvements for readability and precision.",
+        "I notice technical documentation! 🛠️ Want help making it more accessible?",
+        "Technical writing mode activated! 🚀 I'll help you balance accuracy with clarity.",
+        "Detected code/technical content! 💡 I can help with explanations and documentation style.",
+        "Technical documentation spotted! 📖 Let's make it clear and comprehensive.",
+        "I see technical details! ⚡ I can help structure this for maximum impact."
+      ];
+      
+      const randomTechMessage = technicalMessages[Math.floor(Math.random() * technicalMessages.length)];
+      
+      this.stateManager.setIdeationMessage({
+        role: 'assistant',
+        content: randomTechMessage
+      });
+      
+      this.stateManager.setChatOpen(true);
+      this.stateManager.setBotEmotion('thoughtful', 'Analyzing your technical content');
+      this.stateManager.moveToOptimalPosition('analysis');
+      
+      // Auto-close after 10 seconds for technical prompts
+      setTimeout(() => {
+        if (this.stateManager.getState().ideationMessage?.content === randomTechMessage) {
+          this.stateManager.setIdeationMessage(null);
+          this.stateManager.setChatOpen(false);
+          this.stateManager.setBotEmotion('neutral', '');
+        }
+      }, 10000);
+    } else {
+      console.log('📝 Non-technical content detected, no special prompt needed');
     }
   }
 

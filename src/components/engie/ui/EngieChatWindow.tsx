@@ -163,6 +163,18 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
           </div>
         )}
 
+        {/* DEBUG: Log ideation message rendering conditions */}
+        {(() => {
+          console.log('🔍 EngieChatWindow - Ideation Message Debug:', {
+            hasIdeationMessage: !!state.ideationMessage,
+            ideationContent: state.ideationMessage?.content?.substring(0, 50) || 'none',
+            activeSuggestionsLength: activeSuggestions.length,
+            hasEncouragementMessage: !!state.encouragementMessageApi,
+            isGrokActive: state.isGrokActive,
+            shouldShowIdeation: !!(state.ideationMessage && !activeSuggestions.length && !state.encouragementMessageApi && !state.isGrokActive)
+          });
+          return null;
+        })()}
 
         {state.ideationMessage && !activeSuggestions.length && !state.encouragementMessageApi && !state.isGrokActive && (
           <IdeationCard 
