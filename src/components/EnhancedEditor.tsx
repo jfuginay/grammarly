@@ -10,6 +10,7 @@ import {
   identifyPhrases, // identifyPhrases is used by performLocalAnalysis, so not directly called in EnhancedEditor usually
   performLocalAnalysis
 } from '../lib/localTextAnalyzer';
+import ExportButton from './ExportButton';
 
 interface EnhancedEditorProps {
   value: string;
@@ -1082,8 +1083,6 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
   }, []);
 
   const editorClass = `enhanced-editor ${className} ${isAnalyzingText ? 'is-analyzing' : ''} ${shouldShowFragments ? 'show-fragments' : ''} ${readOnly ? 'analysis-view' : 'input-view'}`;
-
-import ExportButton from './ExportButton'; // Added import
 
   // Enhanced rendering with proper text placement
   return (
