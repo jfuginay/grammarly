@@ -335,7 +335,7 @@ const IndexPage = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                 >
-                  Write with confidence across all contexts
+                  See Engie&apos;s intelligent corrections in action
                 </motion.h2>
                 
                 <div className="space-y-3">
@@ -618,12 +618,12 @@ const IndexPage = () => {
         <section className="w-full py-16 bg-gradient-to-b from-transparent to-blue-50 dark:to-slate-800/30 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Engie&apos;s Intelligence</h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-4">
-                Watch Engie analyze real technical writing scenarios, providing contextual suggestions that understand your domain. 
-                From fixing grammar to improving clarity and style, Engie doesn&apos;t just correct—it teaches.
-                This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
-              </p>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">Try Engie Now - Live Demo</h2>
+                              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-4">
+                  Experience the power of real AI-powered spell checking with GPT-4o-mini. 
+                  Type your text below and get instant, intelligent suggestions that understand context and meaning.
+                  This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
+                </p>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -632,23 +632,28 @@ const IndexPage = () => {
               >
                 <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
                   <Sparkles className="h-5 w-5" />
-                  <span className="font-semibold">Try it yourself!</span>
+                  <span className="font-semibold">Live Functional Demo</span>
                 </div>
                 <p className="text-sm text-green-600 dark:text-green-400 text-center mt-1">
-                  Use the &quot;Chat with Engie&quot; section below to test real live spell checking with GPT-4o-mini
+                  This isn&apos;t a simulation - it&apos;s the real Engie API in action
                 </p>
               </motion.div>
             </div>
             
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              {/* Functional Chat with Engie */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-2 md:order-1 transform transition-all duration-500 hover:shadow-2xl">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold flex items-center">
-                    <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
-                    Chat with Engie
-                  </h3>
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">
+              {/* Enhanced Chat with Engie */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 order-2 md:order-1 transform transition-all duration-500 hover:shadow-2xl border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full">
+                      <MessageSquare className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Chat with Engie</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Real-time AI spell checking and suggestions</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800 font-medium">
                     ✨ Live Demo
                   </Badge>
                 </div>
@@ -657,29 +662,35 @@ const IndexPage = () => {
                     ref={textAreaRef}
                     value={userText}
                     onChange={(e) => setUserText(e.target.value)}
-                    className="w-full h-32 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
-                    placeholder="Type your text here and click 'Scan Now' to get real suggestions from Engie..."
+                    className="w-full h-40 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 resize-none text-lg"
+                    placeholder="Type your text here to test Engie's real-time spell checking and suggestions. Try including some typos or grammar mistakes to see Engie in action..."
                   />
                   
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {userText.length} characters
-                    </span>
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {userText.length} characters
+                      </span>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <Brain className="h-4 w-4" />
+                        <span>Powered by GPT-4o-mini</span>
+                      </div>
+                    </div>
                     <Button
                       onClick={handleScanNow}
                       disabled={isScanning || !userText.trim()}
-                      size="sm"
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      size="lg"
+                      className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 text-lg font-semibold rounded-xl"
                     >
                       {isScanning ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Scanning...
+                          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                          Analyzing...
                         </>
                       ) : (
                         <>
-                          <Zap className="mr-2 h-4 w-4" />
-                          Scan Now
+                          <Zap className="mr-3 h-5 w-5" />
+                          Scan with Engie
                         </>
                       )}
                     </Button>
