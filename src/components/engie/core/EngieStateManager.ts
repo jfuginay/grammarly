@@ -51,11 +51,39 @@ export class EngieStateManager {
       return { x: 600, y: 300 };
     }
     
-    // Try to find the Text Analysis area
-    const analysisElement = document.querySelector('[class*="Text Analysis"]') || 
-                           document.querySelector('h3:contains("Text Analysis")') ||
-                           document.querySelector('.md\\:w-1\\/2:last-child') || // Right column in dashboard
-                           document.querySelector('[title*="Analysis"]');
+    // Try to find the Text Analysis area using various methods
+    let analysisElement: Element | null = null;
+    
+    // Method 1: Look for CardTitle containing "Text Analysis"
+    const cardTitles = Array.from(document.querySelectorAll('[class*="CardTitle"], h3, h2, .text-sm.font-medium'));
+    for (const title of cardTitles) {
+      if (title.textContent && title.textContent.includes('Text Analysis')) {
+        analysisElement = title.closest('[class*="Card"]') || title.parentElement;
+        break;
+      }
+    }
+    
+    // Method 2: Look for the right column in dashboard (md:w-1/2:last-child)
+    if (!analysisElement) {
+      analysisElement = document.querySelector('.md\\:w-1\\/2:last-child');
+    }
+    
+    // Method 3: Look for any element with "Analysis" in text content
+    if (!analysisElement) {
+      const allElements = Array.from(document.querySelectorAll('div, section, article'));
+      for (const element of allElements) {
+        if (element.textContent && element.textContent.includes('Analysis')) {
+          analysisElement = element;
+          break;
+        }
+      }
+    }
+    
+    // Method 4: Look for the enhanced editor with analysis
+    if (!analysisElement) {
+      analysisElement = document.querySelector('.analysis-editor') || 
+                      document.querySelector('[class*="analysis"]');
+    }
     
     if (analysisElement) {
       const rect = analysisElement.getBoundingClientRect();
