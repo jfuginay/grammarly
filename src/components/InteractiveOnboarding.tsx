@@ -637,19 +637,19 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                   {currentCategories.map((category) => (
                     <div key={category.id} className="relative">
                       <Card 
-                        className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-sky-300 bg-white"
+                        className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-sky-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                         onClick={(e) => handleDropdownToggle(category.id, e)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gradient-to-br from-sky-100 to-cyan-100 dark:from-sky-900/30 dark:to-cyan-900/30 rounded-lg">
+                              <div className="p-2 bg-gradient-to-br from-sky-100 to-cyan-100 dark:from-sky-900/30 dark:to-cyan-900/30 rounded-lg text-sky-600 dark:text-sky-400">
                                 {category.icon}
                               </div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">{category.label}</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{category.label}</span>
                             </div>
                             <ChevronDown 
-                              className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+                              className={`w-4 h-4 text-gray-600 dark:text-gray-300 transition-transform duration-200 ${
                                 openDropdown === category.id ? 'rotate-180' : ''
                               }`} 
                             />
@@ -671,14 +671,16 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                               <motion.div
                                 key={item.id}
                                 whileHover={{ backgroundColor: 'rgb(248, 250, 252)' }}
-                                className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 border-b border-gray-100 dark:border-gray-600 last:border-b-0"
+                                className="p-3 cursor-pointer hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors duration-150 border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                                 onClick={() => handleTypeSelection(item)}
                               >
                                 <div className="flex items-center gap-3">
-                                  {item.icon}
+                                  <div className="text-sky-600 dark:text-sky-400">
+                                    {item.icon}
+                                  </div>
                                   <div className="flex-1">
-                                    <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{item.label}</div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{item.example}</div>
+                                    <div className="font-medium text-sm text-gray-900 dark:text-white">{item.label}</div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1">{item.example}</div>
                                   </div>
                                 </div>
                               </motion.div>
