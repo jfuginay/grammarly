@@ -453,8 +453,30 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
       return position;
     };
     
+    // Function to constrain Engie's position within the text analysis area
+    const constrainEngiePosition = (position: { top: number; left: number }) => {
+      if (!editorRef.current) return position;
+      
+      const editorRect = editorRef.current.getBoundingClientRect();
+      const engieSize = 40; // Approximate size of Engie bot
+      const padding = 10; // Padding from edges
+      
+      let constrainedTop = position.top;
+      let constrainedLeft = position.left;
+      
+      // Constrain top (keep Engie above, on, or slightly below the text area)
+      constrainedTop = Math.max(-engieSize, position.top); // Allow above text area
+      constrainedTop = Math.min(editorRect.height + padding, constrainedTop); // Don't go too far below
+      
+      // Constrain left (keep within text area bounds with some padding)
+      constrainedLeft = Math.max(-padding, position.left); // Allow slightly to the left
+      constrainedLeft = Math.min(editorRect.width - engieSize + padding, constrainedLeft); // Don't go too far right
+      
+      return { top: constrainedTop, left: constrainedLeft };
+    };
+
     // Get the position where we should start the animation
-    const startPosition = getPositionFromIndex(startIndex);
+    const startPosition = constrainEngiePosition(getPositionFromIndex(startIndex));
     
     // Determine the direction based on whether we're adding or removing text
     const direction = newText.length >= originalText.length ? 'right' : 'left';
@@ -507,8 +529,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
         }
       }
       
-      // Update Engie's position
-      setEngieBotPosition(wordPosition);
+      // Update Engie's position with constraints
+      setEngieBotPosition(constrainEngiePosition(wordPosition));
       
       // Change Engie's emotion based on the word change
       if (currentWord && newWord) {
@@ -776,8 +798,17 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
       });
     }
     
-    // Add suggestion highlights
+    // Add suggestion highlights (but skip high-priority ones when showing parts of speech)
     suggestions.forEach((suggestion: Suggestion) => {
+      // Skip high-priority suggestions when parts of speech are shown
+      // These should only appear in the Priority Issues box, not as overlays
+      const isHighPriority = suggestion.severity === 'High';
+      const showingPartsOfSpeech = shouldShowFragments && readOnly;
+      
+      if (isHighPriority && showingPartsOfSpeech) {
+        return; // Skip this suggestion - it will be shown in Priority Issues box only
+      }
+      
       if (typeof suggestion.startIndex === 'number' && typeof suggestion.endIndex === 'number') {
         const suggestionText = processedText.substring(suggestion.startIndex, suggestion.endIndex);
         highlightMarkers.push({
