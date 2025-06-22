@@ -197,6 +197,7 @@ export class EngieController {
       this.stateManager.setInternalSuggestions(suggestions);
       this.stateManager.setToneAnalysisResult(toneAnalysis);
       this.stateManager.setCurrentSuggestionIndex(0);
+      this.stateManager.updateDragLockWithExternalSuggestions(this.props.suggestions); // Update drag lock status
       
       this.stateManager.setEmotionBasedOnQuality(suggestions.length, text.length);
 
@@ -339,11 +340,18 @@ export class EngieController {
       if (activeSuggestions[nextIndex]) {
         this.stateManager.moveEngieToSuggestion(activeSuggestions[nextIndex]);
       }
-    } else {
+    } else { // All suggestions handled
       this.stateManager.setCurrentSuggestionIndex(0);
-      this.stateManager.resetSuggestions();
-      this.stateManager.setDragLocked(false);
-      this.stateManager.resetEngiePosition();
+      this.stateManager.resetSuggestions(); // Clears internalSuggestions
+
+      // Re-evaluate drag lock based on potentially existing external suggestions
+      const activeSuggestionsAfterReset = this.stateManager.getActiveSuggestions(this.props.suggestions);
+      const shouldBeLocked = activeSuggestionsAfterReset.length > 0;
+      this.stateManager.setDragLocked(shouldBeLocked);
+
+      if (!shouldBeLocked) {
+        this.stateManager.resetEngiePosition();
+      }
     }
   }
 
@@ -373,7 +381,8 @@ export class EngieController {
       this.stateManager.setBotSpeed(Math.abs(deltaX) > 20 ? 'fast' : 'normal');
     }
     this.lastX = data.x;
-    this.stateManager.setEngiePos({ x: data.x, y: data.y });
+    // The position is now updated directly in EngieBot.tsx for smoother dragging
+    // this.stateManager.setEngiePos({ x: data.x, y: data.y });
   }
 
   onStartDrag(): void {

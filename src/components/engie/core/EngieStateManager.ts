@@ -212,7 +212,7 @@ export class EngieStateManager {
 
   setInternalSuggestions(suggestions: Suggestion[]): void {
     this.state.internalSuggestions = suggestions;
-    this.updateDragLock();
+    // Drag lock is now managed by EngieController via updateDragLockWithExternalSuggestions
     this.notify();
   }
 
@@ -521,11 +521,11 @@ export class EngieStateManager {
     this.notify();
   }
 
-  updateDragLock(): void {
-    // Lock dragging if there are active suggestions (internal or external)
-    const hasActiveSuggestions = this.state.internalSuggestions.length > 0;
-    this.setDragLocked(hasActiveSuggestions);
-  }
+  // updateDragLock(): void { // Removed: This was only considering internal suggestions.
+  //   // Lock dragging if there are active suggestions (internal or external)
+  //   const hasActiveSuggestions = this.state.internalSuggestions.length > 0;
+  //   this.setDragLocked(hasActiveSuggestions);
+  // }
 
   // Check if dragging should be locked based on external suggestions too
   updateDragLockWithExternalSuggestions(externalSuggestions: Suggestion[]): void {
