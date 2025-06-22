@@ -914,7 +914,7 @@ const DashboardPage = () => {
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                                  "{suggestion.original}" → "{suggestion.suggestion}"
+                                  &quot;{suggestion.original}&quot; → &quot;{suggestion.suggestion}&quot;
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {suggestion.explanation}
@@ -942,7 +942,7 @@ const DashboardPage = () => {
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                                  "{suggestion.original}" → "{suggestion.suggestion}"
+                                  &quot;{suggestion.original}&quot; → &quot;{suggestion.suggestion}&quot;
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {suggestion.explanation}
