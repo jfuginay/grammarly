@@ -120,23 +120,6 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return () => window.removeEventListener('resize', handleResize);
   }, [state.isChatOpen]);
 
-  // Mouse following logic - unified approach
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      // Store mouse position for later use
-      (window as any).__engieMousePos = { x: e.clientX, y: e.clientY };
-    };
-
-    const step = () => controller.stepTowardMouse();
-    const interval = setInterval(step, 16);
-
-    window.addEventListener('mousemove', handler);
-    return () => {
-      window.removeEventListener('mousemove', handler);
-      clearInterval(interval);
-    };
-  }, [controller]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {

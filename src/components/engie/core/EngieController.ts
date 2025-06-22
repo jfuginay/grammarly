@@ -285,12 +285,15 @@ export class EngieController {
    * Shows contextual encouragement messages for starting to write
    */
   handleNewDocumentOrEmpty(text: string = ''): void {
+    console.log('🔍 handleNewDocumentOrEmpty called with text:', text?.length || 0, 'characters');
     const state = this.stateManager.getState();
     
     // Check if this is a new/empty document scenario
     const isEmptyOrMinimal = !text || text.trim().length < 10;
+    console.log('📝 isEmptyOrMinimal:', isEmptyOrMinimal, 'isChatOpen:', state.isChatOpen);
     
     if (isEmptyOrMinimal && !state.isChatOpen) {
+      console.log('✨ Triggering technical writing popup for new document');
       // Move to writing area to encourage user to start
       this.stateManager.moveToOptimalPosition('writing');
       
@@ -307,6 +310,7 @@ export class EngieController {
       ];
       
       const randomMessage = contextualMessages[Math.floor(Math.random() * contextualMessages.length)];
+      console.log('💬 Setting ideation message:', randomMessage);
       
       // Set a welcoming message and open chat briefly
       this.stateManager.setIdeationMessage({
@@ -325,6 +329,10 @@ export class EngieController {
           this.stateManager.setBotEmotion('neutral', '');
         }
       }, 8000);
+    } else {
+      console.log('❌ Not showing popup because:', 
+        'isEmptyOrMinimal:', isEmptyOrMinimal, 
+        'isChatOpen:', state.isChatOpen);
     }
   }
 
@@ -333,6 +341,12 @@ export class EngieController {
    * Triggers appropriate contextual messages
    */
   handleDocumentChange(newText: string = '', isNewDocument: boolean = false): void {
+    console.log('📄 handleDocumentChange called:', {
+      textLength: newText?.length || 0,
+      isNewDocument,
+      textPreview: newText?.substring(0, 50) || '(empty)'
+    });
+    
     const state = this.stateManager.getState();
     
     // Reset suggestions when document changes
@@ -341,11 +355,13 @@ export class EngieController {
     
     // If it's a new document or empty, show encouragement
     if (isNewDocument || !newText || newText.trim().length < 10) {
+      console.log('🎯 Document is new or empty, will trigger popup in 500ms');
       // Delay slightly to allow UI to settle
       setTimeout(() => {
         this.handleNewDocumentOrEmpty(newText);
       }, 500);
     } else {
+      console.log('📖 Document has content, moving to analysis area');
       // For existing documents with content, move to analysis area
       this.stateManager.moveToOptimalPosition('analysis');
       this.stateManager.setBotEmotion('thoughtful', 'Looking at your document...');
@@ -501,11 +517,6 @@ export class EngieController {
     this.stateManager.setEngiePos({ x, y });
   }
 
-  updateMousePosition(x: number, y: number): void {
-    // Store mouse position for stepTowardMouse method
-    (window as any).__engieMousePos = { x, y };
-  }
-
   formatScore(score: number | undefined | null): string {
     if (typeof score !== 'number' || isNaN(score)) return 'N/A';
     return (score * 100).toFixed(0) + '%';
@@ -514,25 +525,6 @@ export class EngieController {
   cleanup(): void {
     if (this.debounceTimeoutRef) clearTimeout(this.debounceTimeoutRef);
     if (this.inactivityTimerRef) clearTimeout(this.inactivityTimerRef);
-  }
-
-  public stepTowardMouse(): void {
-    if (typeof window === 'undefined') return;
-    const mouse = (window as any).__engieMousePos;
-    if (!mouse) return;
-    const { x: botX, y: botY } = this.stateManager.getState().engiePos;
-    const dx = mouse.x - botX;
-    const dy = mouse.y - botY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 5) return;
-    const step = 24;
-    const ratio = step / dist;
-    const newX = botX + dx * ratio;
-    const newY = botY + dy * ratio;
-    this.stateManager.setEngiePos({ x: newX, y: newY });
-    this.stateManager.setBotDirection(dx > 0 ? 'right' : 'left');
-    this.stateManager.setBotAnimation('walking');
-    setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
 
   /**
