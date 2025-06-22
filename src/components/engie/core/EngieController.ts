@@ -370,6 +370,10 @@ export class EngieController {
 
   onStopDrag(): void {
     this.stateManager.setBotAnimation('idle');
+    // Start walking back to text analysis area after a short delay
+    setTimeout(() => {
+      this.stateManager.startWalkBack();
+    }, 1000); // Wait 1 second before starting walk back
   }
 
   formatScore(score: number | undefined | null): string {

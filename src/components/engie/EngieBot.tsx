@@ -29,6 +29,16 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return unsubscribe;
   }, [controller]);
 
+  // Mouse position tracking for mouse following behavior
+  useEffect(() => {
+    const updateMousePosition = (e: MouseEvent) => {
+      (window as any).__engieMousePos = { x: e.clientX, y: e.clientY };
+    };
+
+    window.addEventListener('mousemove', updateMousePosition);
+    return () => window.removeEventListener('mousemove', updateMousePosition);
+  }, []);
+
   // Simple popup positioning using CSS relative positioning
   const calculatePopupPosition = () => {
     if (!engieRef.current) return { position: 'above' as const };
@@ -117,6 +127,14 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return () => {
       window.removeEventListener('mousemove', handler);
       clearInterval(interval);
+    };
+  }, [controller]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      controller.cleanup();
+      controller.getStateManager().cleanup();
     };
   }, [controller]);
 
