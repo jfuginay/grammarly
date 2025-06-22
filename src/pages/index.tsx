@@ -34,8 +34,8 @@ const IndexPage = () => {
       icon: <Linkedin className="h-5 w-5" />,
       color: "from-blue-500 to-blue-600",
       placeholder: "Just shipped a new feature...",
-      sample: "Just shipped a new feature that reduces API response time by 40%! Sometimes the best optimizations come from questioning assumptions. What's your latest win?",
-      aiSuggestion: "Great technical achievement! Consider adding specific metrics and asking an engaging question to boost engagement.",
+      sample: "Just shipped a caching layer that reduced our API response time from 850ms to 340ms - a 60% improvement! 🚀 The biggest win wasn't the Redis implementation, but discovering we were making redundant database calls. Sometimes the best optimizations come from questioning your assumptions. What's your latest performance breakthrough?",
+      aiSuggestion: "Excellent technical post! Your specific metrics (850ms → 340ms) and insight about redundant calls make this engaging. The question at the end will drive meaningful discussions. Consider adding a brief mention of the business impact.",
       context: "Professional networking"
     },
     {
@@ -43,8 +43,8 @@ const IndexPage = () => {
       icon: <Github className="h-5 w-5" />,
       color: "from-gray-700 to-gray-900",
       placeholder: "## Installation...",
-      sample: "## Installation\n\nRun `npm install awesome-lib` to get started. This library helps you build better APIs faster.",
-      aiSuggestion: "Consider adding a brief description of what the library does before installation steps. Also, add usage examples!",
+      sample: "# FastAPI Cache\n\nA lightweight Redis caching middleware for FastAPI applications.\n\n## Installation\n\n```bash\npip install fastapi-cache\n```\n\n## Quick Start\n\n```python\nfrom fastapi import FastAPI\nfrom fastapi_cache import CacheMiddleware\n\napp = FastAPI()\napp.add_middleware(CacheMiddleware, redis_url=\"redis://localhost\")\n```",
+      aiSuggestion: "Great structure! Your README has a clear description, installation steps, and code example. Consider adding: 1) A features list, 2) Configuration options, 3) Performance benchmarks, and 4) Contributing guidelines to make it more comprehensive.",
       context: "Documentation"
     },
     {
@@ -52,20 +52,50 @@ const IndexPage = () => {
       icon: <Hash className="h-5 w-5" />,
       color: "from-purple-500 to-purple-600",
       placeholder: "Hey team...",
-      sample: "Hey team, the deployment went smooth but I'm seeing some weird behavior in the logs. Anyone else notice this?",
-      aiSuggestion: "Try being more specific about the 'weird behavior' and include relevant log snippets or error messages for faster debugging.",
+      sample: "🚨 Production alert: Our payment processing endpoint is throwing 500 errors since the 2:30 PM deployment. Error rate jumped from 0.1% to 15%. I'm seeing 'database connection timeout' in the logs. Rolling back now, but we should investigate the connection pool changes in PR #847.",
+      aiSuggestion: "Perfect incident communication! You included timeline (2:30 PM), impact metrics (0.1% → 15%), specific error details, immediate action (rollback), and next steps (investigate PR #847). This gives the team everything they need to respond effectively.",
       context: "Team communication"
     }
   ], []);
 
-  const demoSentences = [
-    { original: "This is a example of how AI can help you write better.", 
-      improved: "This is an example of how AI can help you write better." },
-    { original: "The company have announced there new product yesterday.", 
-      improved: "The company has announced their new product yesterday." },
-    { original: "Im not sure weather to go or not.", 
-      improved: "I'm not sure whether to go or not." },
-  ];
+  const demoSentences = useMemo(() => [
+    { 
+      original: "Our API endpoint is experiencing latency issues that effects user experience.", 
+      improved: "Our API endpoint is experiencing latency issues that affect user experience.",
+      type: "Grammar",
+      explanation: "Fixed subject-verb agreement: 'issues' (plural) requires 'affect' not 'effects'"
+    },
+    { 
+      original: "The deployment went smooth, but we need to optimize the database queries for better performance going forward.", 
+      improved: "The deployment went smoothly, but we need to optimize database queries for better performance.",
+      type: "Style",
+      explanation: "Changed 'smooth' to 'smoothly' (adverb) and removed redundant phrases for clarity"
+    },
+    { 
+      original: "Please find the attached documentation for the new feature implementation that we discussed in our meeting yesterday.", 
+      improved: "Here's the documentation for the new feature we discussed yesterday.",
+      type: "Clarity",
+      explanation: "Simplified wordy business-speak into clear, direct communication"
+    },
+    { 
+      original: "The algorithm performs good on most datasets, however it struggles with edge cases.", 
+      improved: "The algorithm performs well on most datasets; however, it struggles with edge cases.",
+      type: "Grammar",
+      explanation: "Fixed adverb usage ('well' not 'good') and proper semicolon before 'however'"
+    },
+    { 
+      original: "We should of tested this more thoroughly before pushing to production.", 
+      improved: "We should have tested this more thoroughly before pushing to production.",
+      type: "Grammar",
+      explanation: "Corrected common error: 'should have' not 'should of'"
+    },
+    { 
+      original: "The refactoring reduced code complexity and improved maintainability and also enhanced performance.", 
+      improved: "The refactoring reduced code complexity, improved maintainability, and enhanced performance.",
+      type: "Style",
+      explanation: "Fixed parallel structure in series and removed redundant 'and also'"
+    }
+  ], []);
 
   // Handle navigation with loading state
   const handleNavigation = (path: string) => {
@@ -122,11 +152,11 @@ const IndexPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto-cycling through demos
+  // Auto-cycling through demos (longer interval for enhanced content)
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveDemoIndex((prev) => (prev + 1) % demoSentences.length);
-    }, 5000);
+    }, 7000); // Increased to 7 seconds for better readability
     
     return () => clearInterval(interval);
   }, [demoSentences.length]);
@@ -488,8 +518,9 @@ const IndexPage = () => {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Engie&apos;s Intelligence</h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                Watch Engie analyze your text in real-time, providing contextual suggestions that go beyond simple grammar checks.
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                Watch Engie analyze real technical writing scenarios, providing contextual suggestions that understand your domain. 
+                From fixing grammar to improving clarity and style, Engie doesn&apos;t just correct—it teaches.
                 This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
               </p>
             </div>
@@ -520,32 +551,100 @@ const IndexPage = () => {
                 </div>
               </div>
               
-              {/* Auto-cycling demo examples */}
+              {/* Enhanced demo examples */}
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-1 md:order-2">
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
                   <MessageSquare className="mr-2 h-5 w-5 text-blue-500" />
-                  See Engie&apos;s corrections
+                  See Engie&apos;s intelligent corrections
                 </h3>
                 
-                <div className="space-y-6">
+                <div className="space-y-4 max-h-96 overflow-y-auto">
                   {demoSentences.map((demo, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ 
-                        opacity: activeDemoIndex === index ? 1 : 0.5,
+                        opacity: activeDemoIndex === index ? 1 : 0.6,
                         scale: activeDemoIndex === index ? 1 : 0.98,
+                        y: activeDemoIndex === index ? 0 : 5,
                       }}
-                      className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg"
+                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                      className={`rounded-lg border-2 transition-all duration-300 ${
+                        activeDemoIndex === index 
+                          ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700 shadow-md' 
+                          : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+                      }`}
                     >
-                      <div className="mb-2 text-gray-500 dark:text-gray-400">Original:</div>
-                      <p className="mb-4 text-gray-700 dark:text-gray-300">{demo.original}</p>
-                      
-                      <div className="mb-2 text-green-600 dark:text-green-400 flex items-center">
-                        <Check className="mr-1 h-4 w-4" /> Improved:
+                      <div className="p-4">
+                        {/* Type Badge */}
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs font-medium ${
+                              demo.type === 'Grammar' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800' :
+                              demo.type === 'Style' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' :
+                              'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                            }`}
+                          >
+                            {demo.type === 'Grammar' ? '📝' : demo.type === 'Style' ? '🎨' : '💡'} {demo.type}
+                          </Badge>
+                          {activeDemoIndex === index && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="text-xs text-blue-600 dark:text-blue-400 font-medium"
+                            >
+                              Active
+                            </motion.div>
+                          )}
+                        </div>
+
+                        {/* Original Text */}
+                        <div className="mb-3">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium uppercase tracking-wide">Original:</div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 line-through opacity-75">{demo.original}</p>
+                        </div>
+                        
+                        {/* Improved Text */}
+                        <div className="mb-3">
+                          <div className="text-xs text-green-600 dark:text-green-400 mb-1 font-medium uppercase tracking-wide flex items-center">
+                            <Check className="mr-1 h-3 w-3" /> Improved:
+                          </div>
+                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">{demo.improved}</p>
+                        </div>
+
+                        {/* Explanation (only for active demo) */}
+                        <AnimatePresence>
+                          {activeDemoIndex === index && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                              className="border-t border-gray-200 dark:border-gray-700 pt-3"
+                            >
+                              <div className="text-xs text-purple-600 dark:text-purple-400 mb-1 font-medium uppercase tracking-wide flex items-center">
+                                <Brain className="mr-1 h-3 w-3" /> Engie explains:
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{demo.explanation}</p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                      <p className="text-gray-900 dark:text-gray-100 font-medium">{demo.improved}</p>
                     </motion.div>
+                  ))}
+                </div>
+
+                {/* Progress indicator */}
+                <div className="flex justify-center mt-4 space-x-1">
+                  {demoSentences.map((_, index) => (
+                    <motion.div
+                      key={index}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        activeDemoIndex === index ? 'w-6 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+                      }`}
+                      whileHover={{ scale: 1.2 }}
+                    />
                   ))}
                 </div>
               </div>
