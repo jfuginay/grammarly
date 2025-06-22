@@ -57,18 +57,25 @@ const ExportButton: React.FC<ExportButtonProps> = ({ content, className }) => {
     // Note: This opens the share dialog, but Facebook might not prefill the quote for all users/setups.
     // A more robust solution might involve creating a temporary page or using the Feed Dialog with an API key.
     const text = encodeURIComponent(content);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=example.com&quote=${text}`, '_blank', 'noopener,noreferrer');
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}&quote=${text}`, '_blank', 'noopener,noreferrer');
     toast({ title: 'Facebook share dialog opened.', description: 'Note: Facebook may not always prefill text content directly.' });
   };
 
   const handleShareLinkedIn = () => {
-    // LinkedIn sharing is more complex for direct text. They prefer sharing URLs.
-    // This will open the share dialog. For text, it's best to guide the user to paste it.
-    // The 'mini' parameter tries to make it a popup.
-    // `source` and `summary` parameters are often ignored for text-only shares.
+    // LinkedIn sharing - for text-only content, we'll use the newer LinkedIn sharing approach
+    // that focuses on the text content rather than requiring a URL
     const text = encodeURIComponent(content);
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=example.com&summary=${text}`, '_blank', 'noopener,noreferrer');
-     toast({ title: 'LinkedIn share dialog opened.', description: 'Note: You may need to paste the text manually on LinkedIn.' });
+    
+    // Use LinkedIn's intent URL which is better for text sharing
+    // This opens the LinkedIn compose dialog with the text pre-filled
+    const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${text}`;
+    window.open(linkedInUrl, '_blank', 'noopener,noreferrer');
+    
+    toast({ 
+      title: 'LinkedIn share dialog opened.', 
+      description: 'Your text should be pre-filled in the LinkedIn post composer.' 
+    });
   };
 
   const handleDownloadTxt = () => {
