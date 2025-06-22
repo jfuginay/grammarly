@@ -1,0 +1,88 @@
+/* Make sure Engie's container is positioned relative */
+.engieContainer {
+  position: relative;
+  display: inline-block;
+}
+
+/* Position the popup relative to Engie */
+.engiePopup {
+  position: absolute;
+  bottom: 100%; /* Appears above Engie */
+  left: 50%;
+  transform: translateX(-50%); /* Center horizontally */
+  margin-bottom: 10px; /* Small gap between Engie and popup */
+  z-index: 1000;
+  
+  /* Prevent popup from going off-screen */
+  max-width: 300px;
+  white-space: normal;
+}
+
+/* Alternative: popup to the right of Engie */
+.engiePopupRight {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: 15px;
+  z-index: 1000;
+}
+
+/* Popup to the left of Engie */
+.engiePopupLeft {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  margin-right: 15px;
+  z-index: 1000;
+}
+
+/* Popup below Engie */
+.engiePopupBelow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 10px;
+  z-index: 1000;
+}
+
+/* Add a little arrow pointing to Engie */
+.engiePopup::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: var(--popup-bg-color, #ffffff);
+}
+
+.engiePopupRight::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: var(--popup-bg-color, #ffffff);
+}
+
+.engiePopupLeft::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-left-color: var(--popup-bg-color, #ffffff);
+}
+
+.engiePopupBelow::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-bottom-color: var(--popup-bg-color, #ffffff);
+} 
