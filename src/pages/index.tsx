@@ -89,7 +89,7 @@ const IndexPage = () => {
         } else if (text.length > 10) {
           setAiSuggestion("Your writing is developing nicely! I can help with tone, clarity, and structure. What are you working on?");
         } else if (text.length > 5) {
-          setAiSuggestion("Great start! Keep writing and I'll provide suggestions to enhance your content.");
+          setAiSuggestion("Great start! Keep writing and I&apos;ll provide suggestions to enhance your content.");
         } else {
           setAiSuggestion("");
         }
@@ -326,7 +326,7 @@ const IndexPage = () => {
         <section className="w-full py-16 bg-gradient-to-b from-transparent to-blue-50 dark:to-slate-800/30 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Engie's Intelligence</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Engie&apos;s Intelligence</h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                 Watch Engie analyze your text in real-time, providing contextual suggestions that go beyond simple grammar checks.
                 This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
@@ -373,7 +373,7 @@ const IndexPage = () => {
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-1 md:order-2">
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
                   <MessageSquare className="mr-2 h-5 w-5 text-blue-500" />
-                  See Engie's corrections
+                  See Engie&apos;s corrections
                 </h3>
                 
                 <div className="space-y-6">
