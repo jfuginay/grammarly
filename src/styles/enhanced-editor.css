@@ -1290,18 +1290,61 @@
 
 /* Visualization enhancement for analysis view */
 .analysis-view .priority-1 {
-  background-color: rgba(254, 202, 202, 0.5) !important;
-  border: 2px solid rgba(239, 68, 68, 0.5) !important;
+  background-color: rgba(254, 202, 202, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  z-index: 15;
 }
 
 .analysis-view .priority-2 {
-  background-color: rgba(254, 240, 138, 0.5) !important;
-  border: 1px solid rgba(250, 204, 21, 0.5) !important;
+  background-color: rgba(254, 240, 138, 0.15) !important;
+  border: 1px solid rgba(250, 204, 21, 0.25) !important;
+  z-index: 10;
 }
 
 .analysis-view .priority-3 {
-  background-color: rgba(186, 230, 254, 0.5) !important;
-  border: 1px solid rgba(14, 165, 233, 0.5) !important;
+  background-color: rgba(191, 219, 254, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Hover states for analysis view - more prominent when hovered */
+.analysis-view .priority-1:hover {
+  background-color: rgba(254, 202, 202, 0.4) !important;
+  border: 1px solid rgba(239, 68, 68, 0.5) !important;
+  z-index: 25;
+}
+
+.analysis-view .priority-2:hover {
+  background-color: rgba(254, 240, 138, 0.4) !important;
+  border: 1px solid rgba(250, 204, 21, 0.5) !important;
+  z-index: 20;
+}
+
+.analysis-view .priority-3:hover {
+  background-color: rgba(191, 219, 254, 0.4) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  z-index: 15;
+}
+
+/* Special handling for punctuation in analysis view - even more subtle */
+.analysis-view .fragment-punctuation.priority-1 {
+  background-color: rgba(254, 202, 202, 0.08) !important;
+  border: 1px solid rgba(239, 68, 68, 0.15) !important;
+  padding: 1px 2px;
+}
+
+.analysis-view .fragment-punctuation.priority-1:hover {
+  background-color: rgba(254, 202, 202, 0.25) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Reduce visual prominence of all punctuation overlays */
+.analysis-view .fragment-punctuation {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.analysis-view .fragment-punctuation:hover {
+  opacity: 1;
 }
 
 /* Transition between the two editors */
