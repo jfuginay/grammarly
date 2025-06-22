@@ -611,56 +611,77 @@ const IndexPage = () => {
           </div>
         </section>
 
-        {/* Interactive demo section */}
-        <section className="w-full py-16 bg-gradient-to-b from-transparent to-blue-50 dark:to-slate-800/30 px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">Try Engie Now - Live Demo</h2>
-                              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-4">
-                  Experience the power of real AI-powered spell checking with GPT-4o-mini. 
-                  Type your text below and get instant, intelligent suggestions that understand context and meaning.
-                  This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
-                </p>
+        {/* Chat with Engie - Enhanced Showcase Section */}
+        <section className="w-full py-24 bg-gradient-to-b from-transparent to-blue-50 dark:to-slate-800/30 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-20">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-4 mb-8"
+              >
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-xl">
+                  <MessageSquare className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">
+                  Try Engie Now
+                </h2>
+              </motion.div>
+              <p className="text-2xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto mb-6 leading-relaxed">
+                Experience the power of real AI-powered spell checking with GPT-4o-mini. 
+                Type your text below and get instant, intelligent suggestions that understand context and meaning.
+              </p>
+              <p className="text-lg font-semibold text-purple-600 dark:text-purple-400 mb-8">
+                This is the power of Engie Suggestion Technology
+              </p>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 max-w-2xl mx-auto"
+                className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700 rounded-xl p-6 max-w-3xl mx-auto shadow-lg"
               >
-                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
-                  <Sparkles className="h-5 w-5" />
-                  <span className="font-semibold">Live Functional Demo</span>
+                <div className="flex items-center justify-center gap-3 text-green-700 dark:text-green-300 mb-2">
+                  <Zap className="h-6 w-6" />
+                  <span className="font-bold text-lg">Live Functional Demo</span>
                 </div>
-                <p className="text-sm text-green-600 dark:text-green-400 text-center mt-1">
+                <p className="text-base text-green-600 dark:text-green-400 text-center font-medium">
                   This isn&apos;t a simulation - it&apos;s the real Engie API in action
                 </p>
               </motion.div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              {/* Enhanced Chat with Engie */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 order-2 md:order-1 transform transition-all duration-500 hover:shadow-2xl border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full">
-                      <MessageSquare className="h-6 w-6 text-white" />
+            {/* Single Column Layout for Maximum Prominence */}
+            <div className="max-w-5xl mx-auto">
+              {/* Enhanced Chat with Engie - Full Width */}
+              <motion.div 
+                className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-10 transform transition-all duration-500 hover:shadow-2xl border-2 border-gray-200 dark:border-gray-700"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <div className="text-center mb-8">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className="p-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-lg">
+                      <MessageSquare className="h-8 w-8 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Chat with Engie</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Real-time AI spell checking and suggestions</p>
+                      <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Chat with Engie</h3>
+                      <p className="text-lg text-gray-600 dark:text-gray-400">Real-time AI spell checking and suggestions</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800 font-medium">
-                    ✨ Live Demo
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800 font-medium text-base px-4 py-2">
+                    ✨ Live Demo - Try It Now!
                   </Badge>
                 </div>
-                <div className="relative">
+                <div className="relative mb-8">
                   <textarea
                     ref={textAreaRef}
                     value={userText}
                     onChange={(e) => setUserText(e.target.value)}
-                    className="w-full h-40 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 resize-none text-lg"
-                    placeholder="Type your text here to test Engie's real-time spell checking and suggestions. Try including some typos or grammar mistakes to see Engie in action..."
+                    className="w-full h-64 p-8 rounded-2xl border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-4 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300 resize-none text-xl leading-relaxed shadow-inner"
+                    placeholder="Type your text here to test Engie's real-time spell checking and suggestions. Try including some typos or grammar mistakes to see Engie in action! For example: 'This is a grate example of text that might have some erors in it that Engie can help fix.'"
                   />
                   
                   <div className="flex items-center justify-between mt-4">
@@ -789,7 +810,7 @@ const IndexPage = () => {
                     </motion.div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
