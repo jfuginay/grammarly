@@ -300,7 +300,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <div className="text-sm font-medium text-engie-primary">✨ With Engie's touch:</div>
+                    <div className="text-sm font-medium text-engie-primary">✨ With Engie&apos;s touch:</div>
                     <div className="p-3 bg-engie-primary/10 border border-engie-primary/20 rounded-lg text-sm">
                       {improvementSuggestion}
                     </div>
@@ -314,7 +314,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                     className="flex-1 bg-gradient-to-r from-engie-primary to-primary text-white"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Use Engie's version
+                    Use Engie&apos;s version
                   </Button>
                   <Button 
                     variant="outline" 
