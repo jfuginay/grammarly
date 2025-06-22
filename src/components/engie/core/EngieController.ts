@@ -204,7 +204,7 @@ export class EngieController {
         // Move to suggestions area autonomously
         this.stateManager.moveToOptimalPosition('suggestions');
         this.stateManager.setChatOpen(true);
-        this.stateManager.setActiveTab('suggestions');
+        this.stateManager.setActiveTab('tone');
         
         if (suggestions.length > 5) {
           this.stateManager.setBotEmotion('concerned', 'Found several issues to fix');

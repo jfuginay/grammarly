@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, X, Zap, Users, Code, Briefcase, MessageSquare, Eye, EyeOff, Timer, Coffee } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SuggestionsTab } from './tabs/SuggestionsTab';
+// Removed Tabs and SuggestionsTab imports - suggestions now handled by Priority Issues panel
 import { ToneTab } from './tabs/ToneTab';
 // import { GrokTab } from './tabs/GrokTab'; // GrokTab import removed
 import { IdeationCard } from './cards/IdeationCard';
@@ -21,16 +20,16 @@ import styles from './EngieChatWindow.module.css'; // Import CSS module
 interface EngieChatWindowProps {
   state: EngieState;
   grokChatHistory: ChatMessage[];
-  activeSuggestions: Suggestion[];
-  currentSuggestion: Suggestion | null;
+  activeSuggestions: Suggestion[]; // Keep for compatibility but not used in UI
+  currentSuggestion: Suggestion | null; // Keep for compatibility but not used in UI
   documents: Array<{ id: string; title: string }>;
   onClose: () => void;
-  onApply: () => void;
-  onDismiss: () => void;
-  onNext: () => void;
+  onApply: () => void; // Keep for compatibility but not used in UI
+  onDismiss: () => void; // Keep for compatibility but not used in UI
+  onNext: () => void; // Keep for compatibility but not used in UI
   onDismissIdeation: () => void;
   onManualIdeate: () => void;
-  onTabChange: (tab: string) => void;
+  onTabChange: (tab: string) => void; // Keep for compatibility but not used in UI
   formatScore: (score: number | undefined | null) => string;
   // handleToggleGrokMode: () => void; // Removed as Grok toggle is removed
   handleResearchWithGrok: (topic: string) => void; // This might be removed if research UI is fully gone
@@ -176,66 +175,33 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
           return null;
         })()}
 
-        {state.ideationMessage && !activeSuggestions.length && !state.encouragementMessageApi && !state.isGrokActive && (
+        {state.ideationMessage && !state.encouragementMessageApi && !state.isGrokActive && (
           <IdeationCard 
             message={state.ideationMessage}
             onDismiss={onDismissIdeation}
           />
         )}
 
-        {state.encouragementMessageApi && !activeSuggestions.length && !state.toneAnalysisResult && !state.ideationMessage && !state.isGrokActive && (
+        {state.encouragementMessageApi && !state.toneAnalysisResult && !state.ideationMessage && !state.isGrokActive && (
           <EncouragementCard message={state.encouragementMessageApi} />
         )}
 
         {!state.ideationMessage && !state.encouragementMessageApi && (
-          <Tabs value={state.activeTab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2"> {/* Updated to grid-cols-2 */}
-              <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
-              <TabsTrigger value="tone">Tone</TabsTrigger>
-              {/* <TabsTrigger value="grok">Grok</TabsTrigger> Grok Tab Trigger Removed */}
-            </TabsList>
-            
-            <TabsContent value="suggestions">
-              <SuggestionsTab
-                activeSuggestions={activeSuggestions}
-                currentSuggestion={currentSuggestion}
-                currentSuggestionIndex={state.currentSuggestionIndex}
-                onApply={onApply}
-                onDismiss={onDismiss}
-                onNext={onNext}
-              />
-            </TabsContent>
-            
-            <TabsContent value="tone">
-              <ToneTab
-                toneAnalysisResult={state.toneAnalysisResult}
-                overallPageToneAnalysis={state.overallPageToneAnalysis}
-                formatScore={formatScore}
-              />
-            </TabsContent>
-
-            {/* Grok Tab Content Removed */}
-            {/*
-            <TabsContent value="grok">
-              <GrokTab
-                isGrokActive={state.isGrokActive}
-                grokEndTime={state.grokEndTime}
-                researchTopic={researchTopic}
-                onResearchTopicChange={setResearchTopic}
-                // onToggleGrokMode={handleToggleGrokMode} // Removed
-                onResearchWithGrok={handleResearchWithGrok}
-              />
-            </TabsContent>
-            */}
-          </Tabs>
+          <div className="w-full">
+            {/* Only show tone analysis - no tabs needed */}
+            <ToneTab
+              toneAnalysisResult={state.toneAnalysisResult}
+              overallPageToneAnalysis={state.overallPageToneAnalysis}
+              formatScore={formatScore}
+            />
+          </div>
         )}
 
-        {/* Fallback "Looking good" or "Brainstorm" button - Conditionally render if Grok not active */}
-        {/* This condition might need adjustment based on how isGrokActive is handled post-toggle removal */}
-        {!currentSuggestion && !state.toneAnalysisResult && !state.overallPageToneAnalysis && 
+        {/* Fallback "Looking good" or "Brainstorm" button - Show when no tone analysis available */}
+        {!state.toneAnalysisResult && !state.overallPageToneAnalysis && 
          !state.ideationMessage && !state.encouragementMessageApi && !state.isIdeating && !state.isGrokActive && (
           <div className="text-center py-4">
-            <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No immediate suggestions or analysis.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Looking good! No tone analysis available yet.</p>
             <Button variant="link" size="sm" className="mt-2" onClick={onManualIdeate}>
               Want to brainstorm ideas?
             </Button>
