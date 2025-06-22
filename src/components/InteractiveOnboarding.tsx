@@ -755,6 +755,40 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                       </Button>
                     </motion.div>
                   )}
+
+                  {/* Continue button for custom text */}
+                  {userText && userText !== selectedType.starterPrompt && userText.trim().length >= 10 && !showEngie && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex justify-center gap-3"
+                    >
+                      <Button 
+                        onClick={() => {
+                          const improved = generateImprovement(userText, selectedType);
+                          setImprovementSuggestion(improved);
+                          setShowEngie(true);
+                          setStep('engie-intro');
+                        }}
+                        className="bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Get Engie's Help
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setStep('complete');
+                          setTimeout(() => {
+                            onComplete(userText, selectedType?.id || 'general');
+                          }, 1500);
+                        }}
+                        className="border-sky-200 hover:bg-sky-50"
+                      >
+                        Continue Without Help
+                      </Button>
+                    </motion.div>
+                  )}
                 </div>
 
                 <div className="text-xs text-muted-foreground text-center bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20 p-3 rounded-lg">
