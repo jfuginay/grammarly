@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Draggable from 'react-draggable';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -160,6 +161,14 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const handleManualIdeate = () => controller.handleManualIdeate();
   const handleTabChange = (tab: string) => controller.getStateManager().setActiveTab(tab);
   const dismissNotification = (index: number) => controller.dismissNotification(index);
+  
+  // Drag handlers - using deltaX/deltaY for smoother dragging
+  const handleDrag = (e: any, data: any) => {
+    controller.updateEngiePosition(state.engiePos.x + data.deltaX, state.engiePos.y + data.deltaY);
+  };
+  const onStartDrag = () => controller.onStartDrag();
+  const onStopDrag = () => controller.onStopDrag();
+  
   const formatScore = (score: number | undefined | null) => controller.formatScore(score);
 
   // Grok handlers
@@ -186,59 +195,65 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
   return (
     <>
-      {/* Engie Character - Autonomous Movement */}
-      <motion.div
-        ref={engieRef}
-        className="engie-character cursor-pointer"
-        onClick={handleEngieTrigger}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        animate={{
-          x: state.engiePos.x,
-          y: state.engiePos.y,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 100,
-          damping: 20,
-          duration: 0.8
-        }}
-        style={{
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          zIndex: 1000,
-          width: 64,
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer'
-        }}
+      {/* Engie Character - Using Draggable for manual drag, motion for autonomous movement */}
+      <Draggable
+        onDrag={handleDrag}
+        onStart={onStartDrag}
+        onStop={onStopDrag}
       >
-        <AnimatedEngieBot
-          animationState={state.botAnimation}
-          speed={state.botSpeed}
-          direction={state.botDirection}
-          emotion={state.botEmotion}
-        />
-        
-        {/* Writing Status Badge */}
-        {state.isScanning && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="absolute -top-2 -right-2"
-          >
-            <Badge variant="secondary" className="text-xs px-1 py-0.5">
-              <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              Scanning
-            </Badge>
-          </motion.div>
-        )}
-      </motion.div>
+        <motion.div
+          ref={engieRef}
+          className="engie-character cursor-pointer"
+          onClick={handleEngieTrigger}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          animate={{
+            x: state.engiePos.x,
+            y: state.engiePos.y,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 100,
+            damping: 20,
+            duration: 0.8
+          }}
+          style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            zIndex: 1000,
+            width: 64,
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          <AnimatedEngieBot
+            animationState={state.botAnimation}
+            speed={state.botSpeed}
+            direction={state.botDirection}
+            emotion={state.botEmotion}
+          />
+          
+          {/* Writing Status Badge */}
+          {state.isScanning && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute -top-2 -right-2"
+            >
+              <Badge variant="secondary" className="text-xs px-1 py-0.5">
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                Scanning
+              </Badge>
+            </motion.div>
+          )}
+        </motion.div>
+      </Draggable>
 
       {/* Popup positioned relative to Engie */}
       <AnimatePresence>
@@ -273,6 +288,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
               onSendGrokMessage={handleSendGrokMessage}
               grokLoading={false}
               grokError={null}
+              popupPosition={popupPosition}
             />
           </motion.div>
         )}
