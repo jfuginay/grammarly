@@ -81,9 +81,9 @@ const IndexPage = () => {
         const text = textAreaRef.current?.value.toLowerCase() || "";
         
         if (text.includes("hello") || text.includes("hi")) {
-          setAiSuggestion("I notice you're starting with a greeting! For professional writing, consider 'Greetings' or 'Welcome' for more impact.");
+          setAiSuggestion("I notice you&apos;re starting with a greeting! For professional writing, consider &apos;Greetings&apos; or &apos;Welcome&apos; for more impact.");
         } else if (text.includes("good") || text.includes("great")) {
-          setAiSuggestion("Nice word choice! To make it more compelling, try 'exceptional', 'outstanding', or 'remarkable' instead.");
+          setAiSuggestion("Nice word choice! To make it more compelling, try &apos;exceptional&apos;, &apos;outstanding&apos;, or &apos;remarkable&apos; instead.");
         } else if (text.includes("engie")) {
                             setAiSuggestion("I see you mentioned me! 😊 I&apos;m here to help make your writing clearer and more engaging.");
         } else if (text.length > 10) {
