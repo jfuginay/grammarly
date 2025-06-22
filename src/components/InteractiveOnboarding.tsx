@@ -565,7 +565,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20">
@@ -633,7 +633,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                 </div>
 
                 {/* Dropdown Categories */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative overflow-visible">
                   {currentCategories.map((category) => (
                     <div key={category.id} className="relative">
                       <Card 
@@ -665,7 +665,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -10, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden"
+                            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
                           >
                             {category.items.map((item) => (
                               <motion.div
