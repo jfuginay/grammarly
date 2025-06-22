@@ -309,6 +309,18 @@ const IndexPage = () => {
                   </motion.p>
                 </AnimatePresence>
               </div>
+
+              {/* "Built by" Tagline */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                className="text-center mb-12"
+              >
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  built 100 percent AI first by EnginDearing.soy
+                </p>
+              </motion.div>
             </div>
 
             {/* Interactive Writing Demo */}
@@ -944,9 +956,8 @@ const IndexPage = () => {
 
       <footer className="relative z-10 py-8 px-4 sm:px-6 lg:px-8 text-center border-t border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md">
         <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600 dark:text-gray-400">
-            <div>© {new Date().getFullYear()} <a href="https://www.engindearing.soy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">EnginDearing</a></div>
-            <div className="mt-3 md:mt-0">Powered by Engie Suggestion Technology (EST)</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            site built and maintained using AI first principles @ <a href="https://engindearing.soy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">engindearing.soy</a>
           </div>
         </div>
       </footer>
