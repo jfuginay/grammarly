@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.0.0 <21.0.0"
+    "node": ">=20.0.0 <23.0.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -18,7 +18,7 @@
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@hookform/resolvers": "^3.9.0",
-    "@prisma/client": "^5.19.1",
+    "@prisma/client": "^6.10.1",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -66,7 +66,7 @@
     "next": "14.2.27",
     "next-themes": "^0.3.0",
     "openai": "^5.6.0",
-    "prisma": "^5.19.1",
+    "prisma": "^6.10.1",
     "react": "^18",
     "react-day-picker": "8.10.1",
     "react-dom": "^18",

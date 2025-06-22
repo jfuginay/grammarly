@@ -42,6 +42,7 @@ export class EngieStateManager {
       isGrokActive: false,
       grokEndTime: null,
       grokChatHistory: [],
+      isDragLocked: false, // Add missing property for drag lock functionality
     };
   }
 
@@ -211,6 +212,7 @@ export class EngieStateManager {
 
   setInternalSuggestions(suggestions: Suggestion[]): void {
     this.state.internalSuggestions = suggestions;
+    // Drag lock is now managed by EngieController via updateDragLockWithExternalSuggestions
     this.notify();
   }
 
@@ -282,6 +284,18 @@ export class EngieStateManager {
   setEngiePos(pos: { x: number; y: number }): void {
     this.state.engiePos = pos;
     this.notify();
+  }
+
+  // Drag lock methods
+  setDragLocked(isLocked: boolean): void {
+    this.state.isDragLocked = isLocked;
+    this.notify();
+  }
+
+  updateDragLockWithExternalSuggestions(externalSuggestions: Suggestion[]): void {
+    // Lock dragging if there are active suggestions (internal or external)
+    const hasActiveSuggestions = this.state.internalSuggestions.length > 0 || externalSuggestions.length > 0;
+    this.setDragLocked(hasActiveSuggestions);
   }
 
   // Position Engie near suggested text
