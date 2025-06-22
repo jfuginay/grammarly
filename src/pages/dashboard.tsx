@@ -121,6 +121,7 @@ const DashboardPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [text, setText] = useState<string>('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [spellingSuggestions, setSpellingSuggestions] = useState<Suggestion[]>([]);
   const [toneHighlights, setToneHighlights] = useState<ToneHighlight[]>([]);
   const [autoSaveState, setAutoSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -274,6 +275,7 @@ const DashboardPage = () => {
     setActiveDocument(doc);
     setText(doc.content);
     setSuggestions([]);
+    setSpellingSuggestions([]);
     setToneHighlights([]);
     
     // Notify Engie about document change
@@ -458,12 +460,14 @@ const DashboardPage = () => {
       console.log("Applying suggestion via Engie:", suggestionToApply);
     }
     
+    // Determine if this is a spelling suggestion or regular suggestion
+    const isSpellingSuggestion = suggestionToApply.type === 'Spelling';
+    
     // Apply the suggestion to the input editor
     applySuggestionLogic(
       suggestionToApply, 
-      setSuggestions,
+      isSpellingSuggestion ? setSpellingSuggestions : setSuggestions,
       editorRef
-      // text, setText, activeDocument, debouncedUpdateDocument are no longer passed
     );
     
     // Clear analysis from analysis editor
@@ -473,8 +477,20 @@ const DashboardPage = () => {
   };
 
   const dismissSuggestion = (suggestionId: string) => {
+    // Remove from both regular and spelling suggestions
     setSuggestions(currentSuggestions => currentSuggestions.filter(s => s.id !== suggestionId));
+    setSpellingSuggestions(currentSpelling => currentSpelling.filter(s => s.id !== suggestionId));
   };
+
+  // Combine all suggestions for Engie (spell check + regular suggestions)
+  const allSuggestions = useMemo(() => {
+    return [...spellingSuggestions, ...suggestions];
+  }, [spellingSuggestions, suggestions]);
+
+  // Handle spell check suggestions from the timer
+  const handleSpellCheckSuggestions = useCallback((newSpellingSuggestions: Suggestion[]) => {
+    setSpellingSuggestions(newSpellingSuggestions);
+  }, []);
 
   // Handle onboarding completion
   const handleOnboardingComplete = useCallback(async (userText: string, contentType: string) => {
@@ -843,6 +859,7 @@ const DashboardPage = () => {
                       className="main-editor-textarea h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-background"
                       placeholder="Start writing your masterpiece..."
                       showFragments={false} // Never show fragments in the input box
+                      onSpellCheckSuggestions={handleSpellCheckSuggestions}
                     />
                   </CardContent>
                 </Card>
@@ -888,63 +905,133 @@ const DashboardPage = () => {
                       Issues that need immediate attention
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0 max-h-32 overflow-y-auto">
-                    {suggestions && suggestions.length > 0 ? (
+                  <CardContent className="p-4 pt-0 max-h-48 overflow-y-auto">
+                    {allSuggestions && allSuggestions.length > 0 ? (
                       <div className="space-y-2">
-                        {suggestions
+                        {/* Spelling suggestions first (always high priority) */}
+                        {allSuggestions
+                          .filter(s => s.type === 'Spelling')
+                          .map((suggestion, index) => (
+                            <div 
+                              key={suggestion.id || `spelling-${index}`}
+                              className="flex items-start gap-2 p-3 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 rounded-xl border border-red-200 dark:border-red-800 shadow-sm hover:shadow-md transition-all duration-200"
+                            >
+                              <div className="flex items-center gap-1">
+                                <span className="text-red-600 text-sm">📝</span>
+                                <span className="text-red-600 font-semibold text-xs bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
+                                  SPELLING
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  &quot;<span className="text-red-600 line-through">{suggestion.original}</span>&quot; → &quot;<span className="text-green-600 font-semibold">{suggestion.suggestion}</span>&quot;
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  {suggestion.explanation}
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  className="h-8 px-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-sm hover:shadow-md transition-all duration-200 text-xs font-medium"
+                                  onClick={() => applySuggestion(suggestion)}
+                                >
+                                  ✓ Fix
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 transition-colors duration-200"
+                                  onClick={() => dismissSuggestion(suggestion.id)}
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        {/* High priority punctuation suggestions */}
+                        {allSuggestions
                           .filter(s => s.type === 'Punctuation' && s.severity === 'High')
                           .map((suggestion, index) => (
                             <div 
                               key={suggestion.id || index}
-                              className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                              className="flex items-start gap-2 p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 rounded-xl border border-orange-200 dark:border-orange-800 shadow-sm hover:shadow-md transition-all duration-200"
                             >
-                              <span className="text-red-600 font-medium text-xs mt-0.5">
-                                PUNCTUATION
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-orange-600 text-sm">🔤</span>
+                                <span className="text-orange-600 font-semibold text-xs bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
+                                  PUNCTUATION
+                                </span>
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                                  &quot;{suggestion.original}&quot; → &quot;{suggestion.suggestion}&quot;
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  &quot;<span className="text-orange-600 line-through">{suggestion.original}</span>&quot; → &quot;<span className="text-green-600 font-semibold">{suggestion.suggestion}</span>&quot;
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                   {suggestion.explanation}
                                 </p>
                               </div>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
-                                onClick={() => applySuggestion(suggestion)}
-                              >
-                                ✓
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  className="h-8 px-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-sm hover:shadow-md transition-all duration-200 text-xs font-medium"
+                                  onClick={() => applySuggestion(suggestion)}
+                                >
+                                  ✓ Fix
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 transition-colors duration-200"
+                                  onClick={() => dismissSuggestion(suggestion.id)}
+                                >
+                                  ✕
+                                </Button>
+                              </div>
                             </div>
                           ))}
-                        {suggestions
-                          .filter(s => s.severity === 'High' && s.type !== 'Punctuation')
+                        {allSuggestions
+                          .filter(s => s.severity === 'High' && s.type !== 'Punctuation' && s.type !== 'Spelling')
                           .map((suggestion, index) => (
                             <div 
                               key={suggestion.id || `other-${index}`}
-                              className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800"
+                              className="flex items-start gap-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm hover:shadow-md transition-all duration-200"
                             >
-                              <span className="text-amber-700 font-medium text-xs mt-0.5">
-                                {suggestion.type.toUpperCase()}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-amber-600 text-sm">
+                                  {suggestion.type === 'Grammar' ? '📝' : 
+                                   suggestion.type === 'Style' ? '🎨' : 
+                                   suggestion.type === 'Clarity' ? '💡' : '✨'}
+                                </span>
+                                <span className="text-amber-700 font-semibold text-xs bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">
+                                  {suggestion.type.toUpperCase()}
+                                </span>
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                                  &quot;{suggestion.original}&quot; → &quot;{suggestion.suggestion}&quot;
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  &quot;<span className="text-amber-600 line-through">{suggestion.original}</span>&quot; → &quot;<span className="text-green-600 font-semibold">{suggestion.suggestion}</span>&quot;
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                   {suggestion.explanation}
                                 </p>
                               </div>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-6 w-6 p-0 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                                onClick={() => applySuggestion(suggestion)}
-                              >
-                                ✓
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  className="h-8 px-3 bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white shadow-sm hover:shadow-md transition-all duration-200 text-xs font-medium"
+                                  onClick={() => applySuggestion(suggestion)}
+                                >
+                                  ✓ Fix
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-8 w-8 p-0 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-600 transition-colors duration-200"
+                                  onClick={() => dismissSuggestion(suggestion.id)}
+                                >
+                                  ✕
+                                </Button>
+                              </div>
                             </div>
                           ))}
                       </div>
@@ -969,7 +1056,7 @@ const DashboardPage = () => {
       
       {/* Engie is now always visible, regardless of document state */}
       <ClientEngie
-        suggestions={suggestions || []}
+        suggestions={allSuggestions || []}
         onApply={applySuggestion}
         onDismiss={dismissSuggestion}
         onIdeate={() => {}}

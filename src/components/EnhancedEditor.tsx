@@ -32,6 +32,7 @@ interface EnhancedEditorProps {
   reflectTextFrom?: string; // Text to reflect in the analysis box
   onSuggestionsFetched?: (suggestions: Suggestion[]) => void;
   onToneHighlightsFetched?: (toneHighlights: Array<{ startIndex: number; endIndex: number; tone: string; severity: string }>) => void;
+  onSpellCheckSuggestions?: (suggestions: Suggestion[]) => void; // Handler for spell check suggestions
 }
 
 export interface EnhancedEditorRef {
@@ -72,7 +73,8 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
     isAnalysisBox = typeof props.isAnalysisBox === 'boolean' ? props.isAnalysisBox : false,
     reflectTextFrom = props.reflectTextFrom || '',
     onSuggestionsFetched,
-    onToneHighlightsFetched
+    onToneHighlightsFetched,
+    onSpellCheckSuggestions
   } = props;
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -155,9 +157,17 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
         
         if (data && Array.isArray(data.suggestions)) {
           setSpellingSuggestions(data.suggestions);
+          // Pass spelling suggestions to parent component
+          if (onSpellCheckSuggestions) {
+            onSpellCheckSuggestions(data.suggestions);
+          }
           console.log(`Spell check completed in ${scanTime}ms, found ${data.suggestions.length} spelling errors`);
         } else {
           setSpellingSuggestions([]);
+          // Clear spelling suggestions in parent component
+          if (onSpellCheckSuggestions) {
+            onSpellCheckSuggestions([]);
+          }
         }
       })
       .catch(error => {
@@ -170,7 +180,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
           setIsSpellChecking(false);
         }
       });
-  }, [value]);
+  }, [value, onSpellCheckSuggestions]);
   
   // Text analysis function with smart batching as per co-developer brief
   // Now returns a Promise that resolves when analysis completes
