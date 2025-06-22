@@ -85,7 +85,7 @@ const IndexPage = () => {
         } else if (text.includes("good") || text.includes("great")) {
           setAiSuggestion("Nice word choice! To make it more compelling, try 'exceptional', 'outstanding', or 'remarkable' instead.");
         } else if (text.includes("engie")) {
-          setAiSuggestion("I see you mentioned me! 😊 I'm here to help make your writing clearer and more engaging.");
+                            setAiSuggestion("I see you mentioned me! 😊 I&apos;m here to help make your writing clearer and more engaging.");
         } else if (text.length > 10) {
           setAiSuggestion("Your writing is developing nicely! I can help with tone, clarity, and structure. What are you working on?");
         } else if (text.length > 5) {
@@ -238,7 +238,7 @@ const IndexPage = () => {
                 </h2>
               </motion.div>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                Your AI writing companion that doesn't just check grammar—it understands context, 
+                Your AI writing companion that doesn&apos;t just check grammar—it understands context, 
                 enhances creativity, and adapts to your unique writing style.
               </p>
             </div>
@@ -248,7 +248,7 @@ const IndexPage = () => {
                 {
                   icon: <Brain className="h-12 w-12 text-purple-500" />,
                   title: "Contextual Intelligence",
-                  description: "Engie doesn't just spot errors—it understands what you're trying to say and helps you say it better.",
+                  description: "Engie doesn&apos;t just spot errors—it understands what you&apos;re trying to say and helps you say it better.",
                   feature: "Smart Context Analysis"
                 },
                 {
@@ -417,7 +417,7 @@ const IndexPage = () => {
                 {
                   icon: <Edit3 className="h-10 w-10 text-blue-500" />,
                   title: "Beyond Grammar",
-                  description: "Engie doesn't just fix errors—it enhances clarity, flow, and impact in your writing."
+                  description: "Engie doesn&apos;t just fix errors—it enhances clarity, flow, and impact in your writing."
                 },
                 {
                   icon: <MessageSquare className="h-10 w-10 text-purple-500" />,
