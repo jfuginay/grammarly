@@ -1086,188 +1086,163 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
 
   // Enhanced rendering with proper text placement
   return (
-    <div className={editorClass} style={{ position: 'relative' }}>
-      {!readOnly && !isAnalysisBox && value && value.trim().length > 0 && (
-        <div style={{ 
-          position: 'absolute', 
-          top: '10px', 
-          right: '10px', 
-          zIndex: 1000,
-          pointerEvents: 'auto'
-        }}>
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-center mb-2">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Write Your Text
+        </label>
+        {!readOnly && !isAnalysisBox && value && value.trim().length > 0 && (
           <ExportButton content={value} />
-        </div>
-      )}
-      <div
-        ref={editorRef}
-        className="editor-highlights"
-        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-        style={{
-          // Only show highlights in readOnly mode or when fragments are explicitly shown
-          // This ensures the left text box doesn't show any highlighting
-          visibility: readOnly || shouldShowFragments ? 'visible' : 'hidden',
-          opacity: readOnly || shouldShowFragments ? '1' : '0',
-          display: (!readOnly && !shouldShowFragments) ? 'none' : 'block', // Don't even render in input mode
-          position: 'relative', // Added to enable absolute positioning of Engie bot
-          pointerEvents: 'none' // Ensure highlights don't interfere with other UI elements
-        }}
-      />
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleTextareaChange}
-        className={`editor-textarea ${readOnly ? 'read-only' : 'input-mode'}`}
-        placeholder={placeholder}
-        style={{ 
-          opacity: readOnly ? '0' : '1', // Hide completely in read-only mode
-          caretColor: 'currentColor', // Ensure cursor is visible
-          // Ensure text entry box is always fully opaque in input mode
-          backgroundColor: readOnly ? 'transparent' : 'var(--background, #ffffff)'
-        }}
-        readOnly={readOnly}
-        spellCheck={false} // We're handling our own error highlighting
-        onFocus={() => {
-          // Keep input box clean with no ghosting
-          if (textareaRef.current && !readOnly) {
-            textareaRef.current.style.opacity = '1';
-            
-            // Ensure the highlight div doesn't interfere with editing
-            if (editorRef.current) {
-              const highlights = editorRef.current.querySelector('.editor-highlights') as HTMLElement;
-              if (highlights) {
-                highlights.style.pointerEvents = 'none';
-                
-                // For input mode, make highlights fully transparent and invisible
-                if (!readOnly && !showFragments) {
-                  highlights.style.opacity = '0';
-                  highlights.style.visibility = 'hidden';
+        )}
+      </div>
+      <div className={`${editorClass} flex-grow`} style={{ position: 'relative' }}>
+        <div
+          ref={editorRef}
+          className="editor-highlights"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          style={{
+            visibility: readOnly || shouldShowFragments ? 'visible' : 'hidden',
+            opacity: readOnly || shouldShowFragments ? '1' : '0',
+            display: (!readOnly && !shouldShowFragments) ? 'none' : 'block',
+            position: 'absolute',
+            pointerEvents: 'none'
+          }}
+        />
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleTextareaChange}
+          className={`editor-textarea ${readOnly ? 'read-only' : 'input-mode'}`}
+          placeholder={placeholder}
+          style={{ 
+            opacity: readOnly ? '0' : '1',
+            caretColor: 'currentColor',
+            backgroundColor: readOnly ? 'transparent' : 'var(--background, #ffffff)',
+            position: 'absolute'
+          }}
+          readOnly={readOnly}
+          spellCheck={false}
+          onFocus={() => {
+            if (textareaRef.current && !readOnly) {
+              textareaRef.current.style.opacity = '1';
+              if (editorRef.current) {
+                const highlights = editorRef.current.querySelector('.editor-highlights') as HTMLElement;
+                if (highlights) {
+                  highlights.style.pointerEvents = 'none';
+                  if (!readOnly && !showFragments) {
+                    highlights.style.opacity = '0';
+                    highlights.style.visibility = 'hidden';
+                  }
                 }
               }
             }
-          }
-        }}
-        onBlur={() => {
-          // Keep input box clean with no ghosting
-          if (textareaRef.current && !readOnly) {
-            textareaRef.current.style.opacity = '1';
-          }
-        }}
-        onKeyUp={() => {
-          // Ensure text boxes and cursor stay aligned on text input
-          const textarea = textareaRef.current;
-          const highlights = editorRef.current?.querySelector('.editor-highlights') as HTMLElement;
-          if (textarea && highlights) {
-            // Synchronize scroll position to ensure alignment
-            highlights.scrollTop = textarea.scrollTop;
-            highlights.scrollLeft = textarea.scrollLeft;
-            
-            // Force update of fragments after typing
-            setTimeout(() => {
-              const fragmentSpans = highlights.querySelectorAll('span[class*="fragment-"]');
-              fragmentSpans.forEach(span => {
-                const spanElement = span as HTMLElement;
-                const startIndex = Number(spanElement.getAttribute('data-start'));
-                const endIndex = Number(spanElement.getAttribute('data-end'));
-                
-                if (!isNaN(startIndex) && !isNaN(endIndex) && startIndex >= 0 && endIndex <= value.length) {
-                  // Update the text content of each span
-                  const spanText = value.substring(startIndex, endIndex);
-                  spanElement.textContent = spanText;
-                }
-              });
-            }, 10);
-          }
-        }}
-        onKeyDown={handleKeyDown}
-      />
-      
-      {/* Enhanced Scan Indicator - only show in the main editor, not analysis box */}
-      {!isAnalysisBox && !readOnly && autoAnalyze && showCountdownTimer && value.trim().length > 0 && (
-        <EnhancedScanIndicator 
-          scanInterval={3}
-          isTyping={isUserTyping}
-          isAnalyzing={isAnalyzingText}
-          isProcessing={isAnalyzingText}
-          suggestionCount={suggestions.length}
-          onScanNow={() => {
-            // Trigger immediate scan
-            if (activeTextAnalysisControllerRef.current) {
-              activeTextAnalysisControllerRef.current.abort();
-            }
-            analyzeText();
           }}
-          onToggleAutoScan={(enabled) => {
-            // Handle auto scan toggle here
-            if (!enabled && inactivityTimerRef.current) {
-              clearTimeout(inactivityTimerRef.current);
-              inactivityTimerRef.current = null;
+          onBlur={() => {
+            if (textareaRef.current && !readOnly) {
+              textareaRef.current.style.opacity = '1';
             }
           }}
-          onIntervalChange={(seconds) => {
-            // Handle interval change here
-            console.log(`Scan interval changed to ${seconds} seconds`);
-            // This would typically update a configuration setting
+          onKeyUp={() => {
+            const textarea = textareaRef.current;
+            const highlights = editorRef.current?.querySelector('.editor-highlights') as HTMLElement;
+            if (textarea && highlights) {
+              highlights.scrollTop = textarea.scrollTop;
+              highlights.scrollLeft = textarea.scrollLeft;
+              setTimeout(() => {
+                const fragmentSpans = highlights.querySelectorAll('span[class*="fragment-"]');
+                fragmentSpans.forEach(span => {
+                  const spanElement = span as HTMLElement;
+                  const startIndex = Number(spanElement.getAttribute('data-start'));
+                  const endIndex = Number(spanElement.getAttribute('data-end'));
+                  if (!isNaN(startIndex) && !isNaN(endIndex) && startIndex >= 0 && endIndex <= value.length) {
+                    const spanText = value.substring(startIndex, endIndex);
+                    spanElement.textContent = spanText;
+                  }
+                });
+              }, 10);
+            }
           }}
+          onKeyDown={handleKeyDown}
         />
-      )}
-
-      {/* AnimatedEngieBot area */}
-      {/* AnimatedEngieBot area - only shown in read-only (analysis) mode when applying suggestions */}
-      {showEngieBot && readOnly && (
-        <div 
-          className="engie-bot-animation-layer" 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            zIndex: 10
-          }}
-        >
-          {/* Word being changed highlight */}
-          {wordBeingChanged && (
-            <div 
-              className="word-highlight-animation"
-              style={{
-                position: 'absolute',
-                top: engieBotPosition.top - 5,
-                left: engieBotPosition.left,
-                backgroundColor: 'rgba(255, 217, 102, 0.5)',
-                borderRadius: '3px',
-                padding: '0 2px',
-                zIndex: 5,
-                pointerEvents: 'none',
-                animation: 'pulse 1s infinite alternate'
-              }}
-            >
-              {wordBeingChanged}
-            </div>
-          )}
-          
-          {/* Engie Bot */}
+        
+        {showEngieBot && readOnly && (
           <div 
-            className="engie-bot-container"
+            className="engie-bot-animation-layer" 
             style={{
               position: 'absolute',
-              top: engieBotPosition.top - 40, // Position above the text
-              left: engieBotPosition.left,
-              transition: 'all 0.5s ease-in-out',
-              transform: 'scale(0.6)', // Make Engie smaller to fit in the editor
-              transformOrigin: 'bottom center',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
               zIndex: 10
             }}
           >
-            <AnimatedEngieBot 
-              animationState={engieBotAnimationState} 
-              speed="normal" 
-              direction={engieBotDirection}
-              emotion={engieBotEmotion}
-            />
+            {wordBeingChanged && (
+              <div 
+                className="word-highlight-animation"
+                style={{
+                  position: 'absolute',
+                  top: engieBotPosition.top - 5,
+                  left: engieBotPosition.left,
+                  backgroundColor: 'rgba(255, 217, 102, 0.5)',
+                  borderRadius: '3px',
+                  padding: '0 2px',
+                  zIndex: 5,
+                  pointerEvents: 'none',
+                  animation: 'pulse 1s infinite alternate'
+                }}
+              >
+                {wordBeingChanged}
+              </div>
+            )}
+            
+            <div 
+              className="engie-bot-container"
+              style={{
+                position: 'absolute',
+                top: engieBotPosition.top - 40,
+                left: engieBotPosition.left,
+                transition: 'all 0.5s ease-in-out',
+                transform: 'scale(0.6)',
+                transformOrigin: 'bottom center',
+                zIndex: 10
+              }}
+            >
+              <AnimatedEngieBot 
+                animationState={engieBotAnimationState} 
+                speed="normal" 
+                direction={engieBotDirection}
+                emotion={engieBotEmotion}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      {!isAnalysisBox && !readOnly && autoAnalyze && showCountdownTimer && value.trim().length > 0 && (
+          <EnhancedScanIndicator 
+            scanInterval={3}
+            isTyping={isUserTyping}
+            isAnalyzing={isAnalyzingText}
+            isProcessing={isAnalyzingText}
+            suggestionCount={suggestions.length}
+            onScanNow={() => {
+              if (activeTextAnalysisControllerRef.current) {
+                activeTextAnalysisControllerRef.current.abort();
+              }
+              analyzeText();
+            }}
+            onToggleAutoScan={(enabled) => {
+              if (!enabled && inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+                inactivityTimerRef.current = null;
+              }
+            }}
+            onIntervalChange={(seconds) => {
+              console.log(`Scan interval changed to ${seconds} seconds`);
+            }}
+          />
+        )}
     </div>
   );
 });
