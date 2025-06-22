@@ -29,9 +29,6 @@ export class EngieController {
       this.grokApiService = null as any;
     }
     
-    // Initialize drag lock based on initial suggestions
-    this.stateManager.updateDragLockWithExternalSuggestions(this.props.suggestions);
-    
     this.setupInactivityTimer();
     this.detectTouchDevice();
   }
@@ -202,9 +199,10 @@ export class EngieController {
 
       if (suggestions.length > 0) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Engie: Found suggestions, opening chat and moving to first suggestion');
+          console.log('Engie: Found suggestions, opening chat and moving to suggestions area');
         }
-        this.stateManager.moveEngieToSuggestion(suggestions[0]);
+        // Move to suggestions area autonomously
+        this.stateManager.moveToOptimalPosition('suggestions');
         this.stateManager.setChatOpen(true);
         this.stateManager.setActiveTab('suggestions');
         
@@ -215,8 +213,10 @@ export class EngieController {
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Engie: No suggestions found');
+          console.log('Engie: No suggestions found, moving to analysis area');
         }
+        // Move to analysis area when no suggestions
+        this.stateManager.moveToOptimalPosition('analysis');
         this.stateManager.setBotEmotion('happy', 'Great writing! No issues found.');
       }
     } catch (error) {
@@ -268,6 +268,18 @@ export class EngieController {
     this.debounceTimeoutRef = setTimeout(() => this.scanForSuggestions(), 2000);
   }
 
+  // Handle user typing activity
+  handleTypingActivity(): void {
+    const state = this.stateManager.getState();
+    const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
+    
+    // Only move to writing area if no active suggestions (otherwise stay near suggestions)
+    if (activeSuggestions.length === 0 && !state.isChatOpen) {
+      this.stateManager.moveToOptimalPosition('writing');
+      this.stateManager.setBotEmotion('thoughtful', 'Watching your writing flow...');
+    }
+  }
+
   handleEngieClick(): void {
     const state = this.stateManager.getState();
     const unreadCount = this.stateManager.getUnreadCount();
@@ -292,8 +304,11 @@ export class EngieController {
     this.stateManager.setChatOpen(false);
     const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
     if (activeSuggestions.length === 0) {
-      this.stateManager.resetEngiePosition();
-      this.stateManager.setDragLocked(false);
+      // Move to idle position when no suggestions
+      this.stateManager.moveToOptimalPosition('idle');
+    } else {
+      // Stay near suggestions if they exist
+      this.stateManager.moveToOptimalPosition('suggestions');
     }
     this.stateManager.setBotEmotion('neutral', '');
   }
@@ -337,13 +352,14 @@ export class EngieController {
       const nextIndex = state.currentSuggestionIndex + 1;
       this.stateManager.setCurrentSuggestionIndex(nextIndex);
       if (activeSuggestions[nextIndex]) {
-        this.stateManager.moveEngieToSuggestion(activeSuggestions[nextIndex]);
+        // Stay in suggestions area for next suggestion
+        this.stateManager.moveToOptimalPosition('suggestions');
       }
     } else {
       this.stateManager.setCurrentSuggestionIndex(0);
       this.stateManager.resetSuggestions();
-      this.stateManager.setDragLocked(false);
-      this.stateManager.resetEngiePosition();
+      // Move to idle position when all suggestions are completed
+      this.stateManager.moveToOptimalPosition('idle');
     }
   }
 
@@ -357,47 +373,6 @@ export class EngieController {
 
   dismissNotification(index: number): void {
     this.stateManager.removeIdeaNotification(index);
-  }
-
-  handleDrag(e: any, data: any): void {
-    // Check if dragging is locked due to active suggestions
-    const state = this.stateManager.getState();
-    if (state.isDragLocked) {
-      // Prevent dragging by not updating position
-      return;
-    }
-
-    const deltaX = data.x - this.lastX;
-    if (Math.abs(deltaX) > 5) {
-      this.stateManager.setBotDirection(deltaX > 0 ? 'right' : 'left');
-      this.stateManager.setBotSpeed(Math.abs(deltaX) > 20 ? 'fast' : 'normal');
-    }
-    this.lastX = data.x;
-    this.stateManager.setEngiePos({ x: data.x, y: data.y });
-  }
-
-  onStartDrag(): void {
-    // Check if dragging is locked due to active suggestions
-    const state = this.stateManager.getState();
-    if (state.isDragLocked) {
-      return;
-    }
-
-    this.stateManager.setBotAnimation('walking');
-  }
-
-  onStopDrag(): void {
-    // Check if dragging is locked due to active suggestions
-    const state = this.stateManager.getState();
-    if (state.isDragLocked) {
-      return;
-    }
-
-    this.stateManager.setBotAnimation('idle');
-    // Start walking back to text analysis area after a short delay
-    setTimeout(() => {
-      this.stateManager.startWalkBack();
-    }, 1000); // Wait 1 second before starting walk back
   }
 
   formatScore(score: number | undefined | null): string {
@@ -484,10 +459,5 @@ export class EngieController {
       // Handle error case
       this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't process your request." });
     }
-  }
-
-  // Method to update drag lock when external suggestions change
-  updateSuggestions(suggestions: Suggestion[]): void {
-    this.stateManager.updateDragLockWithExternalSuggestions(suggestions);
   }
 }
