@@ -320,8 +320,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     }
   };
   // Grok specific handlers
-  const handleToggleGrokMode = () => controller.toggleGrokMode();
-  const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
+  // const handleToggleGrokMode = () => controller.toggleGrokMode(); // Removed
+  // const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic); // Removed
 
   // Debug logging
   useEffect(() => {
@@ -429,8 +429,8 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
                     formatScore={formatScore}
                     // Grok chat props
                     grokChatHistory={state.grokChatHistory}
-                    handleToggleGrokMode={handleToggleGrokMode}
-                    handleResearchWithGrok={handleResearchWithGrok}
+                    // handleToggleGrokMode={handleToggleGrokMode} // Removed
+                    // handleResearchWithGrok={handleResearchWithGrok} // Removed
                     onSendGrokMessage={handleSendGrokMessage}
                     grokLoading={grokLoading}
                     grokError={grokError}
