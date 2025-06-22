@@ -65,6 +65,7 @@ export default async function handler(
   try {
     const { text } = req.body;
     console.log('API: Received text length for spell check:', text?.length || 0);
+    console.log('API: Input text:', JSON.stringify(text));
 
     if (typeof text !== 'string') {
       console.log('API: Invalid text type:', typeof text);
@@ -88,14 +89,15 @@ export default async function handler(
       messages: [
         {
           role: "system",
-          content: `You are a fast and efficient spelling checker. Your ONLY job is to find spelling errors in the provided text.
+          content: `You are a thorough spelling checker. Find ALL spelling errors in the provided text.
 
-**CRITICAL INSTRUCTIONS:**
-1. ONLY find actual spelling mistakes - words that are spelled incorrectly
-2. Do NOT suggest grammar, style, punctuation, or clarity improvements
-3. Do NOT flag proper nouns, names, or technical terms unless clearly misspelled
-4. Do NOT flag contractions, informal language, or slang
-5. Be conservative - only flag obvious spelling errors
+**INSTRUCTIONS:**
+1. Find words that are spelled incorrectly or are incomplete/truncated
+2. Look for missing letters, extra letters, or wrong letters
+3. Flag words that appear to be typos or incomplete words
+4. Include words that might be abbreviations but seem like spelling errors in context
+5. Do NOT flag proper nouns, names, or obvious technical terms
+6. Do NOT suggest grammar or style changes - ONLY spelling corrections
 
 Return JSON with this structure:
 {
@@ -103,7 +105,7 @@ Return JSON with this structure:
     {
       "original": "exact misspelled word from text",
       "suggestion": "correct spelling", 
-      "explanation": "Brief explanation (max 10 words)",
+      "explanation": "Brief explanation (max 15 words)",
       "type": "Spelling",
       "severity": "High"
     }
@@ -111,20 +113,22 @@ Return JSON with this structure:
 }
 
 **Examples of what TO flag:**
-- "recieve" → "receive" 
-- "occured" → "occurred"
-- "seperate" → "separate"
-- "definately" → "definitely"
+- "recieve" → "receive" (i before e rule)
+- "occured" → "occurred" (missing r)
+- "seperate" → "separate" (wrong vowel)
+- "definately" → "definitely" (wrong vowels)
+- "ts" → "it's" (appears to be truncated word)
+- "teh" → "the" (transposed letters)
+- "spell" → "spell" (only if clearly wrong in context)
 
 **Examples of what NOT to flag:**
-- Proper nouns (names, places, brands)
-- Technical terms (API, JavaScript, etc.)
-- Informal contractions (can't, won't, etc.)
-- Regional spellings (color vs colour)
+- Proper nouns (John, Microsoft, etc.)
+- Clear technical terms (API, JSON, etc.)
+- Obvious abbreviations in technical context
 
 If no spelling errors found, return: {"suggestions": []}
 
-Be fast and efficient - this runs every 3 seconds!`
+Analyze carefully - look for any words that seem incomplete or misspelled!`
         },
         {
           role: "user",
@@ -137,6 +141,7 @@ Be fast and efficient - this runs every 3 seconds!`
 
     const responseContent = completion.choices[0].message.content;
     console.log('API: OpenAI spell check response received, content length:', responseContent?.length || 0);
+    console.log('API: Full OpenAI response:', responseContent);
 
     if (!responseContent) {
       console.log('API: No response content from OpenAI');
@@ -150,6 +155,7 @@ Be fast and efficient - this runs every 3 seconds!`
 
     const result = JSON.parse(responseContent);
     console.log('API: Parsed spell check result, suggestions count:', result.suggestions?.length || 0);
+    console.log('API: Full parsed result:', JSON.stringify(result, null, 2));
     
     // Add indices to suggestions and ensure they're all spelling type
     const suggestions = addIndicesToSuggestions(text, (result.suggestions || []).map((s: any) => ({
