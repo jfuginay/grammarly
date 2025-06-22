@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Sparkles, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, X, Zap, Users, Code, Briefcase, MessageSquare, Eye, EyeOff, Timer, Coffee } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SuggestionsTab } from './tabs/SuggestionsTab';
 import { ToneTab } from './tabs/ToneTab';
@@ -12,6 +14,7 @@ import { ChatMessage, ToneAnalysis, Suggestion, EngieState } from '../types';
 import { Switch } from '@/components/ui/switch'; // Import Switch
 import { Input } from '@/components/ui/input'; // Import Input
 import { Label } from '@/components/ui/label'; // Import Label
+import AnimatedEngieBot from '../../AnimatedEngieBot';
 import styles from './EngieChatWindow.module.css'; // Import CSS module
 
 
