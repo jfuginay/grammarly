@@ -179,17 +179,285 @@ const IndexPage = () => {
     </motion.div>
   );
 
-  // Rest of the JSX remains the same...
   return (
-    // ... (keep the existing JSX structure, just update the feature mapping sections)
-    // For technical features:
-    <div className="grid md:grid-cols-3 gap-8">
-      {TECHNICAL_FEATURES.map((feature, i) => renderFeatureCard(feature, i, true))}
-    </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <FloatingTextBackground />
+      
+      {/* Navigation */}
+      <nav className="relative z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <Logo />
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Grammarly-EST
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              <Button 
+                variant="outline" 
+                onClick={() => handleNavigation('/login')}
+                disabled={isLoading}
+                className="hidden sm:inline-flex"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
+              </Button>
+              <Button 
+                onClick={() => handleNavigation('/dashboard')}
+                disabled={isLoading}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                Get Started
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-    // For simple features:
-    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {SIMPLE_FEATURES.map((feature, i) => renderFeatureCard(feature, i))}
+      {/* Hero Section */}
+      <section className="relative overflow-hidden pt-20 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <h1 className="text-5xl md:text-7xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">
+                  Your AI-Powered
+                </span>
+                <br />
+                <span className="text-gray-900 dark:text-white">
+                  Writing Companion
+                </span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-4xl mx-auto">
+                Built for technical professionals who need more than spell-check. 
+                Get intelligent assistance for code documentation, technical blogs, 
+                and professional communication.
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-3 mb-12">
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 px-4 py-2 text-sm font-medium">
+                  ✨ Live Demo - No Signup Required
+                </Badge>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 px-4 py-2 text-sm font-medium">
+                  🚀 Real API Integration
+                </Badge>
+                <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 px-4 py-2 text-sm font-medium">
+                  💼 For Technical Professionals
+                </Badge>
+              </div>
+            </motion.div>
+
+            {/* Live Demo Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Try It Now - Live Demo
+                  </h2>
+                  <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white">
+                    Real API
+                  </Badge>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Enter your text (try with some typos or technical content):
+                    </label>
+                    <textarea
+                      ref={textAreaRef}
+                      value={userText}
+                      onChange={(e) => setUserText(e.target.value)}
+                      placeholder="Type something like: 'This function recieve user input and proccess it for the databse using async/await pattern...'"
+                      className="w-full h-32 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {userText.length} characters
+                    </div>
+                    <Button
+                      onClick={handleScanNow}
+                      disabled={isScanning || !userText.trim()}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      {isScanning ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-2" />
+                          Analyze Text
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {scanError && (
+                    <div className="flex items-center p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+                      <span className="text-red-700 dark:text-red-300">{scanError}</span>
+                    </div>
+                  )}
+
+                  {scanResults && (
+                    <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                        Analysis Results ({scanResults.suggestions.length} suggestions):
+                      </h3>
+                      {scanResults.suggestions.length > 0 ? (
+                        <div className="space-y-2">
+                          {scanResults.suggestions.map((suggestion) => (
+                            <div key={suggestion.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-600 rounded border">
+                              <div className="flex-1">
+                                <span className="text-red-600 dark:text-red-400 line-through mr-2">
+                                  {suggestion.original}
+                                </span>
+                                <span className="text-green-600 dark:text-green-400 mr-2">
+                                  → {suggestion.suggestion}
+                                </span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                  ({suggestion.type})
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => applySuggestionToUserText(suggestion)}
+                                className="ml-2"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-green-600 dark:text-green-400 font-medium">
+                          ✨ Great! No issues found in your text.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Technical Features Section */}
+      <section className="py-20 bg-white dark:bg-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              Built for Technical Professionals
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Whether you're documenting code, writing technical blogs, or communicating with stakeholders, 
+              we understand your context and help you communicate more effectively.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {TECHNICAL_FEATURES.map((feature, i) => renderFeatureCard(feature, i, true))}
+          </div>
+        </div>
+      </section>
+
+      {/* Simple Features Section */}
+      <section className="py-20 bg-gray-50 dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
+              Powerful Features, Simple Experience
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Advanced AI technology that feels effortless to use.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {SIMPLE_FEATURES.map((feature, i) => renderFeatureCard(feature, i))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Ready to Write Better?
+            </h2>
+            <p className="text-xl text-blue-100 mb-8">
+              Join technical professionals who are already writing more effectively with AI assistance.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => handleNavigation('/dashboard')}
+              disabled={isLoading}
+              className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4 h-auto"
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              ) : (
+                <ArrowRight className="h-5 w-5 mr-2" />
+              )}
+              Start Writing Now
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <Logo />
+              <span className="text-2xl font-bold">Grammarly-EST</span>
+            </div>
+            <p className="text-gray-400 mb-4">
+              AI-powered writing companion for technical professionals
+            </p>
+            <p className="text-sm text-gray-500">
+              © 2024 Grammarly-EST. Built with Next.js and OpenAI.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -174,7 +174,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return () => {
       delete (window as any).__engieHandleDocumentChange;
     };
-  }, []);
+  }, [handleDocumentChange]);
 
   return (
     <>
