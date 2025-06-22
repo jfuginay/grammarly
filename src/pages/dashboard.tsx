@@ -127,6 +127,7 @@ const DashboardPage = () => {
   const [newTitle, setNewTitle] = useState('');
   const [showNewDocModal, setShowNewDocModal] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
+  const [showTechnicalWritingOnboarding, setShowTechnicalWritingOnboarding] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true); // Added loading state
   const [showDocumentHistory, setShowDocumentHistory] = useState(false);
@@ -325,7 +326,25 @@ const DashboardPage = () => {
 
   // Create document
   const handleCreateDocument = useCallback(async () => {
-    const titleToCreate = newDocTitle.trim() || 'Untitled Document';
+    // Instead of creating a blank document, open the technical writing onboarding
+    console.log('🚀 Opening technical writing onboarding for new document creation');
+    setShowNewDocModal(false); // Close the simple modal
+    setShowTechnicalWritingOnboarding(true); // Open the technical writing popup
+  }, []);
+
+  // Handle technical writing onboarding completion for new documents
+  const handleTechnicalWritingComplete = useCallback(async (userText: string, contentType: string) => {
+    console.log('📝 Technical writing onboarding completed:', { contentType, textLength: userText.length });
+    
+    // Create document title based on content type
+    const titleToCreate = `${
+      contentType === 'code-review' ? 'Code Review' :
+      contentType === 'sprint-planning' ? 'Sprint Planning' :
+      contentType === 'linkedin' ? 'LinkedIn Post' :
+      contentType === 'team-chat' ? 'Team Communication' :
+      'Technical Document'
+    } - ${new Date().toLocaleDateString()}`;
+    
     setCreatingDoc(true);
     try {
       const response = await fetch('/api/documents', {
@@ -333,39 +352,37 @@ const DashboardPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title: titleToCreate, content: '' }),
+        body: JSON.stringify({ title: titleToCreate, content: userText }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to create document and parse error.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create document.' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
       const newDocument = await response.json();
 
-      // Option 1: Add to existing list (simpler, might have ordering issues if not careful)
+      // Add to document list and select it
       setDocuments(prevDocs => [newDocument, ...prevDocs]);
-      // Option 2: Re-fetch list (ensures consistency but more overhead)
-      // fetchDocuments(); // You'd need to make fetchDocuments available in this scope or pass it
-
       setActiveDocument(newDocument);
-      setText(newDocument.content || '');
-      setNewDocTitle('');
-      setShowNewDocModal(false);
+      setText(userText);
       
-      // Notify Engie about new document
+      // Close the technical writing onboarding
+      setShowTechnicalWritingOnboarding(false);
+      
+      // Notify Engie about new technical document
       setTimeout(() => {
         if ((window as any).__engieHandleDocumentChange) {
-          (window as any).__engieHandleDocumentChange('', true);
+          (window as any).__engieHandleDocumentChange(userText, true);
         }
       }, 100);
       
       toast({
-        title: 'Document Created',
-        description: `"${newDocument.title}" has been created successfully.`,
+        title: '🎉 Technical Document Created!',
+        description: `Your ${contentType.replace('-', ' ')} document is ready. Engie will help you refine it!`,
       });
     } catch (error: any) {
-      console.error('Error creating document:', error);
+      console.error('Error creating technical document:', error);
       toast({
         title: 'Error Creating Document',
         description: error.message || 'An unexpected error occurred.',
@@ -374,7 +391,7 @@ const DashboardPage = () => {
     } finally {
       setCreatingDoc(false);
     }
-  }, [newDocTitle, toast]); // Removed fetchDocuments from deps for now, if re-fetching, add it.
+  }, [toast]);
 
   // Save document title
   const handleTitleSave = useCallback(async () => {
@@ -1017,8 +1034,6 @@ const DashboardPage = () => {
         onIdeate={() => {}}
         targetEditorSelector=".main-editor-textarea" // Target the input box
         documents={documents.map((d: any) => ({ id: d.id, title: d.title }))}
-        grokMode={grokMode}
-        grokPowerRemaining={grokPowerRemaining}
       />
       
       <Dialog open={showNewDocModal} onOpenChange={setShowNewDocModal}>
@@ -1061,6 +1076,13 @@ const DashboardPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Technical Writing Onboarding for new document creation */}
+      <InteractiveOnboarding
+        isOpen={showTechnicalWritingOnboarding}
+        onClose={() => setShowTechnicalWritingOnboarding(false)}
+        onComplete={handleTechnicalWritingComplete}
+      />
 
       {/* Interactive Onboarding for new users */}
       <InteractiveOnboarding
