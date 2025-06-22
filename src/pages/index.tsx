@@ -344,7 +344,7 @@ const IndexPage = () => {
                   <textarea
                     ref={textAreaRef}
                     className="w-full h-32 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Type something here to see Engie's suggestions..."
+                    placeholder="Type something here to see Engie&apos;s suggestions..."
                     onChange={(e) => e.target.value} // Just to trigger the effect
                   ></textarea>
                   
