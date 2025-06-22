@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, Zap, Brain, Edit3, MessageSquare, Check, Code, Linkedin, Github, Hash, ArrowRight, ChevronDown } from 'lucide-react';
+import { Loader2, Sparkles, Zap, Brain, Edit3, MessageSquare, Check, Code, Linkedin, Github, Hash, ArrowRight, ChevronDown, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -17,6 +17,10 @@ const IndexPage = () => {
   const [typedDemoText, setTypedDemoText] = useState("");
   const [selectedWritingType, setSelectedWritingType] = useState(0);
   const [showThinking, setShowThinking] = useState(false);
+  const [userText, setUserText] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResults, setScanResults] = useState<any>(null);
+  const [scanError, setScanError] = useState("");
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   
   // Dynamic taglines for technical professionals
@@ -179,6 +183,55 @@ const IndexPage = () => {
   }, [demoSentences.length]);
 
   const currentScenario = writingScenarios[selectedWritingType];
+
+  // Handle spell check scan
+  const handleScanNow = async () => {
+    if (!userText.trim()) {
+      setScanError("Please enter some text to scan");
+      return;
+    }
+
+    setIsScanning(true);
+    setScanError("");
+    setScanResults(null);
+
+    try {
+      const response = await fetch('/api/spell-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: userText }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setScanResults(result);
+    } catch (error: any) {
+      console.error('Spell check error:', error);
+      setScanError(error.message || 'Failed to scan text. Please try again.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Apply suggestion to user text
+  const applySuggestionToUserText = (suggestion: any) => {
+    const newText = userText.replace(suggestion.original, suggestion.suggestion);
+    setUserText(newText);
+    
+    // Remove this suggestion from results
+    if (scanResults && scanResults.suggestions) {
+      const updatedSuggestions = scanResults.suggestions.filter((s: any) => s.id !== suggestion.id);
+      setScanResults({
+        ...scanResults,
+        suggestions: updatedSuggestions
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background overflow-x-hidden">
@@ -586,28 +639,145 @@ const IndexPage = () => {
             </div>
             
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              {/* Interactive typing demo */}
+              {/* Functional Chat with Engie */}
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-2 md:order-1 transform transition-all duration-500 hover:shadow-2xl">
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
-                  Chat with Engie
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
+                    Chat with Engie
+                  </h3>
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">
+                    ✨ Live Demo
+                  </Badge>
+                </div>
                 <div className="relative">
                   <textarea
                     ref={textAreaRef}
-                    className="w-full h-32 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Type something here to see Engie&apos;s suggestions..."
-                  ></textarea>
+                    value={userText}
+                    onChange={(e) => setUserText(e.target.value)}
+                    className="w-full h-32 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
+                    placeholder="Type your text here and click 'Scan Now' to get real suggestions from Engie..."
+                  />
                   
-                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg text-sm">
-                    <div className="flex items-start">
-                      <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium text-purple-800 dark:text-purple-200">Engie says:</p>
-                        <p className="text-gray-700 dark:text-gray-300">Start typing to see contextual suggestions appear here in real-time!</p>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {userText.length} characters
+                    </span>
+                    <Button
+                      onClick={handleScanNow}
+                      disabled={isScanning || !userText.trim()}
+                      size="sm"
+                      className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isScanning ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Scanning...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="mr-2 h-4 w-4" />
+                          Scan Now
+                        </>
+                      )}
+                    </Button>
                   </div>
+
+                  {/* Error Message */}
+                  {scanError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm"
+                    >
+                      <div className="flex items-start">
+                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-red-800 dark:text-red-200">Error:</p>
+                          <p className="text-red-700 dark:text-red-300">{scanError}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Scan Results */}
+                  {scanResults && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 space-y-3"
+                    >
+                      {/* Scan Stats */}
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+                            <span className="font-medium text-blue-800 dark:text-blue-200">
+                              Scan Complete
+                            </span>
+                          </div>
+                          <div className="text-xs text-blue-600 dark:text-blue-400">
+                            {scanResults.scanTime}ms • GPT-4o-mini
+                          </div>
+                        </div>
+                        <p className="text-blue-700 dark:text-blue-300 mt-1">
+                          Found {scanResults.suggestions?.length || 0} suggestions
+                        </p>
+                      </div>
+
+                      {/* Suggestions */}
+                      {scanResults.suggestions && scanResults.suggestions.length > 0 ? (
+                        <div className="space-y-2">
+                          {scanResults.suggestions.map((suggestion: any, index: number) => (
+                            <motion.div
+                              key={suggestion.id || index}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-lg"
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
+                                      📝 {suggestion.type}
+                                    </Badge>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {suggestion.severity} Priority
+                                    </span>
+                                  </div>
+                                  <p className="text-sm mb-1">
+                                    <span className="text-red-600 line-through">&quot;{suggestion.original}&quot;</span>
+                                    {' → '}
+                                    <span className="text-green-600 font-medium">&quot;{suggestion.suggestion}&quot;</span>
+                                  </p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    {suggestion.explanation}
+                                  </p>
+                                </div>
+                                <Button
+                                  onClick={() => applySuggestionToUserText(suggestion)}
+                                  size="sm"
+                                  className="ml-3 h-8 px-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-sm hover:shadow-md transition-all duration-200 text-xs"
+                                >
+                                  ✓ Apply
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-sm">
+                          <div className="flex items-center">
+                            <Check className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
+                            <span className="font-medium text-green-800 dark:text-green-200">
+                              Great job! No spelling errors found.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
                 </div>
               </div>
               
