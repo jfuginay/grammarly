@@ -1,0 +1,351 @@
+/* Floating Text Background Animation */
+/* Optimized for 60fps performance with CSS transforms only */
+
+.floating-text-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.floating-text-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.floating-word {
+  position: absolute;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 300;
+  color: #3b82f6;
+  opacity: 0.08;
+  will-change: transform;
+  user-select: none;
+  white-space: nowrap;
+  animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+
+/* Dark mode colors */
+.dark .floating-word {
+  color: #60a5fa;
+}
+
+/* Layer 1 - Slowest, largest words */
+.floating-word.layer-1 {
+  font-size: clamp(80px, 12vw, 120px);
+  font-weight: 200;
+  opacity: 0.05;
+  animation-duration: 45s;
+}
+
+/* Layer 2 - Medium speed, medium size */
+.floating-word.layer-2 {
+  font-size: clamp(40px, 6vw, 60px);
+  font-weight: 300;
+  opacity: 0.08;
+  animation-duration: 30s;
+}
+
+/* Layer 3 - Fast, smaller words */
+.floating-word.layer-3 {
+  font-size: clamp(20px, 3vw, 32px);
+  font-weight: 400;
+  opacity: 0.12;
+  animation-duration: 20s;
+}
+
+/* Layer 4 - Fastest, smallest words */
+.floating-word.layer-4 {
+  font-size: clamp(14px, 2vw, 24px);
+  font-weight: 500;
+  opacity: 0.15;
+  animation-duration: 15s;
+}
+
+/* Horizontal movement animations */
+@keyframes float-left-to-right {
+  0% {
+    transform: translateX(-20vw) translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  90% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  100% {
+    transform: translateX(120vw) translateY(-10vh) rotate(2deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-right-to-left {
+  0% {
+    transform: translateX(120vw) translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  90% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  100% {
+    transform: translateX(-20vw) translateY(10vh) rotate(-2deg);
+    opacity: 0;
+  }
+}
+
+/* Diagonal movement animations */
+@keyframes float-diagonal-up {
+  0% {
+    transform: translateX(-10vw) translateY(110vh) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  85% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  100% {
+    transform: translateX(110vw) translateY(-10vh) rotate(3deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-diagonal-down {
+  0% {
+    transform: translateX(110vw) translateY(-10vh) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  85% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  100% {
+    transform: translateX(-10vw) translateY(110vh) rotate(-3deg);
+    opacity: 0;
+  }
+}
+
+/* Curved movement animations */
+@keyframes float-arc-top {
+  0% {
+    transform: translateX(-20vw) translateY(50vh) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  50% {
+    transform: translateX(50vw) translateY(20vh) rotate(1deg);
+  }
+  80% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  100% {
+    transform: translateX(120vw) translateY(50vh) rotate(2deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-arc-bottom {
+  0% {
+    transform: translateX(120vw) translateY(50vh) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  50% {
+    transform: translateX(50vw) translateY(80vh) rotate(-1deg);
+  }
+  80% {
+    opacity: var(--word-opacity, 0.08);
+  }
+  100% {
+    transform: translateX(-20vw) translateY(50vh) rotate(-2deg);
+    opacity: 0;
+  }
+}
+
+/* Specific word positioning and animation assignments */
+.floating-word:nth-child(1) { 
+  top: 10vh; 
+  animation-name: float-left-to-right;
+  animation-delay: 0s;
+  --word-opacity: 0.05;
+}
+
+.floating-word:nth-child(2) { 
+  top: 25vh; 
+  animation-name: float-right-to-left;
+  animation-delay: 3s;
+  --word-opacity: 0.08;
+}
+
+.floating-word:nth-child(3) { 
+  top: 40vh; 
+  animation-name: float-diagonal-up;
+  animation-delay: 6s;
+  --word-opacity: 0.12;
+}
+
+.floating-word:nth-child(4) { 
+  top: 55vh; 
+  animation-name: float-left-to-right;
+  animation-delay: 9s;
+  --word-opacity: 0.15;
+}
+
+.floating-word:nth-child(5) { 
+  top: 70vh; 
+  animation-name: float-arc-top;
+  animation-delay: 12s;
+  --word-opacity: 0.06;
+}
+
+.floating-word:nth-child(6) { 
+  top: 85vh; 
+  animation-name: float-right-to-left;
+  animation-delay: 15s;
+  --word-opacity: 0.10;
+}
+
+.floating-word:nth-child(7) { 
+  top: 15vh; 
+  animation-name: float-diagonal-down;
+  animation-delay: 18s;
+  --word-opacity: 0.07;
+}
+
+.floating-word:nth-child(8) { 
+  top: 30vh; 
+  animation-name: float-arc-bottom;
+  animation-delay: 21s;
+  --word-opacity: 0.09;
+}
+
+.floating-word:nth-child(9) { 
+  top: 45vh; 
+  animation-name: float-left-to-right;
+  animation-delay: 24s;
+  --word-opacity: 0.11;
+}
+
+.floating-word:nth-child(10) { 
+  top: 60vh; 
+  animation-name: float-diagonal-up;
+  animation-delay: 27s;
+  --word-opacity: 0.13;
+}
+
+.floating-word:nth-child(11) { 
+  top: 75vh; 
+  animation-name: float-right-to-left;
+  animation-delay: 30s;
+  --word-opacity: 0.08;
+}
+
+.floating-word:nth-child(12) { 
+  top: 20vh; 
+  animation-name: float-arc-top;
+  animation-delay: 33s;
+  --word-opacity: 0.14;
+}
+
+.floating-word:nth-child(13) { 
+  top: 35vh; 
+  animation-name: float-diagonal-down;
+  animation-delay: 36s;
+  --word-opacity: 0.06;
+}
+
+.floating-word:nth-child(14) { 
+  top: 50vh; 
+  animation-name: float-left-to-right;
+  animation-delay: 39s;
+  --word-opacity: 0.12;
+}
+
+.floating-word:nth-child(15) { 
+  top: 65vh; 
+  animation-name: float-arc-bottom;
+  animation-delay: 42s;
+  --word-opacity: 0.09;
+}
+
+.floating-word:nth-child(16) { 
+  top: 80vh; 
+  animation-name: float-right-to-left;
+  animation-delay: 45s;
+  --word-opacity: 0.11;
+}
+
+/* Pause animations on hover over interactive elements */
+.floating-text-container:hover .floating-word {
+  animation-play-state: paused;
+}
+
+/* Resume animations when not hovering */
+.floating-text-container .floating-word {
+  animation-play-state: running;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .floating-word {
+    animation: none !important;
+    opacity: 0.03 !important;
+    transform: translateX(50vw) translateY(50vh) !important;
+  }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  .floating-word.layer-1 {
+    font-size: clamp(60px, 15vw, 80px);
+    animation-duration: 35s;
+  }
+  
+  .floating-word.layer-2 {
+    font-size: clamp(30px, 8vw, 45px);
+    animation-duration: 25s;
+  }
+  
+  .floating-word.layer-3 {
+    font-size: clamp(18px, 4vw, 28px);
+    animation-duration: 18s;
+  }
+  
+  .floating-word.layer-4 {
+    font-size: clamp(12px, 3vw, 20px);
+    animation-duration: 12s;
+  }
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  .floating-word {
+    opacity: 0.02 !important;
+  }
+}
+
+/* Reduce opacity on small screens to avoid distraction */
+@media (max-width: 480px) {
+  .floating-word {
+    opacity: 0.04 !important;
+  }
+} 

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Sparkles, Zap, Brain, Edit3, MessageSquare, Check, Code, Linkedin, Github, Hash, ArrowRight, ChevronDown, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import FloatingTextBackground from '@/components/FloatingTextBackground';
 
 const IndexPage = () => {
   const router = useRouter();
@@ -238,7 +239,7 @@ const IndexPage = () => {
       {/* Enhanced animated background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-purple-50 to-cyan-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 opacity-60"></div>
-        <div className="code-grid"></div>
+        <FloatingTextBackground isActive={true} />
       </div>
 
       {/* Header with enhanced nav */}
@@ -496,32 +497,7 @@ const IndexPage = () => {
             </motion.div>
           </motion.div>
           
-          {/* Enhanced floating elements */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(15)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-400/20 dark:to-purple-400/20"
-                style={{
-                  width: Math.random() * 8 + 4 + 'px',
-                  height: Math.random() * 8 + 4 + 'px',
-                  left: Math.random() * 100 + '%',
-                  top: Math.random() * 100 + '%',
-                }}
-                animate={{
-                  y: [0, Math.random() * 100 - 50],
-                  x: [0, Math.random() * 100 - 50],
-                  scale: [1, Math.random() * 0.5 + 0.8, 1],
-                }}
-                transition={{
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  duration: Math.random() * 15 + 20,
-                  ease: [0.4, 0, 0.2, 1],
-                }}
-              />
-            ))}
-          </div>
+
         </section>
 
         {/* Meet Engie section */}
@@ -951,38 +927,8 @@ const IndexPage = () => {
         </div>
       </footer>
       
-      {/* Custom CSS for code-inspired grid */}
+      {/* Custom CSS for responsive fluid typography */}
       <style jsx>{`
-        .code-grid {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background-image: 
-            linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-            linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-            radial-gradient(circle at 25px 25px, rgba(147, 51, 234, 0.04) 2px, transparent 2px);
-          background-size: 50px 50px, 50px 50px, 100px 100px;
-          animation: moveCodeGrid 120s linear infinite;
-        }
-        
-        @keyframes moveCodeGrid {
-          0% {
-            background-position: 0 0, 0 0, 0 0;
-          }
-          100% {
-            background-position: 500px 500px, 0 500px, 250px 250px;
-          }
-        }
-        
-        @media (prefers-color-scheme: dark) {
-          .code-grid {
-            background-image: 
-              linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
-              linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
-              radial-gradient(circle at 25px 25px, rgba(168, 85, 247, 0.06) 2px, transparent 2px);
-          }
-        }
-        
         /* Responsive fluid typography utilities */
         @supports (font-size: clamp(1rem, 4vw, 2rem)) {
           .fluid-text-lg { font-size: clamp(1.125rem, 2.5vw, 1.25rem); }
