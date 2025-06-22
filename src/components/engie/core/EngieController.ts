@@ -193,7 +193,6 @@ export class EngieController {
       this.stateManager.setInternalSuggestions(suggestions);
       this.stateManager.setToneAnalysisResult(toneAnalysis);
       this.stateManager.setCurrentSuggestionIndex(0);
-      this.stateManager.updateDragLockWithExternalSuggestions(this.props.suggestions); // Update drag lock status
       
       this.stateManager.setEmotionBasedOnQuality(suggestions.length, text.length);
 
@@ -285,12 +284,15 @@ export class EngieController {
    * Shows contextual encouragement messages for starting to write
    */
   handleNewDocumentOrEmpty(text: string = ''): void {
+    console.log('🔍 handleNewDocumentOrEmpty called with text:', text?.length || 0, 'characters');
     const state = this.stateManager.getState();
     
     // Check if this is a new/empty document scenario
     const isEmptyOrMinimal = !text || text.trim().length < 10;
+    console.log('📝 isEmptyOrMinimal:', isEmptyOrMinimal, 'isChatOpen:', state.isChatOpen);
     
     if (isEmptyOrMinimal && !state.isChatOpen) {
+      console.log('✨ Triggering technical writing popup for new document');
       // Move to writing area to encourage user to start
       this.stateManager.moveToOptimalPosition('writing');
       
@@ -307,6 +309,7 @@ export class EngieController {
       ];
       
       const randomMessage = contextualMessages[Math.floor(Math.random() * contextualMessages.length)];
+      console.log('💬 Setting ideation message:', randomMessage);
       
       // Set a welcoming message and open chat briefly
       this.stateManager.setIdeationMessage({
@@ -320,11 +323,14 @@ export class EngieController {
       // Auto-close the message after 8 seconds to not be intrusive
       setTimeout(() => {
         if (this.stateManager.getState().ideationMessage?.content === randomMessage) {
+          console.log('⏰ Auto-closing technical writing popup');
           this.stateManager.setIdeationMessage(null);
           this.stateManager.setChatOpen(false);
           this.stateManager.setBotEmotion('neutral', '');
         }
       }, 8000);
+    } else {
+      console.log('❌ Not showing popup - either not empty or chat already open');
     }
   }
 
@@ -333,6 +339,7 @@ export class EngieController {
    * Triggers appropriate contextual messages
    */
   handleDocumentChange(newText: string = '', isNewDocument: boolean = false): void {
+    console.log('📄 handleDocumentChange called - newText length:', newText?.length || 0, 'isNew:', isNewDocument);
     const state = this.stateManager.getState();
     
     // Reset suggestions when document changes
@@ -341,11 +348,13 @@ export class EngieController {
     
     // If it's a new document or empty, show encouragement
     if (isNewDocument || !newText || newText.trim().length < 10) {
+      console.log('🎯 Document is new or empty, will trigger popup in 500ms');
       // Delay slightly to allow UI to settle
       setTimeout(() => {
         this.handleNewDocumentOrEmpty(newText);
       }, 500);
     } else {
+      console.log('📖 Document has content, moving to analysis area');
       // For existing documents with content, move to analysis area
       this.stateManager.moveToOptimalPosition('analysis');
       this.stateManager.setBotEmotion('thoughtful', 'Looking at your document...');
@@ -427,19 +436,11 @@ export class EngieController {
         // Stay in suggestions area for next suggestion
         this.stateManager.moveToOptimalPosition('suggestions');
       }
-    } else { // All suggestions handled
+    } else {
       this.stateManager.setCurrentSuggestionIndex(0);
       this.stateManager.resetSuggestions();
-      
-      // Re-evaluate drag lock based on potentially existing external suggestions
-      const activeSuggestionsAfterReset = this.stateManager.getActiveSuggestions(this.props.suggestions);
-      const shouldBeLocked = activeSuggestionsAfterReset.length > 0;
-      this.stateManager.setDragLocked(shouldBeLocked);
-
-      if (!shouldBeLocked) {
-        // Move to idle position when all suggestions are completed and no external suggestions
-        this.stateManager.moveToOptimalPosition('idle');
-      }
+      // Move to idle position when all suggestions are completed
+      this.stateManager.moveToOptimalPosition('idle');
     }
   }
 
@@ -453,57 +454,6 @@ export class EngieController {
 
   dismissNotification(index: number): void {
     this.stateManager.removeIdeaNotification(index);
-  }
-
-  handleDrag(e: any, data: any): void {
-    // Check if dragging is locked due to active suggestions
-    const state = this.stateManager.getState();
-    if (state.isDragLocked) {
-      // Prevent dragging by not updating position
-      return;
-    }
-
-    const deltaX = data.x - this.lastX;
-    if (Math.abs(deltaX) > 5) {
-      this.stateManager.setBotDirection(deltaX > 0 ? 'right' : 'left');
-      this.stateManager.setBotSpeed(Math.abs(deltaX) > 20 ? 'fast' : 'normal');
-    }
-    this.lastX = data.x;
-    // The position is now updated directly in EngieBot.tsx for smoother dragging
-    // this.stateManager.setEngiePos({ x: data.x, y: data.y });
-  }
-
-  onStartDrag(): void {
-    // Check if dragging is locked due to active suggestions
-    const state = this.stateManager.getState();
-    if (state.isDragLocked) {
-      return;
-    }
-
-    this.stateManager.setBotAnimation('walking');
-  }
-
-  onStopDrag(): void {
-    // Check if dragging is locked due to active suggestions
-    const state = this.stateManager.getState();
-    if (state.isDragLocked) {
-      return;
-    }
-
-    this.stateManager.setBotAnimation('idle');
-    // Start walking back to text analysis area after a short delay
-    setTimeout(() => {
-      this.stateManager.startWalkBack();
-    }, 1000); // Wait 1 second before starting walk back
-  }
-
-  updateEngiePosition(x: number, y: number): void {
-    this.stateManager.setEngiePos({ x, y });
-  }
-
-  updateMousePosition(x: number, y: number): void {
-    // Store mouse position for stepTowardMouse method
-    (window as any).__engieMousePos = { x, y };
   }
 
   formatScore(score: number | undefined | null): string {
