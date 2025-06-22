@@ -136,46 +136,6 @@ const DashboardPage = () => {
   const [showParts, setShowParts] = useState(false); // Default to false
   // Interactive onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
-  // Grok mode state and timer
-  const [grokMode, setGrokMode] = useState(false);
-  const [grokPowerRemaining, setGrokPowerRemaining] = useState(0); // seconds
-  const grokTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // Handle grok mode toggle
-  const handleGrokToggle = () => {
-    if (!grokMode) {
-      setGrokMode(true);
-      setGrokPowerRemaining(600); // 10 minutes
-    } else {
-      setGrokMode(false);
-      setGrokPowerRemaining(0);
-    }
-  };
-
-  // Grok timer effect
-  useEffect(() => {
-    if (grokMode && grokPowerRemaining > 0) {
-      grokTimerRef.current = setInterval(() => {
-        setGrokPowerRemaining(prev => {
-          if (prev <= 1) {
-            setGrokMode(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (!grokMode || grokPowerRemaining === 0) {
-      if (grokTimerRef.current) {
-        clearInterval(grokTimerRef.current);
-        grokTimerRef.current = null;
-      }
-    }
-    return () => {
-      if (grokTimerRef.current) {
-        clearInterval(grokTimerRef.current);
-        grokTimerRef.current = null;
-      }
-    };
-  }, [grokMode, grokPowerRemaining]);
   
   // Load preferences from localStorage only on client-side
   useEffect(() => {
@@ -673,10 +633,8 @@ const DashboardPage = () => {
       localStorage.setItem('showParts', newValue.toString());
     }
     
-    // If we have an editor ref, toggle fragments visibility
-    if (editorRef.current) {
-      editorRef.current.toggleFragmentsVisibility();
-    }
+    // Only toggle fragments visibility on the analysis editor (right side)
+    // The input editor (left side) should never show fragments
     if (analysisEditorRef.current) {
       analysisEditorRef.current.toggleFragmentsVisibility();
     }
@@ -818,23 +776,6 @@ const DashboardPage = () => {
                       </label>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="grok-mode-toggle"
-                        checked={grokMode}
-                        onCheckedChange={handleGrokToggle}
-                        disabled={grokMode && grokPowerRemaining === 0}
-                      />
-                      <label htmlFor="grok-mode-toggle" className="text-sm font-medium">
-                        Grok Mode
-                        {grokMode && (
-                          <span className="ml-2 text-xs text-primary font-semibold">
-                            {`Grok Power: ${Math.floor(grokPowerRemaining/60)}:${(grokPowerRemaining%60).toString().padStart(2,'0')}`}
-                          </span>
-                        )}
-                      </label>
-                    </div>
-
                     <div className="flex gap-1 flex-wrap">
                       <div className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100">noun</div>
                       <div className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded border border-green-100">verb</div>
@@ -927,7 +868,7 @@ const DashboardPage = () => {
                       readOnly={true}
                       className="analysis-editor h-full text-base sm:text-lg border rounded-xl focus-visible:ring-0 bg-muted/30"
                       placeholder="Analysis will appear here..."
-                      showFragments={true}
+                      showFragments={showParts}
                       isAnalysisBox={true}
                       reflectTextFrom={text}
                       onSuggestionsFetched={suggestions => setSuggestions(suggestions || [])}
