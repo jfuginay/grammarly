@@ -15,7 +15,7 @@ const IndexPage = () => {
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [cursorVisible, setCursorVisible] = useState(true);
   const [activeDemoIndex, setActiveDemoIndex] = useState(0);
-  const textToType = "Experience the future of writing with AI-powered assistance.";
+  const textToType = "Meet Engie: Your intelligent writing companion that understands context, learns your style, and makes every word count.";
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   
   const demoSentences = [
@@ -81,11 +81,15 @@ const IndexPage = () => {
         const text = textAreaRef.current?.value.toLowerCase() || "";
         
         if (text.includes("hello") || text.includes("hi")) {
-          setAiSuggestion("Try a more engaging greeting like 'Greetings' or 'Welcome'");
+          setAiSuggestion("I notice you're starting with a greeting! For professional writing, consider 'Greetings' or 'Welcome' for more impact.");
         } else if (text.includes("good") || text.includes("great")) {
-          setAiSuggestion("Consider using more precise adjectives like 'exceptional' or 'outstanding'");
+          setAiSuggestion("Nice word choice! To make it more compelling, try 'exceptional', 'outstanding', or 'remarkable' instead.");
+        } else if (text.includes("engie")) {
+          setAiSuggestion("I see you mentioned me! 😊 I'm here to help make your writing clearer and more engaging.");
+        } else if (text.length > 10) {
+          setAiSuggestion("Your writing is developing nicely! I can help with tone, clarity, and structure. What are you working on?");
         } else if (text.length > 5) {
-          setAiSuggestion("Your writing looks good! Consider adding more descriptive language.");
+          setAiSuggestion("Great start! Keep writing and I'll provide suggestions to enhance your content.");
         } else {
           setAiSuggestion("");
         }
@@ -145,8 +149,17 @@ const IndexPage = () => {
             </Badge>
             
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300">
-              Welcome to <span className="text-blue-600 dark:text-blue-400">Grammarly-est</span>
+              Welcome to <span className="text-blue-600 dark:text-blue-400">Grammarly-EST</span>
             </h1>
+            
+            <div className="mb-6 text-lg sm:text-xl text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">EST</span> = 
+              <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">E</span>ngie 
+              <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">S</span>uggestion 
+              <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">T</span>echnology
+              <br />
+              <span className="text-sm text-gray-500 dark:text-gray-500 italic">The most advanced writing assistant you'll ever meet</span>
+            </div>
             
             <div className="h-12 mb-8 text-xl sm:text-2xl text-gray-700 dark:text-gray-300">
               <span>{typedText}</span>
@@ -207,13 +220,116 @@ const IndexPage = () => {
           </div>
         </section>
 
+        {/* Meet Engie section */}
+        <section className="w-full py-20 bg-gradient-to-b from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-3 mb-6"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">
+                  Meet Engie
+                </h2>
+              </motion.div>
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                Your AI writing companion that doesn't just check grammar—it understands context, 
+                enhances creativity, and adapts to your unique writing style.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              {[
+                {
+                  icon: <Brain className="h-12 w-12 text-purple-500" />,
+                  title: "Contextual Intelligence",
+                  description: "Engie doesn't just spot errors—it understands what you're trying to say and helps you say it better.",
+                  feature: "Smart Context Analysis"
+                },
+                {
+                  icon: <MessageSquare className="h-12 w-12 text-blue-500" />,
+                  title: "Interactive Conversations",
+                  description: "Chat directly with Engie for writing advice, brainstorming, or getting unstuck on any project.",
+                  feature: "Real-time Chat Support"
+                },
+                {
+                  icon: <Zap className="h-12 w-12 text-cyan-500" />,
+                  title: "Adaptive Learning",
+                  description: "Engie learns your writing patterns and preferences to provide increasingly personalized suggestions.",
+                  feature: "Personalized Assistance"
+                }
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.2 }}
+                  viewport={{ once: true }}
+                  className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 group hover:scale-105"
+                >
+                  <div className="mb-6 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+                  <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">{feature.description}</p>
+                  <Badge variant="outline" className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800">
+                    {feature.feature}
+                  </Badge>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Engie in Action Preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-8 md:p-12 text-white text-center"
+            >
+              <h3 className="text-3xl md:text-4xl font-bold mb-6">
+                See Engie in Action
+              </h3>
+              <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+                Experience the future of writing assistance with our interactive technical writing prompts, 
+                real-time suggestions, and intelligent document creation.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    size="lg" 
+                    onClick={() => handleNavigation('/signup')} 
+                    className="bg-white text-purple-600 hover:bg-gray-100 rounded-full px-8 font-semibold"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Try Engie Now
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    onClick={() => handleNavigation('/login')} 
+                    className="border-white text-white hover:bg-white hover:text-purple-600 rounded-full px-8"
+                  >
+                    Watch Demo
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* Interactive demo section */}
         <section className="w-full py-16 bg-gradient-to-b from-transparent to-blue-50 dark:to-slate-800/30 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience AI-Powered Writing</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Engie's Intelligence</h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                Our advanced AI analyzes your text in real-time, providing suggestions to enhance clarity, correctness, and impact.
+                Watch Engie analyze your text in real-time, providing contextual suggestions that go beyond simple grammar checks.
+                This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
               </p>
             </div>
             
@@ -221,14 +337,14 @@ const IndexPage = () => {
               {/* Interactive typing demo */}
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-2 md:order-1 transform transition-all duration-500 hover:shadow-2xl">
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <Edit3 className="mr-2 h-5 w-5 text-blue-500" />
-                  Try it yourself
+                  <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
+                  Chat with Engie
                 </h3>
                 <div className="relative">
                   <textarea
                     ref={textAreaRef}
                     className="w-full h-32 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Type something here to see AI suggestions..."
+                    placeholder="Type something here to see Engie's suggestions..."
                     onChange={(e) => e.target.value} // Just to trigger the effect
                   ></textarea>
                   
@@ -243,7 +359,7 @@ const IndexPage = () => {
                         <div className="flex items-start">
                           <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
                           <div>
-                            <p className="font-medium text-blue-800 dark:text-blue-200">AI Suggestion:</p>
+                            <p className="font-medium text-purple-800 dark:text-purple-200">Engie says:</p>
                             <p className="text-gray-700 dark:text-gray-300">{aiSuggestion}</p>
                           </div>
                         </div>
@@ -257,7 +373,7 @@ const IndexPage = () => {
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 order-1 md:order-2">
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
                   <MessageSquare className="mr-2 h-5 w-5 text-blue-500" />
-                  See AI corrections
+                  See Engie's corrections
                 </h3>
                 
                 <div className="space-y-6">
@@ -290,9 +406,9 @@ const IndexPage = () => {
         <section className="w-full py-16 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Powered by Advanced AI</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Engie is Different</h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                Experience writing assistant features that only AI can provide.
+                Unlike traditional grammar checkers, Engie understands context, learns your style, and provides intelligent suggestions that make your writing truly shine.
               </p>
             </div>
             
@@ -300,18 +416,18 @@ const IndexPage = () => {
               {[
                 {
                   icon: <Edit3 className="h-10 w-10 text-blue-500" />,
-                  title: "Real-time Editing",
-                  description: "Get instant suggestions as you type with our AI-powered grammar and spelling assistant."
+                  title: "Beyond Grammar",
+                  description: "Engie doesn't just fix errors—it enhances clarity, flow, and impact in your writing."
                 },
                 {
                   icon: <MessageSquare className="h-10 w-10 text-purple-500" />,
-                  title: "Smart Conversations",
-                  description: "Chat with our AI to get writing advice or generate ideas for your content."
+                  title: "Interactive Guidance",
+                  description: "Chat directly with Engie for writing advice, brainstorming, and creative solutions."
                 },
                 {
                   icon: <Brain className="h-10 w-10 text-pink-500" />,
-                  title: "Contextual Understanding",
-                  description: "Our AI understands context, meaning, and tone to provide genuinely helpful suggestions."
+                  title: "Learns Your Style",
+                  description: "Engie adapts to your unique voice and preferences, providing increasingly personalized help."
                 }
               ].map((feature, i) => (
                 <motion.div
@@ -336,7 +452,7 @@ const IndexPage = () => {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600 dark:text-gray-400">
             <div>© {new Date().getFullYear()} <a href="https://www.engindearing.soy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">EnginDearing</a></div>
-            <div className="mt-3 md:mt-0">Powered by advanced AI technology</div>
+            <div className="mt-3 md:mt-0">Powered by Engie Suggestion Technology (EST)</div>
           </div>
         </div>
       </footer>
