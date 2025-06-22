@@ -1,12 +1,36 @@
-# Grammarly Clone - Multi-Origin Grammar Assistant
+# Grammarly-est - Multi-Origin Grammar Assistant
 
-A Next.js-based grammar and spell-checking application with comprehensive CORS support for multiple origins and domains.
+*Where **EST** stands for **Engie Suggestion Technology** - Your AI-powered writing companion*
+
+A Next.js-based grammar and spell-checking application with comprehensive CORS support for multiple origins and domains, featuring Engie, an intelligent AI assistant that provides contextual writing guidance and suggestions.
+
+## What Makes Grammarly-est Special
+
+**Engie Suggestion Technology (EST)** is at the heart of this application - an intelligent AI companion that doesn't just check grammar, but actively assists your writing process with:
+
+- **Contextual Awareness** - Engie understands what type of content you're writing (technical docs, social posts, professional emails)
+- **Proactive Suggestions** - Get helpful writing tips and ideas before you even ask
+- **Adaptive Positioning** - Engie moves intelligently around your workspace based on your writing activity
+- **Encouraging Guidance** - Friendly, supportive feedback that makes writing feel less daunting
+- **Technical Writing Support** - Specialized assistance for code reviews, documentation, and technical content
 
 ## Features
 
+### 🤖 Engie Suggestion Technology (EST)
+- **Intelligent AI Companion** - Engie provides contextual writing assistance and encouragement
+- **Autonomous Movement** - Smart positioning based on your writing activity and suggestions
+- **New Document Assistance** - Helpful prompts and context-specific guidance for fresh content
+- **Technical Writing Support** - Specialized help for code reviews, documentation, and professional content
+- **Contextual Reactions** - Celebrates breakthroughs, offers support during writer's block
+
+### ✨ Core Writing Features
 - **AI-Powered Grammar Checking** - OpenAI integration for intelligent text correction
 - **Real-time Spell Checking** - Instant feedback on spelling errors
 - **Floating Suggestions** - Interactive hover-based corrections
+- **Priority Issues Panel** - Dedicated area for high-priority punctuation and grammar warnings
+- **Tone Analysis** - Understand and improve the tone of your writing
+
+### 🌐 Technical Excellence
 - **Multi-Origin Support** - Works across different domains and subdomains
 - **Responsive Design** - Works on desktop and mobile devices
 - **Enhanced UI/UX** - Polished button interactions, animations, and visual feedback
@@ -150,7 +174,7 @@ This section provides a self-assessment of the project against common software d
 
 *   **User Personas (Needs Improvement / Not Explicitly Documented):**
     *   While not explicitly detailed in this README, the target users are implicitly individuals needing writing assistance across various web platforms. For an "Excellent" rating, formal user personas with specific use cases would be beneficial.
-*   **Industry Context & “Why Now” (Satisfactory, aiming for Excellent):**
+*   **Industry Context & "Why Now" (Satisfactory, aiming for Excellent):**
     *   The project operates as a "Grammarly Clone," positioning it in the established market of AI-powered writing assistants. The "Why Now" is driven by the increasing maturity and accessibility of AI/NLP models (like those from OpenAI) and the continuous need for improved writing quality across digital platforms. The multi-origin support addresses a modern need for flexible integration.
     *   *To reach Excellent: Explicitly detail current trends (e.g., remote work, content creation surge) and technological advancements that make this project timely.*
 
