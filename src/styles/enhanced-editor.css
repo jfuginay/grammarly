@@ -922,52 +922,9 @@
   transform: translateY(0);
 }
 
-/* Fragment tooltips with improved POS information */
-.editor-highlights span[data-fragment-type][data-pos]::after {
-  content: attr(data-pos) " (" attr(data-fragment-type) ")";
-  position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background: rgba(0, 0, 0, 0.85);
-  color: white;
-  padding: 3px 8px;
-  border-radius: 3px;
-  font-size: 10px;
-  opacity: 0;
-  transition: opacity 0.2s, transform 0.2s;
-  pointer-events: none;
-  white-space: nowrap;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  z-index: 100;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  text-transform: capitalize;
-}
+/* All text overlays removed to reduce visual clutter */
 
-/* Show tooltips on hover */
-.editor-highlights span[data-fragment-type][data-pos]:hover::after {
-  opacity: 0.95;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Different tooltip content based on available attributes */
-.editor-highlights span[data-priority][data-pos]::after {
-  content: attr(data-pos) " (Priority: " attr(data-priority) ")";
-}
-
-.editor-highlights span[data-priority]:not([data-pos])::after {
-  content: attr(data-fragment-type) " (Priority: " attr(data-priority) ")";
-}
-
-.editor-highlights span[data-pos][data-priority]::after {
-  content: attr(data-pos) " (Priority: " attr(data-priority) ")";
-}
-
-.editor-highlights span[data-pos]:not([data-priority])::after {
-  content: attr(data-pos) " (" attr(data-fragment-type) ")";
-}
+/* Priority text overlays removed to reduce visual clutter while maintaining functionality */
 
 /* Color-coded tooltips by part of speech */
 .editor-highlights span.pos-noun::after {
@@ -1022,10 +979,7 @@
   border-top: 2px solid var(--pos-unknown);
 }
 
-.show-fragments .editor-highlights span[data-fragment-type]:hover::after {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+/* Fragment hover tooltips removed */
 
 /* Priority styles for tooltips */
 .editor-highlights span.priority-1::after {

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import '../styles/floating-text-animation.css';
 
 interface FloatingTextBackgroundProps {
   isActive?: boolean;
