@@ -141,8 +141,8 @@ const IndexPage = () => {
       setIsTyping(false);
       // Show thinking indicator after typing is complete, before suggestion
       if (typedDemoText.length >= Math.min(currentScenario.sample.length * 0.7, 100)) {
-        setTimeout(() => setShowThinking(true), 800);
-        setTimeout(() => setShowThinking(false), 2000);
+        setTimeout(() => setShowThinking(true), 600);
+        setTimeout(() => setShowThinking(false), 1800);
       }
     }
   }, [typedDemoText, selectedWritingType, writingScenarios]);
@@ -414,7 +414,7 @@ const IndexPage = () => {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 1.2 }}
+                        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 0.8 }}
                         className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
                       >
                         <div className="flex items-start gap-3">
@@ -422,7 +422,7 @@ const IndexPage = () => {
                             className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{ delay: 1.4, duration: 0.3 }}
+                            transition={{ delay: 1.0, duration: 0.3 }}
                           >
                             <Sparkles className="h-4 w-4 text-white" />
                           </motion.div>
@@ -431,7 +431,7 @@ const IndexPage = () => {
                               className="font-medium text-purple-800 dark:text-purple-200 mb-1"
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              transition={{ delay: 1.6, duration: 0.4 }}
+                              transition={{ delay: 1.2, duration: 0.4 }}
                             >
                               Engie suggests:
                             </motion.p>
@@ -439,7 +439,7 @@ const IndexPage = () => {
                               className="text-gray-700 dark:text-gray-300 text-sm"
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              transition={{ delay: 1.8, duration: 0.4 }}
+                              transition={{ delay: 1.4, duration: 0.4 }}
                             >
                               {currentScenario.aiSuggestion}
                             </motion.p>
@@ -631,11 +631,25 @@ const IndexPage = () => {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Engie&apos;s Intelligence</h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-4">
                 Watch Engie analyze real technical writing scenarios, providing contextual suggestions that understand your domain. 
                 From fixing grammar to improving clarity and style, Engie doesn&apos;t just correct—it teaches.
                 This is the power of <span className="font-semibold text-purple-600 dark:text-purple-400">Engie Suggestion Technology</span>.
               </p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 max-w-2xl mx-auto"
+              >
+                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
+                  <Sparkles className="h-5 w-5" />
+                  <span className="font-semibold">Try it yourself!</span>
+                </div>
+                <p className="text-sm text-green-600 dark:text-green-400 text-center mt-1">
+                  Use the &quot;Chat with Engie&quot; section below to test real live spell checking with GPT-4o-mini
+                </p>
+              </motion.div>
             </div>
             
             <div className="grid md:grid-cols-2 gap-8 items-center">
