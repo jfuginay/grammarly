@@ -286,17 +286,27 @@ const DashboardPage = () => {
     [toast, activeDocument] // Added activeDocument to deps because it's used for potential update
   );
 
-  // Handle text change
-  const handleTextChange = useCallback(
-    (newText: string) => {
-      setText(newText);
-      
-      if (activeDocument) {
-        debouncedUpdateDocument(activeDocument.id, { content: newText });
-      }
-    },
-    [activeDocument, debouncedUpdateDocument]
-  );
+  // Handle text change with debounced auto-save
+  const handleTextChange = useCallback((newText: string) => {
+    setText(newText);
+    
+    // Check if text was cleared (went from having content to being empty/minimal)
+    const wasEmpty = !text || text.trim().length < 10;
+    const isNowEmpty = !newText || newText.trim().length < 10;
+    
+    // If text was just cleared, notify Engie
+    if (!wasEmpty && isNowEmpty) {
+      setTimeout(() => {
+        if ((window as any).__engieHandleDocumentChange) {
+          (window as any).__engieHandleDocumentChange('', false);
+        }
+      }, 100);
+    }
+    
+    if (activeDocument) {
+      debouncedUpdateDocument(activeDocument.id, { content: newText });
+    }
+  }, [activeDocument, debouncedUpdateDocument, text]);
 
   // Select document
   const handleSelectDocument = useCallback((doc: Document) => {
@@ -304,6 +314,13 @@ const DashboardPage = () => {
     setText(doc.content);
     setSuggestions([]);
     setToneHighlights([]);
+    
+    // Notify Engie about document change
+    setTimeout(() => {
+      if ((window as any).__engieHandleDocumentChange) {
+        (window as any).__engieHandleDocumentChange(doc.content, false);
+      }
+    }, 100);
   }, []);
 
   // Create document
@@ -335,6 +352,13 @@ const DashboardPage = () => {
       setText(newDocument.content || '');
       setNewDocTitle('');
       setShowNewDocModal(false);
+      
+      // Notify Engie about new document
+      setTimeout(() => {
+        if ((window as any).__engieHandleDocumentChange) {
+          (window as any).__engieHandleDocumentChange('', true);
+        }
+      }, 100);
       
       toast({
         title: 'Document Created',
@@ -508,6 +532,13 @@ const DashboardPage = () => {
       // Mark onboarding as completed
       localStorage.setItem('hasCompletedOnboarding', 'true');
       setShowOnboarding(false);
+      
+      // Notify Engie about new document with content
+      setTimeout(() => {
+        if ((window as any).__engieHandleDocumentChange) {
+          (window as any).__engieHandleDocumentChange(userText, true);
+        }
+      }, 100);
       
       toast({
         title: '🎉 Welcome to Grammarly-est!',

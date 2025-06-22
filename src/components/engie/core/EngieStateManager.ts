@@ -42,7 +42,7 @@ export class EngieStateManager {
       isGrokActive: false,
       grokEndTime: null,
       grokChatHistory: [],
-      isDragLocked: false,
+      isDragLocked: false, // Add missing property for drag lock functionality
     };
   }
 
@@ -286,6 +286,18 @@ export class EngieStateManager {
     this.notify();
   }
 
+  // Drag lock methods
+  setDragLocked(isLocked: boolean): void {
+    this.state.isDragLocked = isLocked;
+    this.notify();
+  }
+
+  updateDragLockWithExternalSuggestions(externalSuggestions: Suggestion[]): void {
+    // Lock dragging if there are active suggestions (internal or external)
+    const hasActiveSuggestions = this.state.internalSuggestions.length > 0 || externalSuggestions.length > 0;
+    this.setDragLocked(hasActiveSuggestions);
+  }
+
   // Position Engie near suggested text
   moveEngieToSuggestion(suggestion: Suggestion): void {
     if (typeof window === 'undefined') return;
@@ -515,22 +527,122 @@ export class EngieStateManager {
     }
   }
 
-  // Drag lock management
-  setDragLocked(locked: boolean): void {
-    this.state.isDragLocked = locked;
-    this.notify();
+  // Intelligent autonomous movement based on user experience
+  moveToOptimalPosition(context: 'suggestions' | 'writing' | 'analysis' | 'idle'): void {
+    if (typeof window === 'undefined') return;
+
+    let targetPosition: { x: number; y: number };
+    let direction: BotDirection = 'right';
+
+    switch (context) {
+      case 'suggestions':
+        // Move near the Priority Issues panel or suggestions area
+        targetPosition = this.findPriorityIssuesPosition() || this.calculateTextAnalysisPosition();
+        direction = 'left'; // Face towards the content
+        break;
+      
+      case 'writing':
+        // Move near the writing area
+        targetPosition = this.findWritingAreaPosition() || this.calculateTextAnalysisPosition();
+        direction = 'right'; // Face towards analysis
+        break;
+      
+      case 'analysis':
+        // Move near the text analysis area
+        targetPosition = this.calculateTextAnalysisPosition();
+        direction = 'left'; // Face towards content
+        break;
+      
+      case 'idle':
+      default:
+        // Return to default position near text analysis
+        targetPosition = this.calculateTextAnalysisPosition();
+        direction = 'right';
+        break;
+    }
+
+    this.smoothMoveTo(targetPosition, direction);
   }
 
-  // updateDragLock(): void { // Removed: This was only considering internal suggestions.
-  //   // Lock dragging if there are active suggestions (internal or external)
-  //   const hasActiveSuggestions = this.state.internalSuggestions.length > 0;
-  //   this.setDragLocked(hasActiveSuggestions);
-  // }
+  private findPriorityIssuesPosition(): { x: number; y: number } | null {
+    // Look for the Priority Issues panel
+    const priorityPanel = document.querySelector('[class*="Priority Issues"]') ||
+                         document.querySelector('h3, h4, .text-sm.font-medium')?.closest('div');
+    
+    if (priorityPanel) {
+      const rect = priorityPanel.getBoundingClientRect();
+      const engieSize = 64;
+      const padding = 15;
+      
+      return {
+        x: Math.max(padding, rect.right + padding),
+        y: Math.max(padding, rect.top + rect.height / 2 - engieSize / 2)
+      };
+    }
+    
+    return null;
+  }
 
-  // Check if dragging should be locked based on external suggestions too
-  updateDragLockWithExternalSuggestions(externalSuggestions: Suggestion[]): void {
-    const activeSuggestions = this.getActiveSuggestions(externalSuggestions);
-    const hasActiveSuggestions = activeSuggestions.length > 0;
-    this.setDragLocked(hasActiveSuggestions);
+  private findWritingAreaPosition(): { x: number; y: number } | null {
+    // Look for the main writing textarea
+    const writingArea = document.querySelector('.main-editor-textarea') ||
+                       document.querySelector('textarea') ||
+                       document.querySelector('[contenteditable="true"]');
+    
+    if (writingArea) {
+      const rect = writingArea.getBoundingClientRect();
+      const engieSize = 64;
+      const padding = 15;
+      
+      return {
+        x: Math.max(padding, rect.right + padding),
+        y: Math.max(padding, rect.top + rect.height / 4)
+      };
+    }
+    
+    return null;
+  }
+
+  private smoothMoveTo(targetPosition: { x: number; y: number }, direction: BotDirection): void {
+    // Clear any existing movement
+    this.stopWalkBack();
+    
+    // Set target and direction
+    this.targetPosition = targetPosition;
+    this.setBotDirection(direction);
+    
+    // Start smooth movement
+    this.setBotAnimation('walking');
+    this.setBotSpeed('normal');
+    
+    this.walkBackTimer = setInterval(() => {
+      if (!this.targetPosition) return;
+      
+      const currentPos = this.state.engiePos;
+      const target = this.targetPosition;
+      
+      // Calculate distance to target
+      const dx = target.x - currentPos.x;
+      const dy = target.y - currentPos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // If we're close enough, stop walking
+      if (distance < 8) {
+        this.stopWalkBack();
+        return;
+      }
+      
+      // Calculate step size (smooth movement)
+      const stepSize = Math.min(3, distance / 10); // Adaptive step size
+      const normalizedDx = (dx / distance) * stepSize;
+      const normalizedDy = (dy / distance) * stepSize;
+      
+      // Move towards target
+      this.setEngiePos({
+        x: currentPos.x + normalizedDx,
+        y: currentPos.y + normalizedDy
+      });
+      
+    }, 60); // Smooth 60ms intervals
   }
 }

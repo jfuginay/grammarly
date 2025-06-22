@@ -13,7 +13,6 @@ export class EngieController {
   private debounceTimeoutRef: NodeJS.Timeout | null = null;
   private prevScannedTextRef: string = "";
   private inactivityTimerRef: NodeJS.Timeout | null = null;
-  // private grokDeactivationTimer: NodeJS.Timeout | null = null; // Removed
   private lastX: number = 0;
 
   constructor(private props: EngieProps) {
@@ -28,9 +27,6 @@ export class EngieController {
       // Set a null value on client side to avoid undefined errors
       this.grokApiService = null as any;
     }
-    
-    // Initialize drag lock based on initial suggestions
-    this.stateManager.updateDragLockWithExternalSuggestions(this.props.suggestions);
     
     this.setupInactivityTimer();
     this.detectTouchDevice();
@@ -203,9 +199,10 @@ export class EngieController {
 
       if (suggestions.length > 0) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Engie: Found suggestions, opening chat and moving to first suggestion');
+          console.log('Engie: Found suggestions, opening chat and moving to suggestions area');
         }
-        this.stateManager.moveEngieToSuggestion(suggestions[0]);
+        // Move to suggestions area autonomously
+        this.stateManager.moveToOptimalPosition('suggestions');
         this.stateManager.setChatOpen(true);
         this.stateManager.setActiveTab('suggestions');
         
@@ -216,8 +213,10 @@ export class EngieController {
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Engie: No suggestions found');
+          console.log('Engie: No suggestions found, moving to analysis area');
         }
+        // Move to analysis area when no suggestions
+        this.stateManager.moveToOptimalPosition('analysis');
         this.stateManager.setBotEmotion('happy', 'Great writing! No issues found.');
       }
     } catch (error) {
@@ -269,6 +268,90 @@ export class EngieController {
     this.debounceTimeoutRef = setTimeout(() => this.scanForSuggestions(), 2000);
   }
 
+  // Handle user typing activity
+  handleTypingActivity(): void {
+    const state = this.stateManager.getState();
+    const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
+    
+    // Only move to writing area if no active suggestions (otherwise stay near suggestions)
+    if (activeSuggestions.length === 0 && !state.isChatOpen) {
+      this.stateManager.moveToOptimalPosition('writing');
+      this.stateManager.setBotEmotion('thoughtful', 'Watching your writing flow...');
+    }
+  }
+
+  /**
+   * Handle new document or empty document scenarios
+   * Shows contextual encouragement messages for starting to write
+   */
+  handleNewDocumentOrEmpty(text: string = ''): void {
+    const state = this.stateManager.getState();
+    
+    // Check if this is a new/empty document scenario
+    const isEmptyOrMinimal = !text || text.trim().length < 10;
+    
+    if (isEmptyOrMinimal && !state.isChatOpen) {
+      // Move to writing area to encourage user to start
+      this.stateManager.moveToOptimalPosition('writing');
+      
+      // Show contextual encouragement message for new documents
+      const contextualMessages = [
+        "Ready to write something amazing? 📝 Let's get started!",
+        "Fresh document, fresh ideas! ✨ What are you working on today?",
+        "Perfect! A blank canvas for your thoughts. 🎨 Let's bring them to life!",
+        "New document energy! 🚀 I'm here to help you craft something great.",
+        "Love a fresh start! 💫 What story are you going to tell today?",
+        "Technical writing, creative content, or professional docs - I'm ready to help! 🔧",
+        "Starting fresh? Perfect! 🌟 Let's make every word count.",
+        "Empty page, endless possibilities! ✨ Let's turn your ideas into words."
+      ];
+      
+      const randomMessage = contextualMessages[Math.floor(Math.random() * contextualMessages.length)];
+      
+      // Set a welcoming message and open chat briefly
+      this.stateManager.setIdeationMessage({
+        role: 'assistant',
+        content: randomMessage
+      });
+      
+      this.stateManager.setChatOpen(true);
+      this.stateManager.setBotEmotion('excited', 'Ready to help with your writing!');
+      
+      // Auto-close the message after 8 seconds to not be intrusive
+      setTimeout(() => {
+        if (this.stateManager.getState().ideationMessage?.content === randomMessage) {
+          this.stateManager.setIdeationMessage(null);
+          this.stateManager.setChatOpen(false);
+          this.stateManager.setBotEmotion('neutral', '');
+        }
+      }, 8000);
+    }
+  }
+
+  /**
+   * Handle document selection or creation
+   * Triggers appropriate contextual messages
+   */
+  handleDocumentChange(newText: string = '', isNewDocument: boolean = false): void {
+    const state = this.stateManager.getState();
+    
+    // Reset suggestions when document changes
+    this.stateManager.resetSuggestions();
+    this.stateManager.setCurrentSuggestionIndex(0);
+    
+    // If it's a new document or empty, show encouragement
+    if (isNewDocument || !newText || newText.trim().length < 10) {
+      // Delay slightly to allow UI to settle
+      setTimeout(() => {
+        this.handleNewDocumentOrEmpty(newText);
+      }, 500);
+    } else {
+      // For existing documents with content, move to analysis area
+      this.stateManager.moveToOptimalPosition('analysis');
+      this.stateManager.setBotEmotion('thoughtful', 'Looking at your document...');
+    }
+  }
+
   handleEngieClick(): void {
     const state = this.stateManager.getState();
     const unreadCount = this.stateManager.getUnreadCount();
@@ -293,8 +376,11 @@ export class EngieController {
     this.stateManager.setChatOpen(false);
     const activeSuggestions = this.stateManager.getActiveSuggestions(this.props.suggestions);
     if (activeSuggestions.length === 0) {
-      this.stateManager.resetEngiePosition();
-      this.stateManager.setDragLocked(false);
+      // Move to idle position when no suggestions
+      this.stateManager.moveToOptimalPosition('idle');
+    } else {
+      // Stay near suggestions if they exist
+      this.stateManager.moveToOptimalPosition('suggestions');
     }
     this.stateManager.setBotEmotion('neutral', '');
   }
@@ -338,19 +424,21 @@ export class EngieController {
       const nextIndex = state.currentSuggestionIndex + 1;
       this.stateManager.setCurrentSuggestionIndex(nextIndex);
       if (activeSuggestions[nextIndex]) {
-        this.stateManager.moveEngieToSuggestion(activeSuggestions[nextIndex]);
+        // Stay in suggestions area for next suggestion
+        this.stateManager.moveToOptimalPosition('suggestions');
       }
     } else { // All suggestions handled
       this.stateManager.setCurrentSuggestionIndex(0);
-      this.stateManager.resetSuggestions(); // Clears internalSuggestions
-
+      this.stateManager.resetSuggestions();
+      
       // Re-evaluate drag lock based on potentially existing external suggestions
       const activeSuggestionsAfterReset = this.stateManager.getActiveSuggestions(this.props.suggestions);
       const shouldBeLocked = activeSuggestionsAfterReset.length > 0;
       this.stateManager.setDragLocked(shouldBeLocked);
 
       if (!shouldBeLocked) {
-        this.stateManager.resetEngiePosition();
+        // Move to idle position when all suggestions are completed and no external suggestions
+        this.stateManager.moveToOptimalPosition('idle');
       }
     }
   }
@@ -409,6 +497,15 @@ export class EngieController {
     }, 1000); // Wait 1 second before starting walk back
   }
 
+  updateEngiePosition(x: number, y: number): void {
+    this.stateManager.setEngiePos({ x, y });
+  }
+
+  updateMousePosition(x: number, y: number): void {
+    // Store mouse position for stepTowardMouse method
+    (window as any).__engieMousePos = { x, y };
+  }
+
   formatScore(score: number | undefined | null): string {
     if (typeof score !== 'number' || isNaN(score)) return 'N/A';
     return (score * 100).toFixed(0) + '%';
@@ -417,7 +514,6 @@ export class EngieController {
   cleanup(): void {
     if (this.debounceTimeoutRef) clearTimeout(this.debounceTimeoutRef);
     if (this.inactivityTimerRef) clearTimeout(this.inactivityTimerRef);
-    // if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer); // Removed
   }
 
   public stepTowardMouse(): void {
@@ -438,11 +534,6 @@ export class EngieController {
     this.stateManager.setBotAnimation('walking');
     setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
-
-  // Removed toggleGrokMode, deactivateGrokMode, and researchWithGrok methods
-  // as the UI for these has been removed from GrokTab and EngieChatWindow.
-  // isGrokActive state will remain at its default (likely false)
-  // unless activated by other means not covered in this change.
 
   /**
    * Send a message to Grok chat and handle the response
@@ -493,10 +584,5 @@ export class EngieController {
       // Handle error case
       this.stateManager.addGrokChatMessage({ role: 'assistant', content: "Sorry, I couldn't process your request." });
     }
-  }
-
-  // Method to update drag lock when external suggestions change
-  updateSuggestions(suggestions: Suggestion[]): void {
-    this.stateManager.updateDragLockWithExternalSuggestions(suggestions);
   }
 }
