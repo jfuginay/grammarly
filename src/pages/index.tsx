@@ -1,9 +1,9 @@
 import { useRouter } from 'next/router';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, Zap, Brain, Edit3, MessageSquare, Check } from 'lucide-react';
+import { Loader2, Sparkles, Zap, Brain, Edit3, MessageSquare, Check, Code, Linkedin, Github, Hash, ArrowRight, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -11,13 +11,53 @@ const IndexPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [typedText, setTypedText] = useState("");
-  const [aiSuggestion, setAiSuggestion] = useState("");
-  const [cursorVisible, setCursorVisible] = useState(true);
   const [activeDemoIndex, setActiveDemoIndex] = useState(0);
-  const textToType = "Meet Engie: Your intelligent writing companion that understands context, learns your style, and makes every word count.";
+  const [currentTaglineIndex, setCurrentTaglineIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typedDemoText, setTypedDemoText] = useState("");
+  const [selectedWritingType, setSelectedWritingType] = useState(0);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   
+  // Dynamic taglines for technical professionals
+  const taglines = [
+    "Code by day, craft by night? We get it.",
+    "From pull requests to personal posts.",
+    "Technical precision meets human expression.",
+    "Write code. Write docs. Write everything better.",
+    "Your IDE for words, not just code."
+  ];
+
+  // Interactive writing scenarios
+  const writingScenarios = useMemo(() => [
+    {
+      type: "LinkedIn Post",
+      icon: <Linkedin className="h-5 w-5" />,
+      color: "from-blue-500 to-blue-600",
+      placeholder: "Just shipped a new feature...",
+      sample: "Just shipped a new feature that reduces API response time by 40%! Sometimes the best optimizations come from questioning assumptions. What's your latest win?",
+      aiSuggestion: "Great technical achievement! Consider adding specific metrics and asking an engaging question to boost engagement.",
+      context: "Professional networking"
+    },
+    {
+      type: "GitHub README",
+      icon: <Github className="h-5 w-5" />,
+      color: "from-gray-700 to-gray-900",
+      placeholder: "## Installation...",
+      sample: "## Installation\n\nRun `npm install awesome-lib` to get started. This library helps you build better APIs faster.",
+      aiSuggestion: "Consider adding a brief description of what the library does before installation steps. Also, add usage examples!",
+      context: "Documentation"
+    },
+    {
+      type: "Slack Message",
+      icon: <Hash className="h-5 w-5" />,
+      color: "from-purple-500 to-purple-600",
+      placeholder: "Hey team...",
+      sample: "Hey team, the deployment went smooth but I'm seeing some weird behavior in the logs. Anyone else notice this?",
+      aiSuggestion: "Try being more specific about the 'weird behavior' and include relevant log snippets or error messages for faster debugging.",
+      context: "Team communication"
+    }
+  ], []);
+
   const demoSentences = [
     { original: "This is a example of how AI can help you write better.", 
       improved: "This is an example of how AI can help you write better." },
@@ -33,25 +73,44 @@ const IndexPage = () => {
     setTimeout(() => router.push(path), 500);
   };
 
-  // Typing animation effect
-  useEffect(() => {
-    if (typedText.length < textToType.length) {
-      const timeout = setTimeout(() => {
-        setTypedText(textToType.substring(0, typedText.length + 1));
-      }, 50 + Math.random() * 50);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [typedText]);
-
-  // Cursor blinking effect
+  // Cycle through taglines
   useEffect(() => {
     const interval = setInterval(() => {
-      setCursorVisible(prev => !prev);
-    }, 530);
+      setCurrentTaglineIndex((prev) => (prev + 1) % taglines.length);
+    }, 4000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [taglines.length]);
+
+  // Typing animation for demo text
+  useEffect(() => {
+    const currentScenario = writingScenarios[selectedWritingType];
+    if (typedDemoText.length < currentScenario.sample.length) {
+      setIsTyping(true);
+      const timeout = setTimeout(() => {
+        setTypedDemoText(currentScenario.sample.substring(0, typedDemoText.length + 1));
+      }, 30 + Math.random() * 40);
+      
+      return () => clearTimeout(timeout);
+    } else {
+      setIsTyping(false);
+    }
+  }, [typedDemoText, selectedWritingType, writingScenarios]);
+
+  // Reset typing when scenario changes
+  useEffect(() => {
+    setTypedDemoText("");
+    setIsTyping(true);
+  }, [selectedWritingType]);
+
+  // Auto-cycle through writing scenarios
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSelectedWritingType((prev) => (prev + 1) % writingScenarios.length);
+    }, 8000);
+    
+    return () => clearInterval(interval);
+  }, [writingScenarios.length]);
 
   // Scroll position effect for parallax
   useEffect(() => {
@@ -72,148 +131,250 @@ const IndexPage = () => {
     return () => clearInterval(interval);
   }, [demoSentences.length]);
 
-  // AI suggestion effect - simulates real-time feedback
-  useEffect(() => {
-    if (textAreaRef.current && textAreaRef.current.value) {
-      // Simulate AI thinking
-      const timeout = setTimeout(() => {
-        // Some simple suggestions based on text content
-        const text = textAreaRef.current?.value.toLowerCase() || "";
-        
-        if (text.includes("hello") || text.includes("hi")) {
-          setAiSuggestion("I notice you&apos;re starting with a greeting! For professional writing, consider &apos;Greetings&apos; or &apos;Welcome&apos; for more impact.");
-        } else if (text.includes("good") || text.includes("great")) {
-          setAiSuggestion("Nice word choice! To make it more compelling, try &apos;exceptional&apos;, &apos;outstanding&apos;, or &apos;remarkable&apos; instead.");
-        } else if (text.includes("engie")) {
-                            setAiSuggestion("I see you mentioned me! 😊 I&apos;m here to help make your writing clearer and more engaging.");
-        } else if (text.length > 10) {
-          setAiSuggestion("Your writing is developing nicely! I can help with tone, clarity, and structure. What are you working on?");
-        } else if (text.length > 5) {
-          setAiSuggestion("Great start! Keep writing and I&apos;ll provide suggestions to enhance your content.");
-        } else {
-          setAiSuggestion("");
-        }
-      }, 800);
-      
-      return () => clearTimeout(timeout);
-    } else {
-      setAiSuggestion("");
-    }
-  }, [textAreaRef.current?.value]);
+  const currentScenario = writingScenarios[selectedWritingType];
 
   return (
     <div className="flex flex-col min-h-screen bg-background overflow-x-hidden">
-      {/* Neural network animated background */}
+      {/* Enhanced animated background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-purple-50 dark:from-gray-900 dark:to-slate-900 opacity-50"></div>
-        <div className="network-grid"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-purple-50 to-cyan-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 opacity-60"></div>
+        <div className="code-grid"></div>
       </div>
 
-      {/* Header with animated nav */}
+      {/* Header with enhanced nav */}
       <header 
-        className="sticky top-0 z-50 backdrop-blur-md bg-white/70 dark:bg-slate-900/70 border-b border-gray-200 dark:border-gray-800 py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center"
+        className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-gray-200/50 dark:border-gray-800/50 py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center transition-all duration-300"
         style={{
           transform: `translateY(${scrollPosition > 50 ? 0 : 0}px)`,
-          transition: 'transform 0.3s ease-in-out'
         }}
       >
         <Logo />
         <nav className="flex items-center gap-4 md:gap-6">
           <ThemeToggle />
-          <Button variant="ghost" onClick={() => handleNavigation('/login')} className="transition-all hover:scale-105">
+          <Button variant="ghost" onClick={() => handleNavigation('/login')} className="transition-all duration-300 hover:scale-105">
             Log In
           </Button>
           <motion.div 
             whileHover={{ scale: 1.05 }} 
             whileTap={{ scale: 0.95 }}
           >
-            <Button onClick={() => handleNavigation('/signup')} className="relative overflow-hidden group">
+            <Button onClick={() => handleNavigation('/signup')} className="relative overflow-hidden group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all duration-300">
               <span className="relative z-10">Sign Up</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300"></span>
             </Button>
           </motion.div>
         </nav>
       </header>
 
       <main className="flex-grow flex flex-col items-center relative z-10">
-        {/* Hero section with dynamic typing */}
-        <section className="w-full py-20 md:py-32 flex flex-col items-center justify-center text-center px-4 relative overflow-hidden">
+        {/* Transformed Hero Section - Interactive Onboarding */}
+        <section className="w-full min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-5xl mx-auto relative z-10"
+            transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+            className="max-w-7xl mx-auto relative z-10 w-full"
           >
-            <Badge variant="outline" className="mb-6 px-4 py-1 text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-              <Sparkles className="inline mr-2 h-4 w-4" /> AI-POWERED WRITING
-            </Badge>
+            {/* Dynamic Badge */}
+            <motion.div 
+              className="text-center mb-8"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <Badge variant="outline" className="mb-6 px-6 py-2 text-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-medium">
+                <Code className="inline mr-2 h-4 w-4" /> FOR TECHNICAL PROFESSIONALS
+              </Badge>
+            </motion.div>
             
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300">
-              Welcome to <span className="text-blue-600 dark:text-blue-400">Grammarly-EST</span>
-            </h1>
-            
-            <div className="mb-6 text-lg sm:text-xl text-gray-600 dark:text-gray-400">
-              <span className="font-semibold text-blue-600 dark:text-blue-400">EST</span> = 
-              <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">E</span>ngie 
-              <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">S</span>uggestion 
-              <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">T</span>echnology
-              <br />
-              <span className="text-sm text-gray-500 dark:text-gray-500 italic">The most advanced writing assistant you&apos;ll ever meet</span>
+            {/* Main Title with Fluid Typography */}
+            <div className="text-center mb-12">
+              <h1 className="font-extrabold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 dark:from-white dark:via-blue-400 dark:to-purple-400"
+                  style={{ fontSize: 'clamp(2.5rem, 8vw, 4.5rem)', lineHeight: 'clamp(2.8rem, 8.5vw, 5rem)' }}>
+                Welcome to <span className="text-blue-600 dark:text-blue-400">Grammarly-EST</span>
+              </h1>
+              
+              {/* Dynamic Tagline */}
+              <div className="h-16 flex items-center justify-center mb-8">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={currentTaglineIndex}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                    className="text-gray-600 dark:text-gray-300 font-medium"
+                    style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)' }}
+                  >
+                    {taglines[currentTaglineIndex]}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
             </div>
-            
-            <div className="h-12 mb-8 text-xl sm:text-2xl text-gray-700 dark:text-gray-300">
-              <span>{typedText}</span>
-              <span className={`inline-block w-0.5 h-6 bg-blue-600 dark:bg-blue-400 ml-1 align-middle ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}></span>
-            </div>
-            
-            <div className="flex flex-wrap gap-4 justify-center">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  size="lg" 
-                  onClick={() => handleNavigation('/signup')} 
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8"
-                  disabled={isLoading}
+
+            {/* Interactive Writing Demo */}
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+              {/* Writing Type Selector */}
+              <div className="space-y-6">
+                <motion.h2 
+                  className="font-bold text-gray-900 dark:text-white mb-6"
+                  style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                 >
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                  Get Started Free
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={() => handleNavigation('/login')} 
-                  className="rounded-full px-8"
-                  disabled={isLoading}
-                >
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Log In
-                </Button>
+                  Write with confidence across all contexts
+                </motion.h2>
+                
+                <div className="space-y-3">
+                  {writingScenarios.map((scenario, index) => (
+                    <motion.button
+                      key={index}
+                      className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left group ${
+                        selectedWritingType === index
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-slate-800'
+                      }`}
+                      onClick={() => setSelectedWritingType(index)}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-lg bg-gradient-to-r ${scenario.color} text-white group-hover:scale-110 transition-transform duration-300`}>
+                          {scenario.icon}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{scenario.type}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{scenario.context}</p>
+                        </div>
+                        <ArrowRight className={`h-5 w-5 transition-all duration-300 ${
+                          selectedWritingType === index ? 'text-blue-600 translate-x-1' : 'text-gray-400'
+                        }`} />
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Demo Area */}
+              <motion.div
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`p-2 rounded-lg bg-gradient-to-r ${currentScenario.color} text-white`}>
+                    {currentScenario.icon}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{currentScenario.type}</h3>
+                  <Badge variant="outline" className="ml-auto text-xs">Live Demo</Badge>
+                </div>
+                
+                <div className="relative">
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4 min-h-[120px] font-mono text-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-gray-500 dark:text-gray-400 mb-2 text-xs uppercase tracking-wide">
+                      {currentScenario.context}
+                    </div>
+                    <div className="text-gray-900 dark:text-white">
+                      {typedDemoText}
+                      <span className={`inline-block w-0.5 h-4 bg-blue-600 dark:bg-blue-400 ml-1 ${isTyping ? 'animate-pulse' : ''}`}></span>
+                    </div>
+                  </div>
+                  
+                  <AnimatePresence>
+                    {typedDemoText.length > 20 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full">
+                            <Sparkles className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-purple-800 dark:text-purple-200 mb-1">Engie suggests:</p>
+                            <p className="text-gray-700 dark:text-gray-300 text-sm">{currentScenario.aiSuggestion}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </motion.div>
             </div>
+
+            {/* Enhanced CTA Section */}
+            <motion.div 
+              className="text-center mt-16"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="flex flex-wrap gap-4 justify-center mb-8">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    size="lg" 
+                    onClick={() => handleNavigation('/signup')} 
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Zap className="mr-2 h-5 w-5" />}
+                    Start Writing Better
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    onClick={() => handleNavigation('/login')} 
+                    className="rounded-full px-8 py-4 text-lg font-semibold border-2 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                    Log In
+                  </Button>
+                </motion.div>
+              </div>
+              
+              <motion.div 
+                className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 cursor-pointer group"
+                whileHover={{ y: 5 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <span className="text-sm">See Engie in action</span>
+                <ChevronDown className="h-4 w-4 group-hover:translate-y-1 transition-transform duration-300" />
+              </motion.div>
+            </motion.div>
           </motion.div>
           
-          {/* Floating particles background */}
+          {/* Enhanced floating elements */}
           <div className="absolute inset-0 pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(15)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute rounded-full bg-blue-500 dark:bg-blue-400"
+                className="absolute rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-400/20 dark:to-purple-400/20"
                 style={{
-                  width: Math.random() * 10 + 5 + 'px',
-                  height: Math.random() * 10 + 5 + 'px',
-                  opacity: Math.random() * 0.3 + 0.1,
+                  width: Math.random() * 8 + 4 + 'px',
+                  height: Math.random() * 8 + 4 + 'px',
                   left: Math.random() * 100 + '%',
                   top: Math.random() * 100 + '%',
                 }}
                 animate={{
                   y: [0, Math.random() * 100 - 50],
                   x: [0, Math.random() * 100 - 50],
+                  scale: [1, Math.random() * 0.5 + 0.8, 1],
                 }}
                 transition={{
                   repeat: Infinity,
                   repeatType: "reverse",
-                  duration: Math.random() * 10 + 20,
+                  duration: Math.random() * 15 + 20,
+                  ease: [0.4, 0, 0.2, 1],
                 }}
               />
             ))}
@@ -345,27 +506,17 @@ const IndexPage = () => {
                     ref={textAreaRef}
                     className="w-full h-32 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Type something here to see Engie&apos;s suggestions..."
-                    onChange={(e) => e.target.value} // Just to trigger the effect
                   ></textarea>
                   
-                  <AnimatePresence>
-                    {aiSuggestion && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg text-sm"
-                      >
-                        <div className="flex items-start">
-                          <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="font-medium text-purple-800 dark:text-purple-200">Engie says:</p>
-                            <p className="text-gray-700 dark:text-gray-300">{aiSuggestion}</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg text-sm">
+                    <div className="flex items-start">
+                      <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-purple-800 dark:text-purple-200">Engie says:</p>
+                        <p className="text-gray-700 dark:text-gray-300">Start typing to see contextual suggestions appear here in real-time!</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -457,32 +608,45 @@ const IndexPage = () => {
         </div>
       </footer>
       
-      {/* Custom CSS for neural network grid */}
+      {/* Custom CSS for code-inspired grid */}
       <style jsx>{`
-        .network-grid {
+        .code-grid {
           position: absolute;
           width: 100%;
           height: 100%;
-          background-image: radial-gradient(circle at 2px 2px, rgba(0, 0, 255, 0.1) 1px, transparent 0),
-                           radial-gradient(circle at 2px 2px, rgba(0, 0, 255, 0.05) 1px, transparent 0);
-          background-size: 30px 30px, 90px 90px;
-          animation: moveGrid 100s linear infinite;
+          background-image: 
+            linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+            linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+            radial-gradient(circle at 25px 25px, rgba(147, 51, 234, 0.04) 2px, transparent 2px);
+          background-size: 50px 50px, 50px 50px, 100px 100px;
+          animation: moveCodeGrid 120s linear infinite;
         }
         
-        @keyframes moveGrid {
+        @keyframes moveCodeGrid {
           0% {
-            background-position: 0 0, 0 0;
+            background-position: 0 0, 0 0, 0 0;
           }
           100% {
-            background-position: 1000px 1000px, 500px 500px;
+            background-position: 500px 500px, 0 500px, 250px 250px;
           }
         }
         
         @media (prefers-color-scheme: dark) {
-          .network-grid {
-            background-image: radial-gradient(circle at 2px 2px, rgba(100, 150, 255, 0.1) 1px, transparent 0),
-                             radial-gradient(circle at 2px 2px, rgba(100, 150, 255, 0.05) 1px, transparent 0);
+          .code-grid {
+            background-image: 
+              linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+              linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+              radial-gradient(circle at 25px 25px, rgba(168, 85, 247, 0.06) 2px, transparent 2px);
           }
+        }
+        
+        /* Responsive fluid typography utilities */
+        @supports (font-size: clamp(1rem, 4vw, 2rem)) {
+          .fluid-text-lg { font-size: clamp(1.125rem, 2.5vw, 1.25rem); }
+          .fluid-text-xl { font-size: clamp(1.25rem, 3vw, 1.5rem); }
+          .fluid-text-2xl { font-size: clamp(1.5rem, 4vw, 2rem); }
+          .fluid-text-3xl { font-size: clamp(1.875rem, 5vw, 2.5rem); }
+          .fluid-text-4xl { font-size: clamp(2.25rem, 6vw, 3rem); }
         }
       `}</style>
     </div>
