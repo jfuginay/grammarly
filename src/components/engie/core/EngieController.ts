@@ -13,7 +13,6 @@ export class EngieController {
   private debounceTimeoutRef: NodeJS.Timeout | null = null;
   private prevScannedTextRef: string = "";
   private inactivityTimerRef: NodeJS.Timeout | null = null;
-  // private grokDeactivationTimer: NodeJS.Timeout | null = null; // Removed
   private lastX: number = 0;
 
   constructor(private props: EngieProps) {
@@ -194,6 +193,7 @@ export class EngieController {
       this.stateManager.setInternalSuggestions(suggestions);
       this.stateManager.setToneAnalysisResult(toneAnalysis);
       this.stateManager.setCurrentSuggestionIndex(0);
+      this.stateManager.updateDragLockWithExternalSuggestions(this.props.suggestions); // Update drag lock status
       
       this.stateManager.setEmotionBasedOnQuality(suggestions.length, text.length);
 
@@ -427,11 +427,19 @@ export class EngieController {
         // Stay in suggestions area for next suggestion
         this.stateManager.moveToOptimalPosition('suggestions');
       }
-    } else {
+    } else { // All suggestions handled
       this.stateManager.setCurrentSuggestionIndex(0);
       this.stateManager.resetSuggestions();
-      // Move to idle position when all suggestions are completed
-      this.stateManager.moveToOptimalPosition('idle');
+      
+      // Re-evaluate drag lock based on potentially existing external suggestions
+      const activeSuggestionsAfterReset = this.stateManager.getActiveSuggestions(this.props.suggestions);
+      const shouldBeLocked = activeSuggestionsAfterReset.length > 0;
+      this.stateManager.setDragLocked(shouldBeLocked);
+
+      if (!shouldBeLocked) {
+        // Move to idle position when all suggestions are completed and no external suggestions
+        this.stateManager.moveToOptimalPosition('idle');
+      }
     }
   }
 
@@ -447,6 +455,57 @@ export class EngieController {
     this.stateManager.removeIdeaNotification(index);
   }
 
+  handleDrag(e: any, data: any): void {
+    // Check if dragging is locked due to active suggestions
+    const state = this.stateManager.getState();
+    if (state.isDragLocked) {
+      // Prevent dragging by not updating position
+      return;
+    }
+
+    const deltaX = data.x - this.lastX;
+    if (Math.abs(deltaX) > 5) {
+      this.stateManager.setBotDirection(deltaX > 0 ? 'right' : 'left');
+      this.stateManager.setBotSpeed(Math.abs(deltaX) > 20 ? 'fast' : 'normal');
+    }
+    this.lastX = data.x;
+    // The position is now updated directly in EngieBot.tsx for smoother dragging
+    // this.stateManager.setEngiePos({ x: data.x, y: data.y });
+  }
+
+  onStartDrag(): void {
+    // Check if dragging is locked due to active suggestions
+    const state = this.stateManager.getState();
+    if (state.isDragLocked) {
+      return;
+    }
+
+    this.stateManager.setBotAnimation('walking');
+  }
+
+  onStopDrag(): void {
+    // Check if dragging is locked due to active suggestions
+    const state = this.stateManager.getState();
+    if (state.isDragLocked) {
+      return;
+    }
+
+    this.stateManager.setBotAnimation('idle');
+    // Start walking back to text analysis area after a short delay
+    setTimeout(() => {
+      this.stateManager.startWalkBack();
+    }, 1000); // Wait 1 second before starting walk back
+  }
+
+  updateEngiePosition(x: number, y: number): void {
+    this.stateManager.setEngiePos({ x, y });
+  }
+
+  updateMousePosition(x: number, y: number): void {
+    // Store mouse position for stepTowardMouse method
+    (window as any).__engieMousePos = { x, y };
+  }
+
   formatScore(score: number | undefined | null): string {
     if (typeof score !== 'number' || isNaN(score)) return 'N/A';
     return (score * 100).toFixed(0) + '%';
@@ -455,7 +514,6 @@ export class EngieController {
   cleanup(): void {
     if (this.debounceTimeoutRef) clearTimeout(this.debounceTimeoutRef);
     if (this.inactivityTimerRef) clearTimeout(this.inactivityTimerRef);
-    // if (this.grokDeactivationTimer) clearTimeout(this.grokDeactivationTimer); // Removed
   }
 
   public stepTowardMouse(): void {
@@ -476,11 +534,6 @@ export class EngieController {
     this.stateManager.setBotAnimation('walking');
     setTimeout(() => this.stateManager.setBotAnimation('idle'), 200);
   }
-
-  // Removed toggleGrokMode, deactivateGrokMode, and researchWithGrok methods
-  // as the UI for these has been removed from GrokTab and EngieChatWindow.
-  // isGrokActive state will remain at its default (likely false)
-  // unless activated by other means not covered in this change.
 
   /**
    * Send a message to Grok chat and handle the response
