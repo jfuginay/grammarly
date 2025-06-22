@@ -153,8 +153,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const handleToggleGrokMode = () => controller.toggleGrokMode();
   const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
 
-  if (!state.isVisible) return null;
-
+  // Engie is always visible - removed visibility check
   return (
     <>
       {/* Engie Container with Relative Positioning */}
