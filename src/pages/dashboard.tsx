@@ -860,8 +860,8 @@ const DashboardPage = () => {
               </div>
 
               {/* Right Column: Analysis Box */}
-              <div className="md:w-1/2">
-                <Card className="shadow-lg h-full flex flex-col">
+              <div className="md:w-1/2 flex flex-col gap-4">
+                <Card className="shadow-lg flex-1 flex flex-col">
                   <CardHeader className="border-b pb-2">
                     <CardTitle className="text-sm font-medium">Text Analysis</CardTitle>
                     <CardDescription className="text-xs">
@@ -885,6 +885,90 @@ const DashboardPage = () => {
                       onSuggestionsFetched={suggestions => setSuggestions(suggestions || [])}
                       onToneHighlightsFetched={highlights => setToneHighlights(highlights || [])}
                     />
+                  </CardContent>
+                </Card>
+
+                {/* Priority Warnings Panel */}
+                <Card className="shadow-lg">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-red-500">⚠️</span>
+                      Priority Issues
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Issues that need immediate attention
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 max-h-32 overflow-y-auto">
+                    {suggestions && suggestions.length > 0 ? (
+                      <div className="space-y-2">
+                        {suggestions
+                          .filter(s => s.type === 'Punctuation' && s.severity === 'High')
+                          .map((suggestion, index) => (
+                            <div 
+                              key={suggestion.id || index}
+                              className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800"
+                            >
+                              <span className="text-red-600 font-medium text-xs mt-0.5">
+                                PUNCTUATION
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                  "{suggestion.original}" → "{suggestion.suggestion}"
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {suggestion.explanation}
+                                </p>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                onClick={() => applySuggestion(suggestion)}
+                              >
+                                ✓
+                              </Button>
+                            </div>
+                          ))}
+                        {suggestions
+                          .filter(s => s.severity === 'High' && s.type !== 'Punctuation')
+                          .map((suggestion, index) => (
+                            <div 
+                              key={suggestion.id || `other-${index}`}
+                              className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800"
+                            >
+                              <span className="text-amber-700 font-medium text-xs mt-0.5">
+                                {suggestion.type.toUpperCase()}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                  "{suggestion.original}" → "{suggestion.suggestion}"
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {suggestion.explanation}
+                                </p>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 w-6 p-0 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                                onClick={() => applySuggestion(suggestion)}
+                              >
+                                ✓
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          No priority issues found
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          Great job! Your text looks clean.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
