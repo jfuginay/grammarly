@@ -451,6 +451,21 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Reset component state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Reset all state to initial values for a fresh start
+      setStep('selection');
+      setWritingMode('professional');
+      setSelectedType(null);
+      setUserText('');
+      setImprovementSuggestion('');
+      setShowEngie(false);
+      setEngieEmotion('excited');
+      setOpenDropdown(null);
+    }
+  }, [isOpen]);
+
   // Auto-focus textarea when writing step starts
   useEffect(() => {
     if (step === 'writing' && textareaRef.current) {
