@@ -16,6 +16,7 @@ const IndexPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typedDemoText, setTypedDemoText] = useState("");
   const [selectedWritingType, setSelectedWritingType] = useState(0);
+  const [showThinking, setShowThinking] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   
   // Dynamic taglines for technical professionals
@@ -112,18 +113,33 @@ const IndexPage = () => {
     return () => clearInterval(interval);
   }, [taglines.length]);
 
-  // Typing animation for demo text
+  // Typing animation for demo text with realistic timing
   useEffect(() => {
     const currentScenario = writingScenarios[selectedWritingType];
     if (typedDemoText.length < currentScenario.sample.length) {
       setIsTyping(true);
+      const char = currentScenario.sample[typedDemoText.length];
+      
+      // Variable typing speed based on character type for realism
+      let delay = 80; // Base delay
+      if (char === ' ') delay = 120; // Pause at spaces
+      else if (char === '.' || char === '!' || char === '?') delay = 300; // Longer pause at sentence endings
+      else if (char === ',' || char === ';' || char === ':') delay = 200; // Medium pause at punctuation
+      else if (char === '\n') delay = 400; // Pause at line breaks
+      else if (Math.random() < 0.1) delay = delay + Math.random() * 100; // Random thinking pauses
+      
       const timeout = setTimeout(() => {
         setTypedDemoText(currentScenario.sample.substring(0, typedDemoText.length + 1));
-      }, 30 + Math.random() * 40);
+      }, delay);
       
       return () => clearTimeout(timeout);
     } else {
       setIsTyping(false);
+      // Show thinking indicator after typing is complete, before suggestion
+      if (typedDemoText.length >= Math.min(currentScenario.sample.length * 0.7, 100)) {
+        setTimeout(() => setShowThinking(true), 800);
+        setTimeout(() => setShowThinking(false), 2000);
+      }
     }
   }, [typedDemoText, selectedWritingType, writingScenarios]);
 
@@ -131,6 +147,7 @@ const IndexPage = () => {
   useEffect(() => {
     setTypedDemoText("");
     setIsTyping(true);
+    setShowThinking(false);
   }, [selectedWritingType]);
 
   // Auto-cycle through writing scenarios
@@ -314,22 +331,65 @@ const IndexPage = () => {
                     </div>
                   </div>
                   
+                  {/* Thinking indicator */}
                   <AnimatePresence>
-                    {typedDemoText.length > 20 && (
+                    {showThinking && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="p-1 bg-purple-500 rounded-full"
+                          >
+                            <Brain className="h-3 w-3 text-white" />
+                          </motion.div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Engie is analyzing...</span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  <AnimatePresence>
+                    {typedDemoText.length > Math.min(currentScenario.sample.length * 0.7, 100) && !isTyping && !showThinking && (
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 1.2 }}
                         className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full">
+                          <motion.div 
+                            className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 1.4, duration: 0.3 }}
+                          >
                             <Sparkles className="h-4 w-4 text-white" />
-                          </div>
+                          </motion.div>
                           <div className="flex-1">
-                            <p className="font-medium text-purple-800 dark:text-purple-200 mb-1">Engie suggests:</p>
-                            <p className="text-gray-700 dark:text-gray-300 text-sm">{currentScenario.aiSuggestion}</p>
+                            <motion.p 
+                              className="font-medium text-purple-800 dark:text-purple-200 mb-1"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 1.6, duration: 0.4 }}
+                            >
+                              Engie suggests:
+                            </motion.p>
+                            <motion.p 
+                              className="text-gray-700 dark:text-gray-300 text-sm"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 1.8, duration: 0.4 }}
+                            >
+                              {currentScenario.aiSuggestion}
+                            </motion.p>
                           </div>
                         </div>
                       </motion.div>
