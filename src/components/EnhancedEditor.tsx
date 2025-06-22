@@ -83,7 +83,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
   // Add history state for undo/redo functionality
   const [history, setHistory] = useState<TextHistory[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
-  const [maxHistorySize] = useState<number>(50); // Limit history size
+  const maxHistorySize = 50; // Limit history size
   const isUndoRedoOperation = useRef<boolean>(false);
   
   // Countdown timer states
