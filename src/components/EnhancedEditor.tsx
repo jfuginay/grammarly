@@ -214,7 +214,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
         resolve();
       }
     });
-  }, [value, textFragments]); // Removed assignPriorities and performLocalAnalysis from deps, they are imported now
+  }, [value, textFragments, onSuggestionsFetched, onToneHighlightsFetched]);
   
   // assignPriorities, identifyPhrases, and performLocalAnalysis are now imported from ../lib/localTextAnalyzer.ts
   // Their definitions are removed from this file.
@@ -644,7 +644,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       setShowCountdownTimer(prev => !prev);
       // Additional logic for EnhancedScanIndicator could be added here if needed
     }
-  }), [analyzeText, toggleFragmentsVisibility, clearAnalysis, undo, redo]);
+  }), [analyzeText, toggleFragmentsVisibility, clearAnalysis, undo, redo, animateEngieBotThroughChanges, onChange, readOnly, value]);
   
   // Trigger analysis when user stops typing or when showFragments prop changes
   useEffect(() => {
@@ -670,7 +670,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
       setShouldShowFragments(localShouldShow); // This will usually be true from performLocalAnalysis
       if (localFragments.length > 0) lastAnalyzedTextRef.current = value;
     }
-  }, [showFragments, readOnly, value, textFragments.length]); // performLocalAnalysis removed from deps
+  }, [showFragments, readOnly, value, textFragments.length]);
   
   // Update editor content and highlights
   useEffect(() => {
