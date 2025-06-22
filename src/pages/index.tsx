@@ -158,7 +158,7 @@ const IndexPage = () => {
               <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">S</span>uggestion 
               <span className="font-semibold text-purple-600 dark:text-purple-400 ml-2">T</span>echnology
               <br />
-              <span className="text-sm text-gray-500 dark:text-gray-500 italic">The most advanced writing assistant you'll ever meet</span>
+              <span className="text-sm text-gray-500 dark:text-gray-500 italic">The most advanced writing assistant you&apos;ll ever meet</span>
             </div>
             
             <div className="h-12 mb-8 text-xl sm:text-2xl text-gray-700 dark:text-gray-300">
