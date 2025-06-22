@@ -3,14 +3,16 @@ import { EngieState, ChatMessage, ToneAnalysis, Suggestion, BotAnimationState, B
 export class EngieStateManager {
   private state: EngieState;
   private listeners: Array<(state: EngieState) => void> = [];
+  private walkBackTimer: number | null = null;
+  private targetPosition: { x: number; y: number } | null = null;
 
   constructor() {
     this.state = this.getInitialState();
   }
 
   private getInitialState(): EngieState {
-    // Calculate initial position at bottom-right of screen
-    const initialPosition = this.calculateInitialPosition();
+    // Calculate initial position near the Text Analysis area
+    const initialPosition = this.calculateTextAnalysisPosition();
     
     return {
       isChatOpen: false,
@@ -43,21 +45,42 @@ export class EngieStateManager {
     };
   }
 
-  private calculateInitialPosition(): { x: number; y: number } {
-    // Position Engie at bottom-right of the viewport with some padding
-    const engieSize = 64;
-    const padding = 20;
-    
+  private calculateTextAnalysisPosition(): { x: number; y: number } {
     if (typeof window === 'undefined') {
-      // SSR fallback - position in center
-      return { x: 400, y: 300 };
+      // SSR fallback - position in center-right
+      return { x: 600, y: 300 };
     }
     
-    // Calculate bottom-right position
-    const x = Math.max(padding, window.innerWidth - engieSize - padding);
-    const y = Math.max(padding, window.innerHeight - engieSize - padding);
+    // Try to find the Text Analysis area
+    const analysisElement = document.querySelector('[class*="Text Analysis"]') || 
+                           document.querySelector('h3:contains("Text Analysis")') ||
+                           document.querySelector('.md\\:w-1\\/2:last-child') || // Right column in dashboard
+                           document.querySelector('[title*="Analysis"]');
+    
+    if (analysisElement) {
+      const rect = analysisElement.getBoundingClientRect();
+      const engieSize = 64;
+      const padding = 20;
+      
+      // Position Engie to the left of the analysis area
+      const x = Math.max(padding, rect.left - engieSize - padding);
+      const y = Math.max(padding, rect.top + rect.height / 2 - engieSize / 2);
+      
+      return { x, y };
+    }
+    
+    // Fallback: position in the right side of screen, middle height
+    const engieSize = 64;
+    const padding = 20;
+    const x = Math.max(padding, window.innerWidth * 0.75 - engieSize);
+    const y = Math.max(padding, window.innerHeight * 0.4);
     
     return { x, y };
+  }
+
+  private calculateInitialPosition(): { x: number; y: number } {
+    // Use the text analysis position as default
+    return this.calculateTextAnalysisPosition();
   }
 
   getState(): EngieState {
@@ -73,6 +96,68 @@ export class EngieStateManager {
 
   private notify(): void {
     this.listeners.forEach(listener => listener(this.getState()));
+  }
+
+  // Walk back behavior
+  startWalkBack(): void {
+    // Clear any existing walk back timer
+    if (this.walkBackTimer) {
+      clearInterval(this.walkBackTimer);
+    }
+    
+    // Set target position to the text analysis area
+    this.targetPosition = this.calculateTextAnalysisPosition();
+    
+    // Set walking animation
+    this.setBotAnimation('walking');
+    this.setBotSpeed('normal');
+    
+    // Start walking back gradually
+    this.walkBackTimer = setInterval(() => {
+      if (!this.targetPosition) return;
+      
+      const currentPos = this.state.engiePos;
+      const target = this.targetPosition;
+      
+      // Calculate distance to target
+      const dx = target.x - currentPos.x;
+      const dy = target.y - currentPos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // If we're close enough, stop walking
+      if (distance < 5) {
+        this.stopWalkBack();
+        return;
+      }
+      
+      // Calculate step size (slow movement)
+      const stepSize = 2;
+      const normalizedDx = (dx / distance) * stepSize;
+      const normalizedDy = (dy / distance) * stepSize;
+      
+      // Update direction based on movement
+      if (Math.abs(normalizedDx) > 0.5) {
+        this.setBotDirection(normalizedDx > 0 ? 'right' : 'left');
+      }
+      
+      // Move towards target
+      this.setEngiePos({
+        x: currentPos.x + normalizedDx,
+        y: currentPos.y + normalizedDy
+      });
+      
+    }, 50); // Update every 50ms for smooth movement
+  }
+  
+  stopWalkBack(): void {
+    if (this.walkBackTimer) {
+      clearInterval(this.walkBackTimer);
+      this.walkBackTimer = null;
+    }
+    
+    this.targetPosition = null;
+    this.setBotAnimation('idle');
+    this.setBotSpeed('normal');
   }
 
   // State update methods
@@ -211,9 +296,9 @@ export class EngieStateManager {
     }
   }
 
-  // Reset Engie to initial position
+  // Reset Engie to initial position (near text analysis)
   resetEngiePosition(): void {
-    const initialPosition = this.calculateInitialPosition();
+    const initialPosition = this.calculateTextAnalysisPosition();
     this.setEngiePos(initialPosition);
     this.setBotDirection('right');
   }
@@ -390,5 +475,13 @@ export class EngieStateManager {
     this.state.encouragementMessageApi = null;
     this.state.isIdeating = false;
     this.notify();
+  }
+
+  // Cleanup method
+  cleanup(): void {
+    if (this.walkBackTimer) {
+      clearInterval(this.walkBackTimer);
+      this.walkBackTimer = null;
+    }
   }
 }

@@ -120,7 +120,7 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return () => window.removeEventListener('resize', handleResize);
   }, [state.isChatOpen]);
 
-  // Mouse following logic
+  // Mouse following logic - unified approach
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       controller.updateMousePosition(e.clientX, e.clientY);
@@ -133,6 +133,14 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     return () => {
       window.removeEventListener('mousemove', handler);
       clearInterval(interval);
+    };
+  }, [controller]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      controller.cleanup();
+      controller.getStateManager().cleanup();
     };
   }, [controller]);
 
@@ -169,7 +177,6 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   const handleToggleGrokMode = () => controller.toggleGrokMode();
   const handleResearchWithGrok = (topic: string) => controller.researchWithGrok(topic);
 
-  // Engie is always visible - removed visibility check
   return (
     <>
       {/* Engie Character */}

@@ -4,36 +4,47 @@
   display: inline-block;
 }
 
-/* Position the popup relative to Engie */
+/* Base popup styles - appears above Engie by default */
 .engiePopup {
   position: absolute;
   bottom: 100%; /* Appears above Engie */
   left: 50%;
   transform: translateX(-50%); /* Center horizontally */
-  margin-bottom: 10px; /* Small gap between Engie and popup */
-  z-index: 1000;
+  margin-bottom: 15px; /* Gap between Engie and popup */
+  z-index: 1001;
   
   /* Prevent popup from going off-screen */
-  max-width: 300px;
+  max-width: 320px;
   white-space: normal;
+  
+  /* Chat bubble styling */
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
 }
 
-/* Alternative: popup to the right of Engie */
+/* Popup to the right of Engie */
 .engiePopupRight {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 100%;
+  transform: translateY(-50%);
   margin-left: 15px;
-  z-index: 1000;
+  z-index: 1001;
+  max-width: 320px;
+  white-space: normal;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
 }
 
 /* Popup to the left of Engie */
 .engiePopupLeft {
   position: absolute;
-  top: 0;
+  top: 50%;
   right: 100%;
+  transform: translateY(-50%);
   margin-right: 15px;
-  z-index: 1000;
+  z-index: 1001;
+  max-width: 320px;
+  white-space: normal;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
 }
 
 /* Popup below Engie */
@@ -42,19 +53,23 @@
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-top: 10px;
-  z-index: 1000;
+  margin-top: 15px;
+  z-index: 1001;
+  max-width: 320px;
+  white-space: normal;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
 }
 
-/* Add a little arrow pointing to Engie */
+/* Chat bubble tails/arrows pointing to Engie */
 .engiePopup::after {
   content: '';
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 8px solid transparent;
-  border-top-color: var(--popup-bg-color, #ffffff);
+  border: 12px solid transparent;
+  border-top-color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .engiePopupRight::after {
@@ -63,8 +78,9 @@
   top: 50%;
   right: 100%;
   transform: translateY(-50%);
-  border: 8px solid transparent;
-  border-right-color: var(--popup-bg-color, #ffffff);
+  border: 12px solid transparent;
+  border-right-color: white;
+  filter: drop-shadow(-2px 0 4px rgba(0, 0, 0, 0.1));
 }
 
 .engiePopupLeft::after {
@@ -73,8 +89,9 @@
   top: 50%;
   left: 100%;
   transform: translateY(-50%);
-  border: 8px solid transparent;
-  border-left-color: var(--popup-bg-color, #ffffff);
+  border: 12px solid transparent;
+  border-left-color: white;
+  filter: drop-shadow(2px 0 4px rgba(0, 0, 0, 0.1));
 }
 
 .engiePopupBelow::after {
@@ -83,6 +100,47 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 8px solid transparent;
-  border-bottom-color: var(--popup-bg-color, #ffffff);
+  border: 12px solid transparent;
+  border-bottom-color: white;
+  filter: drop-shadow(0 -2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Dark mode support for arrows */
+@media (prefers-color-scheme: dark) {
+  .engiePopup::after {
+    border-top-color: #1f2937; /* gray-800 */
+  }
+  
+  .engiePopupRight::after {
+    border-right-color: #1f2937;
+  }
+  
+  .engiePopupLeft::after {
+    border-left-color: #1f2937;
+  }
+  
+  .engiePopupBelow::after {
+    border-bottom-color: #1f2937;
+  }
+}
+
+/* Additional styling for better chat bubble appearance */
+.engiePopup > *:first-child,
+.engiePopupRight > *:first-child,
+.engiePopupLeft > *:first-child,
+.engiePopupBelow > *:first-child {
+  border-radius: 16px;
+  overflow: hidden;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .engiePopup > *:first-child,
+  .engiePopupRight > *:first-child,
+  .engiePopupLeft > *:first-child,
+  .engiePopupBelow > *:first-child {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 } 
