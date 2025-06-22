@@ -52,9 +52,9 @@ const contentTypes: ContentType[] = [
 ];
 
 const engieIntroductions = [
-  "Hey! 👋 I'm Engie, your writing buddy. I just made that flow better!",
-  "That's me! ✨ I'm Engie, and I'm here to make your writing shine.",
-  "Hi there! 🎯 I'm Engie, your AI writing sidekick. Notice how I improved that?",
+  "Hey! 👋 I&apos;m Engie, your writing buddy. I just made that flow better!",
+  "That&apos;s me! ✨ I&apos;m Engie, and I&apos;m here to make your writing shine.",
+  "Hi there! 🎯 I&apos;m Engie, your AI writing sidekick. Notice how I improved that?",
   "Meet Engie! 🚀 I just gave your text a little polish. Want to see more?"
 ];
 
@@ -216,7 +216,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                       {selectedType.icon}
                       {selectedType.label}
                     </h3>
-                    <p className="text-sm text-muted-foreground">Start writing - I'll help as you go!</p>
+                    <p className="text-sm text-muted-foreground">Start writing - I&apos;ll help as you go!</p>
                   </div>
                   <Badge variant="secondary">Live assistance</Badge>
                 </div>
@@ -248,7 +248,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                 </div>
 
                 <div className="text-xs text-muted-foreground text-center">
-                  Keep writing... I'll appear when I have helpful suggestions! ✨
+                  Keep writing... I&apos;ll appear when I have helpful suggestions! ✨
                 </div>
               </motion.div>
             )}
@@ -327,7 +327,7 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
 
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">
-                    That's how I work! I'll suggest improvements as you write. 🚀
+                    That&apos;s how I work! I&apos;ll suggest improvements as you write. 🚀
                   </p>
                 </div>
               </motion.div>
@@ -345,9 +345,9 @@ export const InteractiveOnboarding: React.FC<InteractiveOnboardingProps> = ({
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">You're all set! 🎉</h3>
+                  <h3 className="text-lg font-semibold">You&apos;re all set! 🎉</h3>
                   <p className="text-sm text-muted-foreground">
-                    Continue writing and I'll help you along the way. No tutorials needed - just start typing and I'll assist!
+                    Continue writing and I&apos;ll help you along the way. No tutorials needed - just start typing and I&apos;ll assist!
                   </p>
                 </div>
 
