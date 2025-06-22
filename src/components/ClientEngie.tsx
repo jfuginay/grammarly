@@ -17,8 +17,8 @@ interface ClientEngieProps {
   onIdeate: () => void;
   targetEditorSelector?: string;
   documents: Array<{ id: string; title: string }>;
-  grokMode?: boolean;
-  grokPowerRemaining?: number;
+  // grokMode?: boolean; // Removed
+  // grokPowerRemaining?: number; // Removed
 }
 
 const ClientEngie: React.FC<ClientEngieProps> = (props) => {
