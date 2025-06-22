@@ -51,21 +51,26 @@ interface TextHistory {
   scrollPosition: number;
 }
 
-const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>(({
-  value,
-  onChange,
-  suggestions,
-  className = '',
-  placeholder = 'Start writing...',
-  toneHighlights = [], // Default to empty array
-  autoAnalyze = true,
-  readOnly = false,
-  showFragments = false,
-  isAnalysisBox = false,
-  reflectTextFrom = '',
-  onSuggestionsFetched,
-  onToneHighlightsFetched
-}, ref) => {
+const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
+  props: EnhancedEditorProps,
+  ref
+) => {
+  const {
+    value,
+    onChange,
+    suggestions,
+    className = props.className || '',
+    placeholder = props.placeholder || 'Start writing...',
+    toneHighlights = props.toneHighlights || [],
+    autoAnalyze = typeof props.autoAnalyze === 'boolean' ? props.autoAnalyze : true,
+    readOnly = typeof props.readOnly === 'boolean' ? props.readOnly : false,
+    showFragments = typeof props.showFragments === 'boolean' ? props.showFragments : false,
+    isAnalysisBox = typeof props.isAnalysisBox === 'boolean' ? props.isAnalysisBox : false,
+    reflectTextFrom = props.reflectTextFrom || '',
+    onSuggestionsFetched,
+    onToneHighlightsFetched
+  } = props;
+
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [highlightedHtml, setHighlightedHtml] = useState<string>('');
