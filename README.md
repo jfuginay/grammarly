@@ -5,7 +5,7 @@
     <strong>Your AI-Powered Writing Companion</strong>
   </p>
   <p>
-    Welcome to Grammarly-EST, where <strong>EST</strong> stands for <strong>Engie Suggestion Technology</strong>. This isn't just a grammar checker; it's an intelligent writing partner designed to enhance your writing process, understand your context, and help you produce your best work.
+    Welcome to Grammarly-EST, powered by <strong>Engie Suggestion Technology (EST)</strong>. "Engie" is your AI companion that understands context and suggests smarter improvements in real time. This isn't just a grammar checker; it's an intelligent writing partner designed to enhance your writing process, understand your context, and help you produce your best work.
   </p>
 </div>
 

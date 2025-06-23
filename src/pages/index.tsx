@@ -233,10 +233,11 @@ const IndexPage = () => {
                 </span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-4xl mx-auto">
-                Built for technical professionals who need more than spell-check. 
-                Get intelligent assistance for code documentation, technical blogs, 
-                and professional communication.
+              <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-4 max-w-4xl mx-auto">
+                Built for technical professionals who need more than spell-check. Get intelligent assistance for code documentation, technical blogs, and professional communication.
+              </p>
+              <p className="text-base md:text-lg text-gray-500 dark:text-gray-400 italic mb-8 max-w-3xl mx-auto">
+                Powered by <strong>Engie Suggestion Technology&nbsp;(EST)</strong> – your friendly AI companion, <strong>Engie</strong>, who reads your writing context and offers smart, real-time suggestions.
               </p>
 
               <div className="flex flex-wrap justify-center gap-3 mb-12">
