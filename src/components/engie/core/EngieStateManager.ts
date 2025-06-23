@@ -46,7 +46,7 @@ export class EngieStateManager {
     };
   }
 
-  private calculateTextAnalysisPosition(): { x: number; y: number } {
+  public calculateTextAnalysisPosition(): { x: number; y: number } {
     if (typeof window === 'undefined') {
       // SSR fallback - position in center-right
       return { x: 600, y: 300 };
