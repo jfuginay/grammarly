@@ -243,14 +243,19 @@ function identifyPhrases(text: string, fragments: TextFragment[]): void {
 // Helper function to fetch tone analysis
 async function fetchToneAnalysis(text: string): Promise<ToneAnalysis | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/check-tone`, {
+    // On the server, we need to use an absolute URL for fetch
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+    
+    const response = await fetch(`${baseUrl}/api/check-tone`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     });
     
     if (!response.ok) {
-      console.error('Error fetching tone analysis:', response.statusText);
+      console.error(`Error fetching tone analysis: ${response.status} ${response.statusText}`);
       return null;
     }
     
