@@ -87,14 +87,15 @@ export class EngieApiService {
       const response = await fetch('/api/engie-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, history: currentHistory }),
+        body: JSON.stringify({ message: prompt, history: currentHistory }),
       });
       if (!response.ok) {
-        console.error('Failed to get response from Engie Chat API');
+        const errorText = await response.text();
+        console.error('Failed to get response from Engie Chat API. Status:', response.status, 'Error:', errorText);
         return null;
       }
       const data = await response.json();
-      return data.message || null;
+      return data.reply || null;
     } catch (error) {
       console.error('Error calling Engie Chat API:', error);
       return null;
