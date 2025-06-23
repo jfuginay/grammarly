@@ -1041,7 +1041,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
     }
     
     setHighlightedHtml(html);
-  }, [value, suggestions, toneHighlights, textFragments, shouldShowFragments, placeholder]);
+  }, [value, suggestions, toneHighlights, textFragments, shouldShowFragments, placeholder, readOnly]);
   
   // Sync scroll position between textarea and highlight div
   useEffect(() => {

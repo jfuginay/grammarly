@@ -374,7 +374,7 @@ const IndexPage = () => {
               Built for Technical Professionals
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Whether you're documenting code, writing technical blogs, or communicating with stakeholders, 
+              Whether you&apos;re documenting code, writing technical blogs, or communicating with stakeholders, 
               we understand your context and help you communicate more effectively.
             </p>
           </motion.div>
