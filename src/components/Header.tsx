@@ -52,11 +52,25 @@ const Header = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || `HTTP ${res.status}`);
+      }
+
+      console.log('Logged out successfully');
       setUser(null);
       router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
+      alert('Logout failed. Please try again.');
     }
   };
 
