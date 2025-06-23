@@ -449,7 +449,15 @@ const IndexPage = () => {
               AI-powered writing companion for technical professionals
             </p>
             <p className="text-sm text-gray-500">
-              © 2024 Grammarly-EST. Built with Next.js and OpenAI.
+              © 2024 Grammarly-EST. Built with Next.js and OpenAI.<br />
+              <a
+                href="https://engindearing.soy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary"
+              >
+                Site created with AI-first methodologies by EnginDearing.soy
+              </a>
             </p>
           </div>
         </div>
