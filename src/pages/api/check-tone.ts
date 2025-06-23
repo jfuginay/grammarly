@@ -98,17 +98,41 @@ export default async function handler(
 
   try {
     console.log('API: Making OpenAI call for tone analysis');
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: [
-        { role: 'system', content: toneSystemPrompt },
-        { role: 'user', content: text },
-      ],
-      response_format: { type: 'json_object' },
-    });
+    
+    // Try gpt-4-turbo first, fallback to gpt-4o-mini if unauthorized
+    let model = 'gpt-4-turbo';
+    let completion;
+    
+    try {
+      completion = await openai.chat.completions.create({
+        model: model,
+        messages: [
+          { role: 'system', content: toneSystemPrompt },
+          { role: 'user', content: text },
+        ],
+        response_format: { type: 'json_object' },
+      });
+    } catch (primaryError: any) {
+      console.log('API: Primary model failed, trying fallback. Error:', primaryError?.message);
+      
+      if (primaryError instanceof OpenAI.APIError && primaryError.status === 401) {
+        console.log('API: 401 error with gpt-4-turbo, trying gpt-4o-mini');
+        model = 'gpt-4o-mini';
+        completion = await openai.chat.completions.create({
+          model: model,
+          messages: [
+            { role: 'system', content: toneSystemPrompt },
+            { role: 'user', content: text },
+          ],
+          response_format: { type: 'json_object' },
+        });
+      } else {
+        throw primaryError; // Re-throw if it's not a 401 error
+      }
+    }
 
     const responseContent = completion.choices[0].message.content;
-    console.log('API: OpenAI tone response received, content length:', responseContent?.length || 0);
+    console.log('API: OpenAI tone response received using model:', model, 'content length:', responseContent?.length || 0);
     
     if (!responseContent) {
       console.log('API: No response content from OpenAI for tone analysis');
@@ -129,16 +153,35 @@ export default async function handler(
     console.error('API: Error details:', {
       name: error?.name,
       message: error?.message,
-      stack: error?.stack
+      stack: error?.stack?.substring(0, 500) // Truncate stack trace
     });
     
     if (error instanceof OpenAI.APIError) {
       console.error('API: OpenAI API Error details:', {
         status: error.status,
         code: error.code,
-        type: error.type
+        type: error.type,
+        message: error.message
       });
-      return res.status(error.status || 500).json({ message: 'OpenAI API Error' });
+      
+      // Provide more specific error messages
+      if (error.status === 401) {
+        return res.status(401).json({ 
+          message: 'OpenAI API authentication failed. Please check API key configuration.' 
+        });
+      } else if (error.status === 429) {
+        return res.status(429).json({ 
+          message: 'OpenAI API rate limit exceeded. Please try again later.' 
+        });
+      } else if (error.status === 400) {
+        return res.status(400).json({ 
+          message: 'Invalid request to OpenAI API. Please check the input text.' 
+        });
+      } else {
+        return res.status(error.status || 500).json({ 
+          message: `OpenAI API Error: ${error.message}` 
+        });
+      }
     }
     
     res.status(500).json({ message: 'Internal Server Error' });
