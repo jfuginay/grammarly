@@ -42,11 +42,15 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
     const popupHeight = 400;
     const gap = 15;
 
+    // Firefox-specific getBoundingClientRect fix
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    const firefoxOffset = isFirefox ? 2 : 0; // Firefox has a known 2px offset issue
+
     // Check available space in each direction
-    const spaceRight = windowWidth - (engieRect.right + gap);
-    const spaceLeft = engieRect.left - gap;
-    const spaceBottom = windowHeight - (engieRect.bottom + gap);
-    const spaceTop = engieRect.top - gap;
+    const spaceRight = windowWidth - (engieRect.right + gap + firefoxOffset);
+    const spaceLeft = engieRect.left - gap - firefoxOffset;
+    const spaceBottom = windowHeight - (engieRect.bottom + gap + firefoxOffset);
+    const spaceTop = engieRect.top - gap - firefoxOffset;
 
     // Determine best position based on available space
     if (spaceRight >= popupWidth) {
@@ -74,35 +78,44 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
 
     const engieRect = engieRef.current.getBoundingClientRect();
     const gap = 15;
+    
+    // Firefox-specific positioning fixes
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    const firefoxOffset = isFirefox ? 2 : 0;
 
     switch (popupPosition) {
       case 'right':
         return {
           position: 'fixed' as const,
-          left: engieRect.right + gap,
-          top: engieRect.top,
+          left: engieRect.right + gap + firefoxOffset,
+          top: engieRect.top + firefoxOffset,
           transform: 'translateY(-50%)',
+          // Firefox-specific z-index fix
+          zIndex: isFirefox ? 1002 : 1001,
         };
       case 'left':
         return {
           position: 'fixed' as const,
-          right: window.innerWidth - engieRect.left + gap,
-          top: engieRect.top,
+          right: window.innerWidth - engieRect.left + gap + firefoxOffset,
+          top: engieRect.top + firefoxOffset,
           transform: 'translateY(-50%)',
+          zIndex: isFirefox ? 1002 : 1001,
         };
       case 'below':
         return {
           position: 'fixed' as const,
-          left: engieRect.left + (engieRect.width / 2),
-          top: engieRect.bottom + gap,
+          left: engieRect.left + (engieRect.width / 2) + firefoxOffset,
+          top: engieRect.bottom + gap + firefoxOffset,
           transform: 'translateX(-50%)',
+          zIndex: isFirefox ? 1002 : 1001,
         };
       default: // above
         return {
           position: 'fixed' as const,
-          left: engieRect.left + (engieRect.width / 2),
-          bottom: window.innerHeight - engieRect.top + gap,
+          left: engieRect.left + (engieRect.width / 2) + firefoxOffset,
+          bottom: window.innerHeight - engieRect.top + gap + firefoxOffset,
           transform: 'translateX(-50%)',
+          zIndex: isFirefox ? 1002 : 1001,
         };
     }
   };
@@ -116,8 +129,24 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
       }
     };
 
+    // Firefox-specific resize handling
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // Firefox needs additional event listeners for proper popup positioning
+    if (isFirefox) {
+      window.addEventListener('scroll', handleResize);
+      window.addEventListener('orientationchange', handleResize);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (isFirefox) {
+        window.removeEventListener('scroll', handleResize);
+        window.removeEventListener('orientationchange', handleResize);
+      }
+    };
   }, [state.isChatOpen]);
 
   // Cleanup on unmount
@@ -260,11 +289,20 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             style={{
               ...getPopupStyles(),
-              zIndex: 1001,
               maxWidth: '320px',
               whiteSpace: 'normal'
             }}
             className={`${styles.engiePopup} ${styles[`engiePopup${popupPosition.charAt(0).toUpperCase() + popupPosition.slice(1)}`] || ''}`}
+            onAnimationComplete={() => {
+              // Firefox-specific forced repaint
+              const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+              if (isFirefox) {
+                const element = document.querySelector(`.${styles.engiePopup}`) as HTMLElement;
+                if (element) {
+                  element.style.transform = element.style.transform;
+                }
+              }
+            }}
           >
             <EngieChatWindow
               state={state}

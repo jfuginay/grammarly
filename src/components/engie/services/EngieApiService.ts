@@ -59,10 +59,25 @@ export class EngieApiService {
   async fetchToneAnalysis(text: string): Promise<ToneAnalysis | null> {
     try {
       console.log('Engie: Fetching tone analysis for text length:', text.length);
+      
+      // Firefox-specific headers and fetch options
+      const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      
+      // Firefox sometimes has issues with certain header configurations
+      if (isFirefox) {
+        headers['Cache-Control'] = 'no-cache';
+      }
+      
       const response = await fetch('/api/check-tone', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ text }),
+        // Firefox-specific fetch options
+        ...(isFirefox && {
+          credentials: 'same-origin',
+          mode: 'cors'
+        })
       });
       
       console.log('Engie: Tone API response status:', response.status);
@@ -78,6 +93,26 @@ export class EngieApiService {
       return data || null;
     } catch (error) {
       console.error('Engie: Error fetching tone analysis:', error);
+      // Firefox-specific error handling
+      const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+      if (isFirefox && error instanceof TypeError && error.message.includes('NetworkError')) {
+        console.error('Engie: Firefox network error detected, retrying...');
+        // Retry once for Firefox network issues
+        try {
+          const retryResponse = await fetch('/api/check-tone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+            credentials: 'same-origin'
+          });
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            return retryData || null;
+          }
+        } catch (retryError) {
+          console.error('Engie: Firefox retry also failed:', retryError);
+        }
+      }
       return null;
     }
   }

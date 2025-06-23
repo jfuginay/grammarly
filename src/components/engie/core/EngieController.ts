@@ -471,7 +471,18 @@ export class EngieController {
       this.handleEngieClose();
     } else {
       this.stateManager.setChatOpen(true);
-      this.analyzePageTone();
+      
+      // Firefox-specific delay to ensure proper rendering
+      const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+      
+      if (isFirefox) {
+        // Firefox needs a slight delay for proper popup positioning
+        setTimeout(() => {
+          this.analyzePageTone();
+        }, 50);
+      } else {
+        this.analyzePageTone();
+      }
     }
   }
 

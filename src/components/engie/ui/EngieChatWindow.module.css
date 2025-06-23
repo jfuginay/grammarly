@@ -20,6 +20,26 @@
   /* Ensure responsive sizing */
   min-width: 280px;
   max-width: 100%;
+  /* Firefox-specific fixes */
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Firefox-specific fallback for backdrop-filter */
+@-moz-document url-prefix() {
+  .chatWindow {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: none;
+    box-shadow: 
+      0 20px 40px hsla(var(--foreground), 0.12),
+      0 8px 16px hsla(var(--foreground), 0.08),
+      0 1px 0 hsla(var(--background), 0.9) inset;
+  }
+  
+  [data-theme="dark"] .chatWindow {
+    background: rgba(31, 41, 55, 0.98);
+  }
 }
 
 @keyframes premium-chat-entrance {
@@ -54,6 +74,8 @@
   content: '';
   position: absolute;
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid hsla(var(--border), 0.8);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: -1;
@@ -62,6 +84,8 @@
 /* Dark theme adjustments */
 [data-theme="dark"] .chatWindow {
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(31, 41, 55, 0.95);
   border-color: hsla(var(--border), 0.6);
   box-shadow: 
     0 20px 40px hsla(0, 0%, 0%, 0.3),
@@ -72,10 +96,12 @@
 [data-theme="dark"] .chatWindow::before,
 [data-theme="dark"] .chatWindow::after {
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(31, 41, 55, 0.95);
   border-color: hsla(var(--border), 0.6);
 }
 
-/* Comic Book Speech Bubble Tails - Simplified and More Reliable */
+/* Comic Book Speech Bubble Tails - Simplified and More Reliable for Firefox */
 
 /* Coming from Engie on the left (bubble to the right of Engie) */
 .popup-from-left::before {
@@ -84,11 +110,16 @@
   width: 20px;
   height: 20px;
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid hsla(var(--border), 0.8);
   border-right: none;
   border-top: none;
   transform: rotate(45deg);
   border-radius: 0 0 0 8px;
+  /* Firefox-specific positioning fix */
+  -moz-transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
 }
 
 .popup-from-left::after {
@@ -97,9 +128,14 @@
   width: 12px;
   height: 12px;
   background: hsla(var(--card), 1);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 1);
   border: none;
   transform: rotate(45deg);
   border-radius: 0 0 0 4px;
+  /* Firefox-specific positioning fix */
+  -moz-transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
 }
 
 /* Coming from Engie on the right (bubble to the left of Engie) */
@@ -109,11 +145,16 @@
   width: 20px;
   height: 20px;
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid hsla(var(--border), 0.8);
   border-left: none;
   border-top: none;
   transform: rotate(-45deg);
   border-radius: 0 0 8px 0;
+  /* Firefox-specific positioning fix */
+  -moz-transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
 }
 
 .popup-from-right::after {
@@ -122,9 +163,14 @@
   width: 12px;
   height: 12px;
   background: hsla(var(--card), 1);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 1);
   border: none;
   transform: rotate(-45deg);
   border-radius: 0 0 4px 0;
+  /* Firefox-specific positioning fix */
+  -moz-transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
 }
 
 /* Coming from Engie above (bubble below Engie) */
@@ -135,10 +181,15 @@
   width: 20px;
   height: 20px;
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid hsla(var(--border), 0.8);
   border-bottom: none;
   border-right: none;
   border-radius: 8px 0 0 0;
+  /* Firefox-specific positioning fix */
+  -moz-transform: translateX(-50%) rotate(45deg);
+  -webkit-transform: translateX(-50%) rotate(45deg);
 }
 
 .popup-from-top::after {
@@ -148,8 +199,13 @@
   width: 12px;
   height: 12px;
   background: hsla(var(--card), 1);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 1);
   border: none;
   border-radius: 4px 0 0 0;
+  /* Firefox-specific positioning fix */
+  -moz-transform: translateX(-50%) rotate(45deg);
+  -webkit-transform: translateX(-50%) rotate(45deg);
 }
 
 /* Coming from Engie below (bubble above Engie) */
@@ -160,10 +216,15 @@
   width: 20px;
   height: 20px;
   background: hsla(var(--card), 0.95);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid hsla(var(--border), 0.8);
   border-top: none;
   border-right: none;
   border-radius: 0 0 0 8px;
+  /* Firefox-specific positioning fix */
+  -moz-transform: translateX(-50%) rotate(-45deg);
+  -webkit-transform: translateX(-50%) rotate(-45deg);
 }
 
 .popup-from-bottom::after {
@@ -173,8 +234,13 @@
   width: 12px;
   height: 12px;
   background: hsla(var(--card), 1);
+  /* Firefox fallback */
+  background: rgba(255, 255, 255, 1);
   border: none;
   border-radius: 0 0 0 4px;
+  /* Firefox-specific positioning fix */
+  -moz-transform: translateX(-50%) rotate(-45deg);
+  -webkit-transform: translateX(-50%) rotate(-45deg);
 }
 
 /* Premium content styling */
@@ -186,6 +252,13 @@
     hsla(var(--background), 0.4) 100%
   );
   backdrop-filter: blur(8px);
+  /* Firefox fallback */
+  @supports not (backdrop-filter: blur(8px)) {
+    background: linear-gradient(180deg, 
+      hsla(var(--background), 0.9) 0%, 
+      hsla(var(--background), 0.7) 100%
+    );
+  }
 }
 
 .chatWindow .premium-content {

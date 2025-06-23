@@ -61,34 +61,64 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
 }) => {
   const [researchTopic, setResearchTopic] = React.useState(''); // Keep for now, though its UI in GrokTab is gone
   const [grokInput, setGrokInput] = React.useState('');
-        {/* Grok chat input for arbitrary prompts */}
-        {state.isGrokActive && ( // This condition might need re-evaluation based on how 'isGrokActive' is used post-toggle-removal
-          <form
-            className="flex gap-2 mt-2"
-            onSubmit={e => {
-              e.preventDefault();
-              if (grokInput.trim() && onSendGrokMessage) {
-                onSendGrokMessage(grokInput.trim());
-                setGrokInput('');
-              }
-            }}
-          >
-            <Input
-              value={grokInput}
-              onChange={e => setGrokInput(e.target.value)}
-              placeholder="Ask Grok anything..."
-              disabled={grokLoading}
-              className="flex-1"
-              aria-label="Grok chat input"
-            />
-            <Button type="submit" disabled={grokLoading || !grokInput.trim()}>
-              {grokLoading ? 'Sending...' : 'Send'}
-            </Button>
-          </form>
-        )}
-        {grokError && (
-          <div className="text-xs text-red-500 mt-1">{grokError}</div>
-        )}
+  
+  // Firefox-specific handling
+  const [isFirefox, setIsFirefox] = React.useState(false);
+  
+  React.useEffect(() => {
+    // Detect Firefox
+    const firefoxDetected = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    setIsFirefox(firefoxDetected);
+    
+    // Firefox-specific initialization
+    if (firefoxDetected) {
+      console.log('Engie: Firefox detected, applying compatibility fixes');
+    }
+  }, []);
+
+  // Firefox-specific animation variants
+  const firefoxAnimationVariants = {
+    initial: { opacity: 0, y: 10, scale: 0.98 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, y: 10, scale: 0.98 }
+  };
+
+  const defaultAnimationVariants = {
+    initial: { opacity: 0, y: 20, scale: 0.95 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, y: 20, scale: 0.95 }
+  };
+
+  const animationVariants = isFirefox ? firefoxAnimationVariants : defaultAnimationVariants;
+
+  {/* Grok chat input for arbitrary prompts */}
+  {state.isGrokActive && ( // This condition might need re-evaluation based on how 'isGrokActive' is used post-toggle-removal
+    <form
+      className="flex gap-2 mt-2"
+      onSubmit={e => {
+        e.preventDefault();
+        if (grokInput.trim() && onSendGrokMessage) {
+          onSendGrokMessage(grokInput.trim());
+          setGrokInput('');
+        }
+      }}
+    >
+      <Input
+        value={grokInput}
+        onChange={e => setGrokInput(e.target.value)}
+        placeholder="Ask Grok anything..."
+        disabled={grokLoading}
+        className="flex-1"
+        aria-label="Grok chat input"
+      />
+      <Button type="submit" disabled={grokLoading || !grokInput.trim()}>
+        {grokLoading ? 'Sending...' : 'Send'}
+      </Button>
+    </form>
+  )}
+  {grokError && (
+    <div className="text-xs text-red-500 mt-1">{grokError}</div>
+  )}
 
   const combinedChatHistory = React.useMemo(() => {
     let combined: ChatMessage[] = [];
@@ -103,10 +133,10 @@ export const EngieChatWindow: React.FC<EngieChatWindowProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
+      initial={animationVariants.initial}
+      animate={animationVariants.animate}
+      exit={animationVariants.exit}
+      transition={{ duration: isFirefox ? 0.3 : 0.2 }}
       className={`${styles.chatWindow} mb-4 w-[calc(100vw-2.5rem)] sm:w-80 max-w-xs rounded-lg bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden`}
     >
       <header className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
