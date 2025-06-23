@@ -466,14 +466,13 @@ export class EngieController {
   }
 
   handleEngieTrigger(): void {
-    const state = this.stateManager.getState();
-    
-    if (!state.isChatOpen) {
-      this.debouncedScan();
+    const { isChatOpen } = this.stateManager.getState();
+    if (isChatOpen) {
+      this.handleEngieClose();
+    } else {
+      this.stateManager.setChatOpen(true);
       this.analyzePageTone();
-      this.stateManager.setEmotionBasedOnInteraction('chat-opened');
     }
-    this.stateManager.setChatOpen(!state.isChatOpen);
   }
 
   handleEngieClose(): void {
