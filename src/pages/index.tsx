@@ -281,7 +281,7 @@ const IndexPage = () => {
                       ref={textAreaRef}
                       value={userText}
                       onChange={(e) => setUserText(e.target.value)}
-                      placeholder="Type something like: 'This function recieve user input and proccess it for the databse using async/await pattern...'"
+                      placeholder="Type something like: &apos;This function recieve user input and proccess it for the databse using async/await pattern...&apos;"
                       className="w-full h-32 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     />
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
@@ -164,9 +164,9 @@ export const EngieBot: React.FC<EngieProps> = (props) => {
   };
 
   // Document change handler for new/empty documents
-  const handleDocumentChange = (newText: string = '', isNewDocument: boolean = false) => {
+  const handleDocumentChange = useCallback((newText: string = '', isNewDocument: boolean = false) => {
     controller.handleDocumentChange(newText, isNewDocument);
-  };
+  }, [controller]);
 
   // Expose document change handler globally so parent can call it
   useEffect(() => {
