@@ -56,6 +56,15 @@ interface TextHistory {
   scrollPosition: number;
 }
 
+// Helper to safely encode URI components without throwing on malformed characters
+const safeEncode = (value: string) => {
+  try {
+    return encodeURIComponent(value)
+  } catch {
+    return ""
+  }
+}
+
 const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
   props: EnhancedEditorProps,
   ref
@@ -995,7 +1004,7 @@ const EnhancedEditor = forwardRef<EnhancedEditorRef, EnhancedEditorProps>((
           
           // Add suggestion-specific attributes
           if (marker.suggestion) {
-            attributesString = ` data-id="${marker.suggestion.id}" data-suggestion="${encodeURIComponent(marker.suggestion.suggestion)}"`;
+            attributesString = ` data-id="${marker.suggestion.id}" data-suggestion="${safeEncode(marker.suggestion.suggestion)}"`;
           }
           
           // Add fragment-specific attributes
