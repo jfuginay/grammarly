@@ -187,11 +187,8 @@ const IndexPage = () => {
       <nav className="relative z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center">
               <Logo />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Grammarly-EST
-              </span>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -447,7 +444,6 @@ const IndexPage = () => {
           <div className="text-center">
             <div className="flex items-center justify-center space-x-3 mb-4">
               <Logo />
-              <span className="text-2xl font-bold">Grammarly-EST</span>
             </div>
             <p className="text-gray-400 mb-4">
               AI-powered writing companion for technical professionals
