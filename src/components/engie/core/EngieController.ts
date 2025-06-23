@@ -601,49 +601,8 @@ export class EngieController {
   }
 
   updateEngiePosition(x: number, y: number): void {
-    // Apply tethering constraints to keep Engie near the text analysis area
-    const constrainedPosition = this.applyTetherConstraints(x, y);
-    this.stateManager.setEngiePos(constrainedPosition);
-  }
-
-  /**
-   * Apply tetherball-like constraints to keep Engie near the text analysis area
-   */
-  private applyTetherConstraints(x: number, y: number): { x: number; y: number } {
-    // Get the "home base" position (text analysis area)
-    const homeBase = this.stateManager.calculateTextAnalysisPosition();
-    
-    // Define the maximum tether radius (how far Engie can wander)
-    const maxTetherRadius = 300; // pixels
-    const engieSize = 64;
-    const screenPadding = 20;
-    
-    // Calculate distance from home base
-    const dx = x - homeBase.x;
-    const dy = y - homeBase.y;
-    const distanceFromHome = Math.sqrt(dx * dx + dy * dy);
-    
-    let constrainedX = x;
-    let constrainedY = y;
-    
-    // If Engie is trying to go beyond the tether radius, constrain it
-    if (distanceFromHome > maxTetherRadius) {
-      // Calculate the constrained position on the edge of the tether circle
-      const angle = Math.atan2(dy, dx);
-      constrainedX = homeBase.x + Math.cos(angle) * maxTetherRadius;
-      constrainedY = homeBase.y + Math.sin(angle) * maxTetherRadius;
-    }
-    
-    // Also ensure Engie stays within the viewport bounds
-    if (typeof window !== 'undefined') {
-      const maxX = window.innerWidth - engieSize - screenPadding;
-      const maxY = window.innerHeight - engieSize - screenPadding;
-      
-      constrainedX = Math.max(screenPadding, Math.min(constrainedX, maxX));
-      constrainedY = Math.max(screenPadding, Math.min(constrainedY, maxY));
-    }
-    
-    return { x: constrainedX, y: constrainedY };
+    // Tethering constraints are now applied automatically in EngieStateManager.setEngiePos()
+    this.stateManager.setEngiePos({ x, y });
   }
 
   formatScore(score: number | undefined | null): string {
